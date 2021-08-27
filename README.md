@@ -34,7 +34,7 @@ light:
   refresh_every: 0                      # Resend values if no fades are running every x seconds, 0 disables automatic refresh
   universes:                            # Support for multiple universes
     0:                                  # Nr of Universe (see configuration of your Art-Net Node)
-    output_correction: quadratic        # optional: output correction for the whole universe, will be used as default if nothing is set for the channel
+      output_correction: quadratic      # optional: output correction for the whole universe, will be used as default if nothing is set for the channel
       devices:
         # Dimmer
         - channel: 1                    # first channel of dmx dimmer
@@ -42,11 +42,11 @@ light:
           type: dimmer                  # type
           transition: 1                 # default duration of fades in sec. Will be overridden by Transition sent from HA
           output_correction: quadratic  # optional: quadratic, cubic or quadruple. Apply different dimming curves to the output. Default is None which means linear dimming
-          channel_size: "16bit"         # width of the channel sent to DMX device, default "8bit", "16bit", "24bit" and "32bit" available.
+          channel_size: 16bit           # width of the channel sent to DMX device, default "8bit", "16bit", "24bit" and "32bit" available.
         - channel: 3
           name: my_rgb_lamp
           transition: 1
-          channel_size: "16bit"
+          channel_size: 16bit
           output_correction: quadratic
         - channel: 125
           type: "color_temp"
@@ -77,7 +77,7 @@ Device configuration variables:
     - **'rgb'** (red, green, blue)
     - **'rgbw'** (red, green, blue, white)
     - **'rgbww'** (red, green, blue, cool-white, warm-white)
-    - **'custom_white'** (cool-white, warm-white)
+    - **'color_temp'** (cool-white, warm-white)
   - **output_correction** (*Optional; default=linear*): applied to each channel, overrides universe setting.
     - **'linear'**
     - **'quadratic'** (see Graph)
