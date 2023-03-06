@@ -8,25 +8,6 @@ Use Brightness and RGB value separately to give more resolution to brightness to
 
 The DMX integration for Home Assistant allows you to send DMX values to an [Art-Net](http://www.art-net.org.uk) capable DMX interface. This component is a one way integration which sends [Art-Net](https://en.wikipedia.org/wiki/Art-Net) UDP packets to the DMX interface. This integration uses [pyartnet](https://github.com/spacemanspiff2007/PyArtNet) libraries and requires at least Python version 3.8.
 
-## WIP before submitting it to HACS' default repositories
-
-- [x] Implement custom_white
-- [x] Reimplement KiNet
-- [x] Implement sACN (https://github.com/jnimmo/hass-dmx/pull/66)
-- [x] Stop animation thread when not animating (https://github.com/jnimmo/hass-dmx/pull/8#issuecomment-449679960)
-
-## WIP before submitting it to Home Assistant core integrations
-
-- [x] Implement Art-Net broadcast IP (https://github.com/jnimmo/hass-dmx/issues/58)
-- [x] Implement custom_rgb (https://github.com/jnimmo/hass-dmx/issues/65)
-- [ ] Implement custom light colors (https://github.com/jnimmo/hass-dmx/issues/52)
-- [ ] Implement custom_device (https://github.com/jnimmo/hass-dmx/issues/54, https://github.com/jnimmo/hass-dmx/issues/62, https://github.com/Breina/ha-artnet-led/issues/7)
-
-## Prerequisites
-
-* [Home Assistant (hass)](https://www.home-assistant.io/) >= 2021.5 for Color_Mode.
-* [pyartnet](https://github.com/spacemanspiff2007/PyArtNet) == 0.8.3 will load automatically.
-
 ## Installation
 
 > **Note**
@@ -112,7 +93,7 @@ light:
 - **refresh_every** (*Optional; default=120*): Seconds to resend values if no fades are running, 0 disables.
 - **node_type** (*Optional; default=artnet-direct*): the protocol to use
   - **'artnet-direct'**: Directly sends DMX packets to a single node's IP.
-  - **'artnet-controller'**: Auto-discovers ArtNet nodes and other controllers, can be picked up by other controllers.
+  - **'artnet-controller'**: Auto-discovers ArtNet nodes and other controllers, can be picked up by other controllers. Will allow Home Assistant lights to be updated through DMX input.
   - **'sacn'**: The E1.31 sACN protocol, directly sending to a node's IP.
   - **'kinet'**: The KiNET, directly sending to a node's IP.
 - **universe** (*Required*): Art-Net universe for following DMX channels.
