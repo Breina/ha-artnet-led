@@ -1,6 +1,6 @@
 import datetime
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 CLIENT_VERSION = 1
@@ -242,8 +242,8 @@ class Port:
     input: bool = False
     output: bool = False
     type: PortType = PortType.DMX512
-    good_input: GoodInput = GoodInput()
-    good_output_a: GoodOutputA = GoodOutputA()
+    good_input: GoodInput = field(default_factory=GoodInput)
+    good_output_a: GoodOutputA = field(default_factory=GoodOutputA)
     sw_in: int = 0
     sw_out: int = 0
     rdm_enabled: bool = False
