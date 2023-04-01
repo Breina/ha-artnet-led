@@ -1,6 +1,6 @@
 {
-  "domain": "artnet_led",
-  "name": "DMX Artnet integration",
+  "domain": "dmx",
+  "name": "DMX integration",
   "codeowners": [
     "@corb3000",
     "@mvandenabeele",
@@ -14,5 +14,6 @@
   "requirements": [
     "pyartnet==1.0.1"
   ],
+  "config_flow": true,
   "version": "0.1.1"
 }

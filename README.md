@@ -64,7 +64,7 @@ Example:
 
 ```yaml
 light:
-- platform: artnet_led
+- platform: dmx
   host: IP                              # IP of Art-Net Node
   max_fps: 25                           # Max 40 per second
   refresh_every: 0                      # Resend values if no fades are running every x seconds, 0 disables automatic refresh
@@ -209,7 +209,7 @@ _Staticly sets the green channel on 50% brightness_
 |--------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-------|-------|-----------|---------------|
 | fixed        |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
 | binary       |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
-| dimmer       |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
+| dimmer       | `d` |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
 | custom_white | `d` | `c` | `C` | `h` | `H` | `t` | `T` |     |     |     |     |     |     |       |       | `[0,255]` | `ch`          |
 | rgb          | `d` |     |     |     |     |     |     | `r` | `R` | `g` | `G` | `b` | `B` | `w`\* | `W`\* | `[0,255]` | `rgb`         |
 | rgbw         | `d` |     |     |     |     |     |     | `r` | `R` | `g` | `G` | `b` | `B` | `w`   | `W`   | `[0,255]` | `rgbw`        |

@@ -2,7 +2,7 @@ from typing import Literal
 
 from pyartnet import BaseUniverse
 
-from custom_components.artnet_led.bridge.channel_bridge import ChannelBridge
+from custom_components.dmx.bridge.channel_bridge import ChannelBridge
 
 
 class UniverseBridge(BaseUniverse):

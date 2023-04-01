@@ -563,7 +563,7 @@ class ArtPoll(ArtBase):
             self.__target_port_top.port_address, index = self._consume_int_msb(packet, index)
             self.__target_port_bottom.port_address, index = self._consume_int_msb(packet, index)
         except SerializationException as e:
-            print(e)
+            log.exception(e)
 
         return index
 
@@ -822,7 +822,7 @@ class ArtPollReply(ArtBase):
 
             index += 15
         except SerializationException as e:
-            print(e)
+            log.exception(e)
         return index
 
 
@@ -878,7 +878,7 @@ class ArtIpProg(ArtBase):
 
             index += 4
         except SerializationException as e:
-            print(e)
+            log.exception(e)
 
         return index
 
@@ -938,7 +938,7 @@ class ArtIpProgReply(ArtBase):
 
             index += 2
         except SerializationException as e:
-            print(e)
+            log.exception(e)
 
         return index
 
@@ -1028,7 +1028,7 @@ class ArtAddress(ArtBase):
             command_byte, index = self._pop(packet, index)
             self.command, self.command_port_index = ArtAddressCommand.decode_with_port_index(command_byte)
         except SerializationException as e:
-            print(e)
+            log.exception(e)
 
         return index
 
@@ -1105,7 +1105,7 @@ class ArtDiagData(ArtBase):
             text_length, index = self._consume_int_msb(packet, index)
             self.text, index = self._consume_str(packet, index, text_length + 1)
         except SerializationException as e:
-            print(e)
+            log.exception(e)
 
         return index
 
@@ -1163,7 +1163,7 @@ class ArtTimeCode(ArtBase):
             type_bytes, index = self._pop(packet, index)
             self.type = TimeCodeType(type_bytes)
         except SerializationException as e:
-            print(e)
+            log.exception(e)
 
         return index
 
@@ -1200,7 +1200,7 @@ class ArtCommand(ArtBase):
             self.command, index = self._consume_str(packet, index, 512)
 
         except SerializationException as e:
-            print(e)
+            log.exception(e)
 
         return index
 
@@ -1246,12 +1246,12 @@ class ArtTrigger(ArtBase):
             self.sub_key, index = self._pop(packet, index)
 
             if self.oem == 0xFFFF and self.key > 3:
-                print(f"Warning: Trigger key range undefined for OEM '{self.oem}', key '{self.key}'")
+                log.warning(f"Warning: Trigger key range undefined for OEM '{self.oem}', key '{self.key}'")
 
             self.payload, index = self._take(packet, index, 512)
 
         except SerializationException as e:
-            print(e)
+            log.exception(e)
 
         return index
 
@@ -1309,7 +1309,7 @@ class ArtDmx(ArtBase):
             data_length, index = self._consume_int_msb(packet, index)
             self.data, index = self._take(packet, data_length, index)
         except SerializationException as e:
-            print(e)
+            log.exception(e)
 
         return index
 
