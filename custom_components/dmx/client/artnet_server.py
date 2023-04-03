@@ -4,7 +4,7 @@ import logging
 import random
 import uuid
 from asyncio import transports, Task
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from socket import socket
 from typing import Any, Union
 
@@ -67,7 +67,7 @@ class Node:
 
 @dataclass
 class OwnPort:
-    port: Port = Port()
+    port: Port = field(default_factory=Port)
     data: bytearray | None = None
     update_task: Task[None] = None
 

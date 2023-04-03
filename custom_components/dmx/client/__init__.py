@@ -112,6 +112,7 @@ class PortAddress:
     net: int = 0
     sub_net: int = 0
     universe: int = 0
+
     def __init__(self, net: int, sub_net: int, universe: int = 0) -> None:
         super().__init__()
         assert (0 <= net <= 0xF)
