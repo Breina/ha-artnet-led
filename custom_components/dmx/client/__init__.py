@@ -10,7 +10,6 @@ PORT = 0x1936
 HOME_ASSISTANT_ESTA = ord('H') << 8 + ord('A')
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 
 class OpCode(Enum):

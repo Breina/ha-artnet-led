@@ -26,7 +26,6 @@ ART_ADDRESS_SUPPORT = False  # TODO
 HA_PHYSICAL_PORT = 0x00
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 
 @dataclass
@@ -145,7 +144,6 @@ class ArtNetServer(asyncio.DatagramProtocol):
         nodes = self.nodes_by_port_address.get(port_address)
         if nodes:
             if node not in nodes:
-                log.info(f"Discovered node {node}")
                 nodes.add(node)
 
                 if self.uptime() > 3:

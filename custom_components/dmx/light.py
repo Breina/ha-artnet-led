@@ -46,7 +46,6 @@ CONF_DEVICE_TRANSITION = ATTR_TRANSITION
 CONF_SEND_PARTIAL_UNIVERSE = "send_partial_universe"
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 CONF_NODE_TYPE = "node_type"
 CONF_NODE_MAX_FPS = "max_fps"

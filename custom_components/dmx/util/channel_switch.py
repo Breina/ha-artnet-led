@@ -5,7 +5,6 @@ from math import floor
 from homeassistant.exceptions import IntegrationError
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 allowed_chars_per_type = {
     "fixed": "",

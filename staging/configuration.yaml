@@ -22,6 +22,11 @@ light:
 #            transition: 0
 #            channel_size: 16bit
 
+logger:
+  default: info
+  logs:
+    custom_components.artnet_led: debug
+
 homeassistant:
   auth_providers:
     - type: trusted_networks

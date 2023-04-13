@@ -12,7 +12,6 @@ from custom_components.dmx.client import PortAddress
 from custom_components.dmx.client.artnet_server import ArtNetServer
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 HA_OEM = 0x2BE9
 
