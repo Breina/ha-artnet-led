@@ -23,7 +23,7 @@ from homeassistant.components.light import (
     COLOR_MODE_RGBWW,
     SUPPORT_TRANSITION,
     PLATFORM_SCHEMA,
-    LightEntity, COLOR_MODE_ONOFF, COLOR_MODE_WHITE)
+    LightEntity, COLOR_MODE_ONOFF, COLOR_MODE_WHITE, ATTR_WHITE)
 from homeassistant.const import CONF_DEVICES, STATE_OFF, STATE_ON
 from homeassistant.const import CONF_FRIENDLY_NAME as CONF_DEVICE_FRIENDLY_NAME
 from homeassistant.const import CONF_HOST as CONF_NODE_HOST
@@ -508,7 +508,7 @@ class DmxWhite(DmxBaseLight):
         # Intentionally switching min and max here; it's inverted in the conversion.
         self._min_mireds = convert_to_mireds(kwargs[CONF_DEVICE_MAX_TEMP])
         self._max_mireds = convert_to_mireds(kwargs[CONF_DEVICE_MIN_TEMP])
-        self._vals = (self._max_mireds + self._min_mireds) / 2 + self._min_mireds or 300
+        self._vals = (self._max_mireds + self._min_mireds) / 2 or 300
 
         self._channel_setup = kwargs.get(CONF_CHANNEL_SETUP) or "ch"
         validate(self._channel_setup, self.CONF_TYPE)
@@ -546,6 +546,10 @@ class DmxWhite(DmxBaseLight):
         """
         if ATTR_COLOR_TEMP in kwargs:
             self._vals = kwargs[ATTR_COLOR_TEMP]
+
+        elif ATTR_WHITE in kwargs:
+            self._vals = (self._max_mireds + self._min_mireds) / 2
+            self._attr_brightness = kwargs[ATTR_WHITE]
 
         if ATTR_BRIGHTNESS in kwargs:
             self._attr_brightness = kwargs[ATTR_BRIGHTNESS]

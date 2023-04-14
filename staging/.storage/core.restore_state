@@ -5,45 +5,6 @@
   "data": [
     {
       "state": {
-        "entity_id": "light.eetkamer_zw",
-        "state": "off",
-        "attributes": {
-          "min_color_temp_kelvin": 2500,
-          "max_color_temp_kelvin": 6535,
-          "min_mireds": 153,
-          "max_mireds": 400,
-          "supported_color_modes": [
-            "color_temp",
-            "white"
-          ],
-          "type": "color_temp",
-          "dmx_channels": [
-            105,
-            106
-          ],
-          "dmx_values": [
-            0,
-            0
-          ],
-          "values": 276.5,
-          "bright": 0,
-          "transition": 0.0,
-          "friendly_name": "Eetkamer ZW",
-          "supported_features": 32
-        },
-        "last_changed": "2023-02-22T14:21:00.159127+00:00",
-        "last_updated": "2023-02-22T14:21:00.159127+00:00",
-        "context": {
-          "id": "01GSWQZFBZEMYWGFWBAJDP1P00",
-          "parent_id": null,
-          "user_id": null
-        }
-      },
-      "extra_data": null,
-      "last_seen": "2023-02-22T14:26:00.218991+00:00"
-    },
-    {
-      "state": {
         "entity_id": "person.admin",
         "state": "unknown",
         "attributes": {
