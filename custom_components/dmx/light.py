@@ -11,7 +11,6 @@ import pyartnet
 import voluptuous as vol
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
-    ATTR_COLOR_TEMP,
     ATTR_RGB_COLOR,
     ATTR_RGBW_COLOR,
     ATTR_RGBWW_COLOR,
@@ -23,7 +22,7 @@ from homeassistant.components.light import (
     COLOR_MODE_RGBWW,
     SUPPORT_TRANSITION,
     PLATFORM_SCHEMA,
-    LightEntity, COLOR_MODE_ONOFF, COLOR_MODE_WHITE, ATTR_WHITE)
+    LightEntity, COLOR_MODE_ONOFF, COLOR_MODE_WHITE, ATTR_WHITE, ATTR_COLOR_TEMP_KELVIN)
 from homeassistant.const import CONF_DEVICES, STATE_OFF, STATE_ON
 from homeassistant.const import CONF_FRIENDLY_NAME as CONF_DEVICE_FRIENDLY_NAME
 from homeassistant.const import CONF_HOST as CONF_NODE_HOST
@@ -206,9 +205,8 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
     return True
 
 
-def convert_to_mireds(kelvin_string):
-    kelvin_number = int(kelvin_string[:-1])
-    return color_util.color_temperature_kelvin_to_mired(kelvin_number)
+def convert_to_kelvin(kelvin_string) -> int:
+    return int(kelvin_string[:-1])
 
 
 class DmxBaseLight(LightEntity, RestoreEntity):
@@ -229,7 +227,7 @@ class DmxBaseLight(LightEntity, RestoreEntity):
         self._features = 0
         self._supported_color_modes = set()
         self._channel_last_update = 0
-        self._scale_factor = 1
+        self._scale_factor = 1 # TODO wtf is this even?
         self._channel_width = 0
         self._type = None
 
@@ -507,9 +505,9 @@ class DmxWhite(DmxBaseLight):
         self._color_mode = COLOR_MODE_COLOR_TEMP
         # Intentionally switching min and max here; it's inverted in the conversion.
 
-        self._min_mireds = convert_to_mireds(kwargs[CONF_DEVICE_MAX_TEMP])
-        self._max_mireds = convert_to_mireds(kwargs[CONF_DEVICE_MIN_TEMP])
-        self._vals = (self._max_mireds + self._min_mireds) / 2 or 300
+        self._min_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MIN_TEMP])
+        self._max_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MAX_TEMP])
+        self._vals = int((self._max_kelvin + self._min_kelvin) / 2)
 
         self._channel_setup = kwargs.get(CONF_CHANNEL_SETUP) or "ch"
         validate(self._channel_setup, self.CONF_TYPE)
@@ -517,22 +515,21 @@ class DmxWhite(DmxBaseLight):
         self._channel_width = len(self._channel_setup)
 
     @property
-    def color_temp(self) -> int:
-        """Return the CT color temperature."""
+    def color_temp_kelvin(self) -> int | None:
         return self._vals
 
     @property
-    def min_mireds(self) -> int:
-        """Return the coldest color_temp that this light supports."""
-        return self._min_mireds
+    def min_color_temp_kelvin(self) -> int:
+        """Return the warmest color_temp_kelvin that this light supports."""
+        return self._min_kelvin
 
     @property
-    def max_mireds(self) -> int:
-        """Return the warmest color_temp that this light supports."""
-        return self._max_mireds
+    def max_color_temp_kelvin(self) -> int:
+        """Return the coldest color_temp_kelvin that this light supports."""
+        return self._max_kelvin
 
     def _update_values(self, values: array[int]):
-        self._state, self._attr_brightness, _, _, _, _, _, color_temp = from_values(self._channel_setup, self.channel_size[1], values, self._min_mireds, self._max_mireds)
+        self._state, self._attr_brightness, _, _, _, _, _, color_temp = from_values(self._channel_setup, self.channel_size[1], values, self._min_kelvin, self._max_kelvin)
         self._vals = color_temp
 
         self._channel_value_change()
@@ -547,11 +544,12 @@ class DmxWhite(DmxBaseLight):
         """
         Instruct the light to turn on.
         """
-        if ATTR_COLOR_TEMP in kwargs:
-            self._vals = kwargs[ATTR_COLOR_TEMP]
+
+        if ATTR_COLOR_TEMP_KELVIN in kwargs:
+            self._vals = kwargs[ATTR_COLOR_TEMP_KELVIN]
 
         elif ATTR_WHITE in kwargs:
-            self._vals = (self._max_mireds + self._min_mireds) / 2
+            self._vals = (self._max_kelvin + self._min_kelvin) / 2
             self._attr_brightness = kwargs[ATTR_WHITE]
 
         if ATTR_BRIGHTNESS in kwargs:
@@ -722,8 +720,8 @@ class DmxRGBWW(DmxBaseLight):
         self._features = SUPPORT_TRANSITION
         self._color_mode = COLOR_MODE_RGBWW
         # Intentionally switching min and max here; it's inverted in the conversion.
-        self._min_mireds = convert_to_mireds(kwargs[CONF_DEVICE_MAX_TEMP])
-        self._max_mireds = convert_to_mireds(kwargs[CONF_DEVICE_MIN_TEMP])
+        self._min_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MIN_TEMP])
+        self._max_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MAX_TEMP])
         self._vals = (255, 255, 255, 255, 255)
 
         self._channel_setup = kwargs.get(CONF_CHANNEL_SETUP) or "rgbch"
@@ -745,18 +743,19 @@ class DmxRGBWW(DmxBaseLight):
         return self._vals
 
     @property
-    def min_mireds(self) -> int:
-        """Return the coldest color_temp that this light supports."""
-        return self._min_mireds
+    def min_color_temp_kelvin(self) -> int:
+        """Return the warmest color_temp_kelvin that this light supports."""
+        return self._min_kelvin
 
     @property
-    def max_mireds(self) -> int:
-        """Return the warmest color_temp that this light supports."""
-        return self._max_mireds
+    def max_color_temp_kelvin(self) -> int:
+        """Return the coldest color_temp_kelvin that this light supports."""
+        return self._max_kelvin
 
     @property
-    def color_temp(self) -> int | None:
-        return color_util.rgbww_to_color_temperature(self._vals, self.min_mireds, self.max_mireds)[0]
+    def color_temp_kelvin(self) -> int | None:
+        return color_util.rgbww_to_color_temperature(
+            self._vals, self.min_color_temp_kelvin, self.max_color_temp_kelvin)[0]
 
     def get_target_values(self):
         red = self._vals[0]
@@ -766,8 +765,8 @@ class DmxRGBWW(DmxBaseLight):
         warm_white = self._vals[4]
 
         return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness, red, green, blue,
-                         cold_white, warm_white, self.color_temp_kelvin, self.min_color_temp_kelvin,
-                         self.max_color_temp_kelvin)
+                         cold_white, warm_white, min_kelvin=self.min_color_temp_kelvin,
+                         max_kelvin=self.max_color_temp_kelvin)
 
     async def async_turn_on(self, **kwargs):
         """
