@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from array import array
@@ -22,7 +23,8 @@ from homeassistant.components.light import (
     COLOR_MODE_RGBWW,
     SUPPORT_TRANSITION,
     PLATFORM_SCHEMA,
-    LightEntity, COLOR_MODE_ONOFF, COLOR_MODE_WHITE, ATTR_WHITE, ATTR_COLOR_TEMP_KELVIN)
+    LightEntity, COLOR_MODE_ONOFF, COLOR_MODE_WHITE, ATTR_WHITE, ATTR_COLOR_TEMP_KELVIN, SUPPORT_FLASH, ATTR_FLASH,
+    FLASH_SHORT, FLASH_LONG)
 from homeassistant.const import CONF_DEVICES, STATE_OFF, STATE_ON
 from homeassistant.const import CONF_FRIENDLY_NAME as CONF_DEVICE_FRIENDLY_NAME
 from homeassistant.const import CONF_HOST as CONF_NODE_HOST
@@ -227,7 +229,6 @@ class DmxBaseLight(LightEntity, RestoreEntity):
         self._features = 0
         self._supported_color_modes = set()
         self._channel_last_update = 0
-        self._scale_factor = 1 # TODO wtf is this even?
         self._channel_width = 0
         self._type = None
 
@@ -328,6 +329,39 @@ class DmxBaseLight(LightEntity, RestoreEntity):
         """Return the Target DMX Values"""
         raise NotImplementedError()
 
+    async def flash(self, old_values, old_brightness, **kwargs):
+        self._transition = kwargs.get(ATTR_TRANSITION, self._fade_time)
+        if self._transition == 0:
+            self._transition = 1
+
+        old_state = self._state
+        self._state = True
+
+        flash_time = kwargs.get(ATTR_FLASH)
+
+        if old_state and old_values == self._vals and old_brightness == self._attr_brightness:
+            if self._attr_brightness < 128:
+                self._attr_brightness = 255
+            else:
+                self._attr_brightness = 0
+
+        if flash_time == FLASH_SHORT:
+            self._channel.set_values(self.get_target_values())
+            await self._channel
+        elif flash_time == FLASH_LONG:
+            self._channel.set_fade(self.get_target_values(), self._transition * 1000)
+            await self._channel
+        else:
+            log.error(f"{flash_time} is not a valid value for attribute {ATTR_FLASH}")
+            return
+
+        self._state = old_state
+        self._attr_brightness = old_brightness
+        self._vals = old_values
+
+        self._channel.set_fade(self.get_target_values(), self._transition * 1000)
+
+
     async def async_create_fade(self, **kwargs):
         """Instruct the light to turn on"""
         self._state = True
@@ -415,6 +449,7 @@ class DmxBinary(DmxBaseLight):
         super().__init__(**kwargs)
         self._channel_width = 1
         self._supported_color_modes.add(COLOR_MODE_ONOFF)
+        self._features = SUPPORT_FLASH
         self._color_mode = COLOR_MODE_ONOFF
 
     def _update_values(self, values: array[int]):
@@ -426,12 +461,35 @@ class DmxBinary(DmxBaseLight):
         return [self.brightness * self._channel_size[1]]
 
     async def async_turn_on(self, **kwargs):
+        if ATTR_FLASH in kwargs:
+            flash_time = kwargs[ATTR_FLASH]
+            if flash_time == FLASH_SHORT:
+                duration = 0.5
+            else:
+                duration = 2.0
+
+            await self.flash_binary(duration)
+            return
+
         self._state = True
         self._attr_brightness = 255
         self._channel.set_fade(
             self.get_target_values(), 0
         )
         self.async_schedule_update_ha_state()
+
+    async def flash_binary(self, duration: float):
+        self._state = not self._state
+        self._attr_brightness = 255 if self._state else 0
+        self._channel.set_fade(
+            self.get_target_values(), 0
+        )
+        await asyncio.sleep(duration)
+        self._state = not self._state
+        self._attr_brightness = 255 if self._state else 0
+        self._channel.set_fade(
+            self.get_target_values(), 0
+        )
 
     async def async_turn_off(self, **kwargs):
         self._state = False
@@ -459,7 +517,7 @@ class DmxDimmer(DmxBaseLight):
         super().__init__(**kwargs)
         self._channel_width = 1
         self._supported_color_modes.add(COLOR_MODE_BRIGHTNESS)
-        self._features = SUPPORT_TRANSITION
+        self._features = SUPPORT_TRANSITION | SUPPORT_FLASH
         self._color_mode = COLOR_MODE_BRIGHTNESS
         self._channel_setup = kwargs.get(CONF_CHANNEL_SETUP) or "d"
         validate(self._channel_setup, self.CONF_TYPE)
@@ -500,7 +558,7 @@ class DmxWhite(DmxBaseLight):
         self._supported_color_modes.add(COLOR_MODE_COLOR_TEMP)
         self._supported_color_modes.add(COLOR_MODE_WHITE)
 
-        self._features = SUPPORT_TRANSITION
+        self._features = SUPPORT_TRANSITION | SUPPORT_FLASH
 
         self._color_mode = COLOR_MODE_COLOR_TEMP
         # Intentionally switching min and max here; it's inverted in the conversion.
@@ -529,7 +587,9 @@ class DmxWhite(DmxBaseLight):
         return self._max_kelvin
 
     def _update_values(self, values: array[int]):
-        self._state, self._attr_brightness, _, _, _, _, _, color_temp = from_values(self._channel_setup, self.channel_size[1], values, self._min_kelvin, self._max_kelvin)
+        self._state, self._attr_brightness, _, _, _, _, _, color_temp = from_values(self._channel_setup,
+                                                                                    self.channel_size[1], values,
+                                                                                    self._min_kelvin, self._max_kelvin)
         self._vals = color_temp
 
         self._channel_value_change()
@@ -545,6 +605,9 @@ class DmxWhite(DmxBaseLight):
         Instruct the light to turn on.
         """
 
+        old_values = self._vals
+        old_brightness = self._attr_brightness
+
         if ATTR_COLOR_TEMP_KELVIN in kwargs:
             self._vals = kwargs[ATTR_COLOR_TEMP_KELVIN]
 
@@ -554,9 +617,12 @@ class DmxWhite(DmxBaseLight):
 
         if ATTR_BRIGHTNESS in kwargs:
             self._attr_brightness = kwargs[ATTR_BRIGHTNESS]
-            self._scale_factor = self._attr_brightness / 255
 
-        await super().async_create_fade(**kwargs)
+        if ATTR_FLASH in kwargs:
+            await super().flash(old_values, old_brightness, **kwargs)
+        else:
+            await super().async_create_fade(**kwargs)
+
         return None
 
     async def restore_state(self, old_state):
@@ -578,7 +644,7 @@ class DmxRGB(DmxBaseLight):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._supported_color_modes.add(COLOR_MODE_RGB)
-        self._features = SUPPORT_TRANSITION
+        self._features = SUPPORT_TRANSITION | SUPPORT_FLASH
         self._color_mode = COLOR_MODE_RGB
         self._vals = (255, 255, 255)
 
@@ -612,7 +678,8 @@ class DmxRGB(DmxBaseLight):
         else:
             white = -1
 
-        return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness, red, green, blue,
+        return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness, red, green,
+                         blue,
                          white)
 
     async def async_turn_on(self, **kwargs):
@@ -620,15 +687,21 @@ class DmxRGB(DmxBaseLight):
         Instruct the light to turn on.
         """
 
+        old_values = self._vals
+        old_brightness = self._attr_brightness
+
         # RGB already contains brightness information
         if ATTR_RGB_COLOR in kwargs:
             self._vals = kwargs[ATTR_RGB_COLOR]
 
         if ATTR_BRIGHTNESS in kwargs:
             self._attr_brightness = kwargs[ATTR_BRIGHTNESS]
-            self._scale_factor = self._attr_brightness / 255
 
-        await super().async_create_fade(**kwargs)
+        if ATTR_FLASH in kwargs:
+            await super().flash(old_values, old_brightness, **kwargs)
+        else:
+            await super().async_create_fade(**kwargs)
+
         return None
 
     async def restore_state(self, old_state):
@@ -650,7 +723,7 @@ class DmxRGBW(DmxBaseLight):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._supported_color_modes.add(COLOR_MODE_RGBW)
-        self._features = SUPPORT_TRANSITION
+        self._features = SUPPORT_TRANSITION | SUPPORT_FLASH
         self._color_mode = COLOR_MODE_RGBW
         self._vals = (255, 255, 255, 255)
 
@@ -678,23 +751,30 @@ class DmxRGBW(DmxBaseLight):
         blue = self._vals[2]
         white = self._vals[3]
 
-        return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness, red, green, blue,
+        return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness, red, green,
+                         blue,
                          white)
 
     async def async_turn_on(self, **kwargs):
         """
         Instruct the light to turn on.
         """
+
+        old_values = self._vals
+        old_brightness = self._attr_brightness
+
         # RGB already contains brightness information
         if ATTR_RGBW_COLOR in kwargs:
             self._vals = kwargs[ATTR_RGBW_COLOR]
-            # self._scale_factor = 1
 
         if ATTR_BRIGHTNESS in kwargs:
             self._attr_brightness = kwargs[ATTR_BRIGHTNESS]
-            self._scale_factor = self._attr_brightness / 255
 
-        await super().async_create_fade(**kwargs)
+        if ATTR_FLASH in kwargs:
+            await super().flash(old_values, old_brightness, **kwargs)
+        else:
+            await super().async_create_fade(**kwargs)
+
         return None
 
     async def restore_state(self, old_state):
@@ -717,7 +797,7 @@ class DmxRGBWW(DmxBaseLight):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._supported_color_modes.add(COLOR_MODE_RGBWW)
-        self._features = SUPPORT_TRANSITION
+        self._features = SUPPORT_TRANSITION | SUPPORT_FLASH
         self._color_mode = COLOR_MODE_RGBWW
         # Intentionally switching min and max here; it's inverted in the conversion.
         self._min_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MIN_TEMP])
@@ -764,7 +844,8 @@ class DmxRGBWW(DmxBaseLight):
         cold_white = self._vals[3]
         warm_white = self._vals[4]
 
-        return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness, red, green, blue,
+        return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness, red, green,
+                         blue,
                          cold_white, warm_white, min_kelvin=self.min_color_temp_kelvin,
                          max_kelvin=self.max_color_temp_kelvin)
 
@@ -773,16 +854,21 @@ class DmxRGBWW(DmxBaseLight):
         Instruct the light to turn on.
         """
 
+        old_values = self._vals
+        old_brightness = self._attr_brightness
+
         # RGB already contains brightness information
         if ATTR_RGBWW_COLOR in kwargs:
             self._vals = kwargs[ATTR_RGBWW_COLOR]
-            # self._scale_factor = 1
 
         if ATTR_BRIGHTNESS in kwargs:
             self._attr_brightness = kwargs[ATTR_BRIGHTNESS]
-            self._scale_factor = self._attr_brightness / 255
 
-        await super().async_create_fade(**kwargs)
+        if ATTR_FLASH in kwargs:
+            await super().flash(old_values, old_brightness, **kwargs)
+        else:
+            await super().async_create_fade(**kwargs)
+
         return None
 
     async def restore_state(self, old_state):
@@ -794,7 +880,6 @@ class DmxRGBWW(DmxBaseLight):
 
             prev_brightness = old_state.attributes.get('bright')
             self._attr_brightness = prev_brightness
-            self._scale_factor = self._attr_brightness / 255
 
         if old_state.state != STATE_OFF:
             await super().async_create_fade(brightness=self._attr_brightness, rgbww_color=self._vals, transition=0)
