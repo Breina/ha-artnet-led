@@ -506,6 +506,7 @@ class DmxWhite(DmxBaseLight):
 
         self._color_mode = COLOR_MODE_COLOR_TEMP
         # Intentionally switching min and max here; it's inverted in the conversion.
+
         self._min_mireds = convert_to_mireds(kwargs[CONF_DEVICE_MAX_TEMP])
         self._max_mireds = convert_to_mireds(kwargs[CONF_DEVICE_MIN_TEMP])
         self._vals = (self._max_mireds + self._min_mireds) / 2 or 300
@@ -538,7 +539,9 @@ class DmxWhite(DmxBaseLight):
 
     def get_target_values(self):
         return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness,
-                         color_temp=self.color_temp, min_mireds=self.min_mireds, max_mireds=self.max_mireds)
+                         color_temp_kelvin=self.color_temp_kelvin,
+                         min_kelvin=self.min_color_temp_kelvin,
+                         max_kelvin=self.max_color_temp_kelvin)
 
     async def async_turn_on(self, **kwargs):
         """
@@ -763,7 +766,8 @@ class DmxRGBWW(DmxBaseLight):
         warm_white = self._vals[4]
 
         return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness, red, green, blue,
-                         cold_white, warm_white, self.color_temp, self.min_mireds, self.max_mireds)
+                         cold_white, warm_white, self.color_temp_kelvin, self.min_color_temp_kelvin,
+                         self.max_color_temp_kelvin)
 
     async def async_turn_on(self, **kwargs):
         """

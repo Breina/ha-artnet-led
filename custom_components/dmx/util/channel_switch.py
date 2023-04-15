@@ -27,12 +27,13 @@ def _default_calculation_function(channel_value):
 
 def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightness: int = 255, red: int = -1,
               green: int = -1, blue: int = -1, cold_white: int = -1, warm_white: int = -1,
-              color_temp: int | None = None, min_mireds: int | None = None, max_mireds: int | None = None) -> list[int]:
+              color_temp_kelvin: int | None = None, min_kelvin: int | None = None, max_kelvin: int | None = None
+              ) -> list[int]:
 
     if cold_white == -1 and warm_white == -1 \
-            and color_temp is not None and min_mireds is not None and max_mireds is not None:
-        warm_white = 255 * (color_temp - min_mireds) / (max_mireds - min_mireds)
-        cold_white = 255 - warm_white
+            and color_temp_kelvin is not None and min_kelvin is not None and max_kelvin is not None:
+        cold_white = 255 * (color_temp_kelvin - min_kelvin) / (max_kelvin - min_kelvin)
+        warm_white = 255 - cold_white
 
     max_color = max(1, max(red, green, blue, cold_white, warm_white))
 
@@ -83,7 +84,7 @@ def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightn
     return values
 
 def from_values(channel_setup: str, channel_size: int, values: list[int],
-                min_mireds: int | None = None, max_mireds: int | None = None):
+                min_kelvin: int | None = None, max_kelvin: int | None = None):
 
     assert len(channel_setup) == len(values)
 
@@ -93,7 +94,7 @@ def from_values(channel_setup: str, channel_size: int, values: list[int],
     blue: int | None = None
     cold_white: int | None = None
     warm_white: int | None = None
-    color_temp: int | None = None
+    color_temp_kelvin: int | None = None
 
 
     # Find brightness
@@ -149,15 +150,15 @@ def from_values(channel_setup: str, channel_size: int, values: list[int],
     elif cold_white is not None and warm_white is None:
         warm_white = 255 - cold_white
 
-    if min_mireds is not None and max_mireds is not None:
+    if min_kelvin is not None and max_kelvin is not None:
         white_sum = cold_white + warm_white
         if white_sum == 0:
-            color_temp = round((min_mireds + max_mireds) / 2 + min_mireds)
+            color_temp_kelvin = round((min_kelvin + max_kelvin) / 2)
         else:
-            warm_ratio = warm_white / (white_sum)
-            color_temp = round(min_mireds - min_mireds * warm_ratio + max_mireds * warm_ratio)
+            cold_ratio = cold_white / (white_sum)
+            color_temp_kelvin = round(min_kelvin - min_kelvin * cold_ratio + max_kelvin * cold_ratio)
 
-    return is_on, brightness, red, green, blue, cold_white, warm_white, color_temp
+    return is_on, brightness, red, green, blue, cold_white, warm_white, color_temp_kelvin
 
 def _scale_brightness(value: int | None, brightness: int) -> int | None:
     if value is not None:
