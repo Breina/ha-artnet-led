@@ -221,7 +221,6 @@ class DmxBaseLight(LightEntity, RestoreEntity):
         self.entity_id = f"light.{name.replace(' ', '_').lower()}"
         self._attr_brightness = 255
         self._fade_time = kwargs[CONF_DEVICE_TRANSITION]
-        self._transition = self._fade_time
         self._state = False
         self._channel_size = CHANNEL_SIZE[kwargs[CONF_CHANNEL_SIZE]]
         self._color_mode = kwargs[CONF_DEVICE_TYPE]
@@ -276,8 +275,7 @@ class DmxBaseLight(LightEntity, RestoreEntity):
                 ],
                 "dmx_values": self._channel.get_values(),
                 "values": self._vals,
-                "bright": self._attr_brightness,
-                "transition": self._transition
+                "bright": self._attr_brightness
                 }
         self._channel_last_update = time.time()
         return data
@@ -330,9 +328,9 @@ class DmxBaseLight(LightEntity, RestoreEntity):
         raise NotImplementedError()
 
     async def flash(self, old_values, old_brightness, **kwargs):
-        self._transition = kwargs.get(ATTR_TRANSITION, self._fade_time)
-        if self._transition == 0:
-            self._transition = 1
+        transition = kwargs.get(ATTR_TRANSITION, self._fade_time)
+        if transition == 0:
+            transition = 1
 
         old_state = self._state
         self._state = True
@@ -349,7 +347,7 @@ class DmxBaseLight(LightEntity, RestoreEntity):
             self._channel.set_values(self.get_target_values())
             await self._channel
         elif flash_time == FLASH_LONG:
-            self._channel.set_fade(self.get_target_values(), self._transition * 1000)
+            self._channel.set_fade(self.get_target_values(), transition * 1000)
             await self._channel
         else:
             log.error(f"{flash_time} is not a valid value for attribute {ATTR_FLASH}")
@@ -359,17 +357,17 @@ class DmxBaseLight(LightEntity, RestoreEntity):
         self._attr_brightness = old_brightness
         self._vals = old_values
 
-        self._channel.set_fade(self.get_target_values(), self._transition * 1000)
+        self._channel.set_fade(self.get_target_values(), transition * 1000)
 
 
     async def async_create_fade(self, **kwargs):
         """Instruct the light to turn on"""
         self._state = True
 
-        self._transition = kwargs.get(ATTR_TRANSITION, self._fade_time)
+        transition = kwargs.get(ATTR_TRANSITION, self._fade_time)
 
         self._channel.set_fade(
-            self.get_target_values(), self._transition * 1000
+            self.get_target_values(), transition * 1000
         )
 
         self.async_schedule_update_ha_state()
@@ -379,14 +377,11 @@ class DmxBaseLight(LightEntity, RestoreEntity):
         Instruct the light to turn off. If a transition time has been specified in seconds
         the controller will fade.
         """
-        self._transition = kwargs.get(ATTR_TRANSITION, self._fade_time)
+        transition = kwargs.get(ATTR_TRANSITION, self._fade_time)
 
-        log.debug(
-            "Turning off '%s' with transition  %i", self._name, self._transition
-        )
         self._channel.set_fade(
             [0 for _ in range(self._channel._width)],
-            self._transition * 1000
+            transition * 1000
         )
 
         self._state = False
@@ -419,7 +414,6 @@ class DmxBaseLight(LightEntity, RestoreEntity):
     @property
     def channel(self):
         return self._channel
-
 
 class DmxFixed(DmxBaseLight):
     CONF_TYPE = "fixed"
