@@ -1,6 +1,7 @@
 import functools
 import logging
 from math import floor
+from typing import Union
 
 from homeassistant.exceptions import IntegrationError
 
@@ -16,27 +17,28 @@ allowed_chars_per_type = {
     "rgbww": "dcChHtTrRgGbB"
 }
 
-def validate(channel_setup: str, type: str):
+
+def validate(channel_setup: Union[str, list], type: str):
     allowed_chars = allowed_chars_per_type[type]
     for channel in channel_setup:
-        if (not (channel in allowed_chars)) and (not isinstance(channel, int)):
+        if (isinstance(channel, str) and not (channel in allowed_chars)) and (not isinstance(channel, int)):
             raise IllegalChannelSetup(f"The letter '{channel}' is not allowed for type {type}")
+
 
 def _default_calculation_function(channel_value):
     return channel_value if isinstance(channel_value, int) else 0
+
 
 def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightness: int = 255, red: int = -1,
               green: int = -1, blue: int = -1, cold_white: int = -1, warm_white: int = -1,
               color_temp_kelvin: int | None = None, min_kelvin: int | None = None, max_kelvin: int | None = None
               ) -> list[int]:
-
     if cold_white == -1 and warm_white == -1 \
             and color_temp_kelvin is not None and min_kelvin is not None and max_kelvin is not None:
         cold_white = 255 * (color_temp_kelvin - min_kelvin) / (max_kelvin - min_kelvin)
         warm_white = 255 - cold_white
 
     max_color = max(1, max(red, green, blue, cold_white, warm_white))
-
 
     # d = dimmer
     # r = red (scaled for brightness)
@@ -83,9 +85,9 @@ def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightn
 
     return values
 
+
 def from_values(channel_setup: str, channel_size: int, values: list[int],
                 min_kelvin: int | None = None, max_kelvin: int | None = None):
-
     assert len(channel_setup) == len(values)
 
     brightness: int | None = None
@@ -95,7 +97,6 @@ def from_values(channel_setup: str, channel_size: int, values: list[int],
     cold_white: int | None = None
     warm_white: int | None = None
     color_temp_kelvin: int | None = None
-
 
     # Find brightness
     for index, channel in enumerate(channel_setup):
@@ -160,12 +161,14 @@ def from_values(channel_setup: str, channel_size: int, values: list[int],
 
     return is_on, brightness, red, green, blue, cold_white, warm_white, color_temp_kelvin
 
+
 def _scale_brightness(value: int | None, brightness: int) -> int | None:
     if value is not None:
         if brightness == 0:
             return value
         else:
             return round(value * 255 / brightness)
+
 
 class IllegalChannelSetup(IntegrationError):
     def __init__(self, reason: str):
@@ -174,4 +177,3 @@ class IllegalChannelSetup(IntegrationError):
 
     def __str__(self) -> str:
         return self.reason
-

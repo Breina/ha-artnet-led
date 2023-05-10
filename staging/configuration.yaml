@@ -17,10 +17,17 @@ light:
 #            min_temp: 2500K
 #            max_temp: 6500K
           - channel: 1
-            name: Test light RGBW
-            type: rgbww
-            transition: 0
-            channel_size: 16bit
+            name: snack_bar_sign
+            type: rgb
+            channel_setup:
+              - d
+              - 1
+              - 125
+              - R
+              - G
+              - B
+            output_correction: linear
+            channel_size: 8bit
 #          - channel: 30
 #            name: Test light DOS
 #            type: binary
