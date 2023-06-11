@@ -45,7 +45,7 @@ Example:
 
 ```yaml
 light:
-- platform: dmx
+- platform: artnet_led
   host: IP                              # IP of Art-Net Node
   max_fps: 25                           # Max 40 per second
   refresh_every: 0                      # Resend values if no fades are running every x seconds, 0 disables automatic refresh
@@ -186,15 +186,15 @@ _Staticly sets the green channel on 50% brightness_
 
 #### Compatibility
 
-| Type         |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       |           | Default value |
-|--------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-------|-------|-----------|---------------|
-| fixed        |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
-| binary       |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
-| dimmer       | `d` |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
-| custom_white | `d` | `c` | `C` | `h` | `H` | `t` | `T` |     |     |     |     |     |     |       |       | `[0,255]` | `ch`          |
-| rgb          | `d` |     |     |     |     |     |     | `r` | `R` | `g` | `G` | `b` | `B` | `w`\* | `W`\* | `[0,255]` | `rgb`         |
-| rgbw         | `d` |     |     |     |     |     |     | `r` | `R` | `g` | `G` | `b` | `B` | `w`   | `W`   | `[0,255]` | `rgbw`        |
-| rgbww        | `d` | `c` | `C` | `h` | `H` | `t` | `T` | `r` | `R` | `g` | `G` | `b` | `B` |       |       | `[0,255]` | `rgbch`       |
+| Type       |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       |           | Default value |
+|------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-------|-------|-----------|---------------|
+| fixed      |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
+| binary     |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
+| dimmer     |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
+| color_temp | `d` | `c` | `C` | `h` | `H` | `t` | `T` |     |     |     |     |     |     |       |       | `[0,255]` | `ch`          |
+| rgb        | `d` |     |     |     |     |     |     | `r` | `R` | `g` | `G` | `b` | `B` | `w`\* | `W`\* | `[0,255]` | `rgb`         |
+| rgbw       | `d` |     |     |     |     |     |     | `r` | `R` | `g` | `G` | `b` | `B` | `w`   | `W`   | `[0,255]` | `rgbw`        |
+| rgbww      | `d` | `c` | `C` | `h` | `H` | `t` | `T` | `r` | `R` | `g` | `G` | `b` | `B` |       |       | `[0,255]` | `rgbch`       |
 
 \* In the case of a white channel being used in an RGB light fixture, the white channel is automatically calculated.
 
