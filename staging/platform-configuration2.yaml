@@ -1,0 +1,144 @@
+dmx:
+  fixtures:
+    - desk_ch:
+        name: Desk Channel
+        category: dimmer
+        available_channels:
+          - intensity:
+              fine_channel_aliases: [ "intensity_fine", "intensity_fine^2" ],
+              capability:
+                type: Intensity
+          - shutter:
+              capabilities:
+                - {
+                  dmx_range: [ 0, 20 ],
+                  type: "ShutterStrobe",
+                  shutter_effect: "Closed"
+                }
+                - {
+                  dmx_range: [ 21, 255 ],
+                  type: "ShutterStrobe",
+                  shutter_effect: "Open"
+                }
+        modes:
+          - 8bit:
+              name: 8 bit
+              channels: [ "shutter", "intensity" ]
+          - 16bit:
+              name: 16 bit
+              channels: [ "shutter", "intensity", "intensity_fine" ]
+          - 24bit:
+              name: 24 bit
+              channels: [ "shutter", "intensity", "intensity_fine", "intensity_fine^2" ]
+
+    - rgb_light:
+        name: My RGB light
+
+
+  artnet:
+    max_fps: 43 # Optional
+    refresh_every: 1.2 # Optional
+
+    universes:
+      - 1/2/0: # Net = 1 / Sub-net = 2 / Universe = 0
+          compatibility:
+            send_partial_universe: False
+            manual_nodes:
+              - { host: 192.168.1.11, port: 6454 }
+              - { host: 192.168.1.12 }
+
+          channels:
+            - 11:
+                name: Superfan
+                type: fan
+                channel_size: 8bit
+                byte_order: big
+            - 201:
+                name: SuperBinarySensor
+                type: binary_sensor
+                channel_size: 8bit
+                byte_order: big
+
+                class: battery
+                threshold: 1
+            - 303:
+                name: SuperNumber
+                type: number
+                channel_size: 8bit
+                byte_order: big
+
+                class: battery
+            - 444:
+                name: SuperSwitch
+                type: switch
+                channel_size: 8bit
+                byte_order: big
+
+                value: 255
+      - 3: # Net and Sub-net default to 0, universe = 3
+          channels:
+            - 5:
+                name: SuperLamp
+                type: rgb
+                transition: 1
+                channel_size: 16bit
+
+                output_correction: quadratic
+                channel_setup: rbgw
+
+    triggers: # All triggers will always send HA events, regardless if being configured
+      scenes: # Trigger HA scenes FROM external ArtNet controller
+        - 1:
+            scene_entity_id: scene.romantic
+            transition: 2.5
+        - 5:
+            scene_entity_id: scene.movie
+            transition: 0
+
+      shows: # HA trigger show TO external ArtNet controller's
+        - 2:
+            name: Rose # Creates a button entity with this name
+            oem: 4567 # So that the controller knows it's for itself
+            host: 192.168.1.11 # If not defined, will broadcast instead
+
+      text: # Receive ASCII from external
+        name: SuperTextInput # Inputs ASCII text into HA
+
+  sacn:
+    host: 192.168.1.11 # Required
+    port: 6454 # Optional
+    max-fps: # Optional
+    refresh_every: # Optional
+    universes:
+    # Same as ArtNet
+
+  kinet:
+    host: 192.168.1.11 # Required
+    port: 6454 # Optional
+    max-fps: # Optional
+    refresh_every: # Optional
+    universes:
+    # Same as ArtNet
+
+homeassistant:
+  auth_providers:
+    - type: trusted_networks
+      trusted_networks:
+        - 0.0.0.0/0
+      allow_bypass_login: true
+
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+# Text to speech
+#tts:
+#  - platform: google_translate
+
+#automation: !include automations.yaml
+#script: !include scripts.yaml
+#scene: !include scenes.yaml

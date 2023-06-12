@@ -28,10 +28,27 @@ light:
               - B
             output_correction: linear
             channel_size: 8bit
-#          - channel: 30
-#            name: Test light DOS
-#            type: binary
-#            channel_size: 8bit
+  - platform: artnet_led
+    host: 192.168.1.35
+    max_fps: 43
+    refresh_every: 0
+    universes:
+      0:
+        send_partial_universe: True
+        output_correction: quadratic
+        devices:
+          - channel: 13
+            name: Test light2
+            type: color_temp
+            transition: 1
+            channel_size: 16bit
+          - channel: 1
+            name: snack_bar_sign2
+            type: rgb
+            channel_setup: dRGB
+            output_correction: linear
+            channel_size: 8bit
+
 
 logger:
   default: info

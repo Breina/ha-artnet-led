@@ -143,7 +143,6 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
         raise NotImplementedError(f"Unknown client type '{client_type}'")
 
     entity_registry = async_get(hass)
-    await entity_registry.async_load()
 
     device_list = []
     used_unique_ids = []
