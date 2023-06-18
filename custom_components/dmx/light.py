@@ -358,7 +358,6 @@ class DmxBaseLight(LightEntity, RestoreEntity):
 
         self._channel.set_fade(self.get_target_values(), transition * 1000)
 
-
     async def async_create_fade(self, **kwargs):
         """Instruct the light to turn on"""
         self._state = True
@@ -414,15 +413,22 @@ class DmxBaseLight(LightEntity, RestoreEntity):
     def channel(self):
         return self._channel
 
+
 class DmxFixed(DmxBaseLight):
     CONF_TYPE = "fixed"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._channel_width = 1
+        self._color_mode = COLOR_MODE_ONOFF
+        self._channel_setup = kwargs.get(CONF_CHANNEL_SETUP) or [255]
+        self._channel_width = len(self._channel_setup)
 
     def get_target_values(self):
-        return [self.brightness * self._channel_size[1]]
+        return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness)
+
+    def set_channel(self, channel: pyartnet.base.Channel):
+        super().set_channel(channel)
+        channel.set_values(self.get_target_values())
 
     async def async_turn_on(self, **kwargs):
         pass  # do nothing, fixed is constant value
