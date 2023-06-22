@@ -97,7 +97,7 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
                 port,
                 max_fps=max_fps,
                 refresh_every=refresh_interval,
-                start_refresh_task=(refresh_interval == 0),
+                start_refresh_task=(refresh_interval > 0),
                 sequence_counter=True
             )
             NODES[id] = __node
@@ -119,7 +119,7 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
                 port,
                 max_fps=max_fps,
                 refresh_every=refresh_interval,
-                start_refresh_task=(refresh_interval == 0),
+                start_refresh_task=(refresh_interval > 0),
                 source_name="ha-artnet-led"
             )
             NODES[id] = __node
@@ -133,7 +133,7 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
                 port,
                 max_fps=max_fps,
                 refresh_every=refresh_interval,
-                start_refresh_task=(refresh_interval == 0),
+                start_refresh_task=(refresh_interval > 0),
             )
             NODES[id] = __node
 
