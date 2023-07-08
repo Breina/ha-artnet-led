@@ -48,6 +48,9 @@ CONF_SEND_PARTIAL_UNIVERSE = "send_partial_universe"
 
 log = logging.getLogger(__name__)
 
+CONF_NODE_HOST_OVERRIDE = "host_override"
+CONF_NODE_PORT_OVERRIDE = "port_override"
+
 CONF_NODE_TYPE = "node_type"
 CONF_NODE_MAX_FPS = "max_fps"
 CONF_NODE_REFRESH = "refresh_every"
@@ -87,14 +90,21 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
     host = config.get(CONF_NODE_HOST)
     port = config.get(CONF_NODE_PORT)
 
+    real_host = config.get(CONF_NODE_HOST_OVERRIDE)
+    if len(real_host) == 0 :
+        real_host = host
+    real_port = config.get(CONF_NODE_PORT_OVERRIDE)
+    if real_port == None:
+        real_port = port
+
     # setup Node
     node: pyartnet.base.BaseNode
     if client_type == "artnet-direct":
         __id = f"{host}:{port}"
         if __id not in NODES:
             __node = pyartnet.ArtNetNode(
-                host,
-                port,
+                real_host,
+                real_port,
                 max_fps=max_fps,
                 refresh_every=refresh_interval,
                 start_refresh_task=(refresh_interval > 0),
@@ -115,8 +125,8 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
         __id = f"{host}:{port}"
         if __id not in NODES:
             __node = pyartnet.SacnNode(
-                host,
-                port,
+                real_host,
+                real_port,
                 max_fps=max_fps,
                 refresh_every=refresh_interval,
                 start_refresh_task=(refresh_interval > 0),
@@ -129,8 +139,8 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
         __id = f"{host}:{port}"
         if __id not in NODES:
             __node = pyartnet.KiNetNode(
-                host,
-                port,
+                real_host,
+                real_port,
                 max_fps=max_fps,
                 refresh_every=refresh_interval,
                 start_refresh_task=(refresh_interval > 0),
@@ -938,7 +948,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
                 )
             },
         },
+        vol.Optional(CONF_NODE_HOST_OVERRIDE, default=""): cv.string,
         vol.Optional(CONF_NODE_PORT, default=6454): cv.port,
+        vol.Optional(CONF_NODE_PORT_OVERRIDE): cv.port,
         vol.Optional(CONF_NODE_MAX_FPS, default=25): vol.All(
             vol.Coerce(int), vol.Range(min=1, max=50)
         ),
