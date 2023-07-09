@@ -88,7 +88,7 @@ light:
 
 ### Configuration variables
 - **host** (*Required*): Art-Net/DMX gateway address
-- **port** (*Optional; default=6454*): Art-Net/DMX gateway port
+- **port** (*Optional; default=6454 (Art-Net), 5568 (sACN), 6038 (KiNet)*): DMX gateway port. This is directly hardcoded into the respective protocols, so don't change this if you're not very certain.
 - **max-fps** (*Optional; default=25*): frame rate for fade update (1 to 40 FPS)
 - **refresh_every** (*Optional; default=120*): Seconds to resend values if no fades are running, 0 disables.
 - **node_type** (*Optional; default=artnet-direct*): the protocol to use

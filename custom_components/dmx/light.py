@@ -42,6 +42,10 @@ from custom_components.dmx.bridge.artnet_controller import ArtNetController
 from custom_components.dmx.bridge.channel_bridge import ChannelBridge
 from custom_components.dmx.util.channel_switch import validate, to_values, from_values
 
+ARTNET_DEFAULT_PORT = 6454
+SACN_DEFAULT_PORT = 5568
+KINET_DEFAULT_PORT = 6038
+
 CONF_DEVICE_TRANSITION = ATTR_TRANSITION
 
 CONF_SEND_PARTIAL_UNIVERSE = "send_partial_universe"
@@ -91,7 +95,7 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
     port = config.get(CONF_NODE_PORT)
 
     real_host = config.get(CONF_NODE_HOST_OVERRIDE)
-    if len(real_host) == 0 :
+    if len(real_host) == 0:
         real_host = host
     real_port = config.get(CONF_NODE_PORT_OVERRIDE)
     if real_port == None:
@@ -100,6 +104,9 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
     # setup Node
     node: pyartnet.base.BaseNode
     if client_type == "artnet-direct":
+        if real_port is None:
+            real_port = ARTNET_DEFAULT_PORT
+
         __id = f"{host}:{port}"
         if __id not in NODES:
             __node = pyartnet.ArtNetNode(
@@ -122,6 +129,9 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
         node = NODES["server"]
 
     elif client_type == "sacn":
+        if real_port is None:
+            real_port = SACN_DEFAULT_PORT
+
         __id = f"{host}:{port}"
         if __id not in NODES:
             __node = pyartnet.SacnNode(
@@ -136,6 +146,9 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
 
         node = NODES[id]
     elif client_type == "kinet":
+        if real_port is None:
+            real_port = KINET_DEFAULT_PORT
+
         __id = f"{host}:{port}"
         if __id not in NODES:
             __node = pyartnet.KiNetNode(
@@ -949,7 +962,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
             },
         },
         vol.Optional(CONF_NODE_HOST_OVERRIDE, default=""): cv.string,
-        vol.Optional(CONF_NODE_PORT, default=6454): cv.port,
+        vol.Optional(CONF_NODE_PORT): cv.port,
         vol.Optional(CONF_NODE_PORT_OVERRIDE): cv.port,
         vol.Optional(CONF_NODE_MAX_FPS, default=25): vol.All(
             vol.Coerce(int), vol.Range(min=1, max=50)

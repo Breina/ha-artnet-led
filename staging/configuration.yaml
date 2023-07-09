@@ -1,53 +1,43 @@
 light:
   - platform: artnet_led
-    host: 192.168.1.15
-    max_fps: 43
-    refresh_every: 0
-    node_type: artnet-controller
-    universes:
-      0:
-        send_partial_universe: True
-        output_correction: quadratic
-        devices:
-          - channel: 13
-            name: Test light
-            type: color_temp
-            transition: 1
-            channel_size: 16bit
-#            min_temp: 2500K
-#            max_temp: 6500K
-          - channel: 1
-            name: snack_bar_sign
-            type: rgb
-            channel_setup:
-              - d
-              - 1
-              - 125
-              - R
-              - G
-              - B
-            output_correction: linear
-            channel_size: 8bit
-  - platform: artnet_led
     host: 192.168.1.35
-    max_fps: 43
-    refresh_every: 0
+    max_fps: 40
+    node_type: sacn
     universes:
-      0:
-        send_partial_universe: True
-        output_correction: quadratic
+      1:
+        send_partial_universe: False
         devices:
-          - channel: 13
-            name: Test light2
-            type: color_temp
-            transition: 1
-            channel_size: 16bit
           - channel: 1
-            name: snack_bar_sign2
+            name: Back lights
+            type: dimmer
+            transition: 0.5
+          - channel: 2
+            name: Front left
+            type: dimmer
+          - channel: 3
+            name: Front middle
+            type: dimmer
+            transition: 0.5
+          - channel: 4
+            name: Front right
+            type: dimmer
+            transition: 0.5
+          - channel: 6
+            name: Back Far L&R
+            type: dimmer
+            transition: 0.5
+          - channel: 7
+            name: Back left
+            type: dimmer
+            transition: 0.5
+          - channel: 8
+            name: Back right
+            type: dimmer
+            transition: 0.5
+          - channel: 13
+            name: Red LED
             type: rgb
-            channel_setup: dRGB
-            output_correction: linear
-            channel_size: 8bit
+            transition: 1
 
 
 logger:
