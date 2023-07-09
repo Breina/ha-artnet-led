@@ -17,6 +17,8 @@ from custom_components.dmx.client import OpCode, ArtBase, ArtPoll, ArtPollReply,
     DiagnosticsMode, DiagnosticsPriority, ArtIpProgReply, ArtDiagData, ArtTimeCode, ArtCommand, ArtTrigger, ArtDmx
 from custom_components.dmx.client.net_utils import get_private_ip, get_default_gateway
 
+STALE_NODE_CUTOFF_TIME = 10
+
 ARTNET_PORT = 0x1936
 
 RDM_SUPPORT = False  # TODO
@@ -231,10 +233,10 @@ class ArtNetServer(asyncio.DatagramProtocol):
             await asyncio.sleep(random.uniform(2.5, 3))
 
     async def remove_stale_nodes(self):
-        await asyncio.sleep(5)
+        await asyncio.sleep(STALE_NODE_CUTOFF_TIME)
 
         now = datetime.datetime.now()
-        cutoff_time: datetime.datetime = now - datetime.timedelta(seconds=5)
+        cutoff_time: datetime.datetime = now - datetime.timedelta(seconds=STALE_NODE_CUTOFF_TIME)
 
         nodes_by_ip_to_delete = []
 

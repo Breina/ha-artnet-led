@@ -1,44 +1,101 @@
 light:
-  - platform: artnet_led
-    host: 192.168.1.35
-    max_fps: 40
-    node_type: sacn
-    universes:
-      1:
-        send_partial_universe: False
-        devices:
-          - channel: 1
-            name: Back lights
-            type: dimmer
-            transition: 0.5
-          - channel: 2
-            name: Front left
-            type: dimmer
-          - channel: 3
-            name: Front middle
-            type: dimmer
-            transition: 0.5
-          - channel: 4
-            name: Front right
-            type: dimmer
-            transition: 0.5
-          - channel: 6
-            name: Back Far L&R
-            type: dimmer
-            transition: 0.5
-          - channel: 7
-            name: Back left
-            type: dimmer
-            transition: 0.5
-          - channel: 8
-            name: Back right
-            type: dimmer
-            transition: 0.5
-          - channel: 13
-            name: Red LED
-            type: rgb
-            transition: 1
+# room 3 via DMX
+- platform: artnet_led
+  host: 10.86.189.129                   # IP of Art-Net Node
+  max_fps: 25                           # Max 40 per second
+  refresh_every: 1                      # Resend values if no fades are running every x seconds, 0 disables automatic refresh
+  node_type: artnet-controller          # Which protocol to use (artnet-controller / artnet-direct)
+  universes:                            # Support for multiple universes
+    3:                                  # Nr of Universe (see configuration of your Art-Net Node)
+      send_partial_universe: True       # Only send the universe which contains data
+      output_correction: quadratic      # optional: output correction for the whole universe, will be used as default if nothing is set for the channel
+      devices:
+        # Dimmer
+        - channel: 1                    # first channel of dmx dimmer
+          name: 3_DMX_1                 # name
+          type: dimmer                  # type
+          transition: 1                 # default duration of fades in sec. Will be overridden by Transition sent from HA
+          output_correction: quadratic  # optional: quadratic, cubic or quadruple. Apply different dimming curves to the output. Default is None which means linear dimming
+          channel_size: 8bit            # width of the channel sent to DMX device, default "8bit", "16bit", "24bit" and "32bit" available.
+        - channel: 2
+          name: 3_DMX_2
+          type: dimmer
+          transition: 1
+          output_correction: quadratic
+          channel_size: 8bit
+        - channel: 3
+          name: 3_DMX_3
+          type: dimmer
+          transition: 1
+          output_correction: quadratic
+          channel_size: 8bit
+        - channel: 4
+          name: 3_DMX_4
+          type: dimmer
+          transition: 1
+          output_correction: quadratic
+          channel_size: 8bit
+        - channel: 5
+          name: 3_DMX_5
+          type: dimmer
+          transition: 1
+          output_correction: quadratic
+          channel_size: 8bit
+        - channel: 6
+          name: 3_DMX_6
+          type: dimmer
+          transition: 1
+          output_correction: quadratic
+          channel_size: 8bit
 
+# zaal 5 via DMX
+- platform: artnet_led
+  host: 192.168.1.35                    # IP of Art-Net Node
+  max_fps: 25                           # Max 40 per second
+  refresh_every: 1                      # Resend values if no fades are running every x seconds, 0 disables automatic refresh
+  node_type: artnet-controller          # Which protocol to use
+  universes:                            # Support for multiple universes
+    5:                                  # Nr of Universe (see configuration of your Art-Net Node)
+      send_partial_universe: True       # Only send the universe which contains data
+      output_correction: quadratic      # optional: output correction for the whole universe, will be used as default if nothing is set for the channel
+      devices:
+        # Dimmer
+        - channel: 1                    # first channel of dmx dimmer
+          name: 5_DMX_1                   # name
+          type: dimmer                  # type
+          transition: 1                 # default duration of fades in sec. Will be overridden by Transition sent from HA
+          output_correction: quadratic  # optional: quadratic, cubic or quadruple. Apply different dimming curves to the output. Default is None which means linear dimming
+          channel_size: 8bit            # width of the channel sent to DMX device, default "8bit", "16bit", "24bit" and "32bit" available.
+        - channel: 2
+          name: 5_DMX_2
+          type: dimmer
+          transition: 1
+          channel_size: 8bit
+          output_correction: quadratic
+        - channel: 3
+          name: 5_DMX_3
+          type: dimmer
+          transition: 1
+          channel_size: 8bit
+          output_correction: quadratic
+        - channel: 4
+          name: 5_DMX_4
+          type: dimmer
+          transition: 1
+          channel_size: 8bit
+          output_correction: quadratic
+        - channel: 5
+          name: 5_DMX_5
+          type: dimmer
+          transition: 1
+          channel_size: 8bit
+          output_correction: quadratic
+        - channel: 6
+          name: 5_DMX_6
+          type: dimmer
+          transition: 1
+          channel_size: 8bit
+          output_correction: quadratic
 
 logger:
   default: info
