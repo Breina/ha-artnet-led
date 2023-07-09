@@ -448,6 +448,11 @@ class ArtNetServer(asyncio.DatagramProtocol):
             log.debug(f"Received DMX data from {addr[0]}\n"
                       f"  Address: {dmx.port_address}")
             self.handle_dmx(dmx)
+
+        elif opcode == OpCode.OP_SYNC:
+            # No action
+            pass
+
         else:
             log.warning(f"Received Opcode {opcode}, which isn't supported yet!")
 
