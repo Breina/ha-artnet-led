@@ -12,7 +12,7 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/Breina/ha-artnet-led/issues",
   "requirements": [
-    "pyartnet==1.0.1"
+    "pyartnet==1.0.1", "Levenshtein==0.21.1"
   ],
   "config_flow": true,
   "version": "0.1.1"
