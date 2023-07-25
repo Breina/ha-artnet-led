@@ -38,9 +38,9 @@ from homeassistant.util.color import color_rgb_to_rgbw
 from pyartnet import BaseUniverse, Channel
 from pyartnet.errors import UniverseNotFoundError
 
-from custom_components.artnet_led.bridge.artnet_controller import ArtNetController
-from custom_components.artnet_led.bridge.channel_bridge import ChannelBridge
-from custom_components.artnet_led.util.channel_switch import validate, to_values, from_values
+from custom_components.dmx.bridge.artnet_controller import ArtNetController
+from custom_components.dmx.bridge.channel_bridge import ChannelBridge
+from custom_components.dmx.util.channel_switch import validate, to_values, from_values
 
 ARTNET_DEFAULT_PORT = 6454
 SACN_DEFAULT_PORT = 5568

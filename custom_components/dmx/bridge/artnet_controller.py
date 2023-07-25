@@ -7,9 +7,9 @@ from pyartnet.base import BaseNode
 from pyartnet.base.base_node import TYPE_U
 from pyartnet.errors import InvalidUniverseAddressError
 
-from custom_components.artnet_led.bridge.universe_bridge import UniverseBridge
-from custom_components.artnet_led.client import PortAddress
-from custom_components.artnet_led.client.artnet_server import ArtNetServer
+from custom_components.dmx.bridge.universe_bridge import UniverseBridge
+from custom_components.dmx.client import PortAddress
+from custom_components.dmx.client.artnet_server import ArtNetServer
 
 log = logging.getLogger(__name__)
 
