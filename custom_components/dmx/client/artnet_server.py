@@ -74,7 +74,8 @@ class OwnPort:
 
 
 class ArtNetServer(asyncio.DatagramProtocol):
-    def __init__(self, hass: HomeAssistant, state_update_callback, firmware_version: int = 0, oem: int = 0, esta=0,
+    def __init__(self, hass: HomeAssistant, state_update_callback, new_node_callback, firmware_version: int = 0,
+                 oem: int = 0, esta=0,
                  short_name: str = "PyArtNet", long_name: str = "Python ArtNet Server",
                  is_server_dhcp_configured: bool = True, polling: bool = True, sequencing: bool = True,
                  retransmit_time_ms: int = 900):
@@ -82,6 +83,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
         self.__hass = hass
         self.__state_update_callback = state_update_callback
+        self.__new_node_callback = new_node_callback
         self.firmware_version = firmware_version
         self.oem = oem
         self.esta = esta
@@ -207,7 +209,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
         server_event = loop.create_datagram_endpoint(lambda: self, local_addr=('0.0.0.0', ARTNET_PORT))
 
         if self._polling:
-            self.__hass.async_create_task(self.start_poll_loop())
+            self.__hass.async_create_background_task(self.start_poll_loop(), "Art-Net polling loop")
         log.info("ArtNet server started")
 
         return self.__hass.async_add_job(server_event)
@@ -227,7 +229,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
                     sock.setblocking(False)
                     sock.sendto(poll.serialize(), ("255.255.255.255", 0x1936))
 
-                self.__hass.async_create_task(self.remove_stale_nodes())
+                self.__hass.async_create_background_task(self.remove_stale_nodes(), "Art-Net remove stale nodes")
 
                 log.debug("Sleeping a few seconds before polling again...")
             await asyncio.sleep(random.uniform(2.5, 3))
@@ -493,8 +495,11 @@ class ArtNetServer(asyncio.DatagramProtocol):
             node = Node(source_ip, bind_index, current_time)
             self.add_node_by_ip(node, source_ip, bind_index)
             log.info(f"Discovered new node at {inet_ntoa(source_ip)}@{bind_index} with "
-                     f"{reply.net_switch}:{reply.sub_switch}:[{','.join([str(p.sw_out) for p in reply.ports])}]"
+                     f"{reply.net_switch}:{reply.sub_switch}:[{','.join([str(p.sw_out) for p in reply.ports if p.output])}]"
                      )
+            self.__new_node_callback(
+                [PortAddress(reply.net_switch, reply.sub_switch, u.sw_out) for u in reply.ports if u.output]
+            )
 
         else:
             node.last_seen = current_time

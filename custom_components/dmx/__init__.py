@@ -3,20 +3,22 @@ import logging
 from os import walk
 from typing import Any
 
-import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
 import Levenshtein
+import homeassistant.helpers.config_validation as cv
 import unicodedata
+import voluptuous as vol
 from homeassistant.components.light import ATTR_TRANSITION
+from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry, SOURCE_INTEGRATION_DISCOVERY
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_MODE, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import IntegrationError
+from homeassistant.helpers import discovery_flow
 from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.bridge.artnet_controller import ArtNetController
 from custom_components.dmx.client import PortAddress
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES
-from custom_components.fixtures.fixture import parse_json, implement
+from custom_components.fixtures.fixture import parse_json
 from custom_components.fixtures.model import Fixture
 
 log = logging.getLogger(__name__)
@@ -59,6 +61,8 @@ DEFAULT_FIXTURES_FOLDER = 'fixtures'
 PLATFORMS = [Platform.NUMBER]
 
 FIXTURES = {}
+
+ARTNET_CONTROLLER = None
 
 
 class UnknownFixtureError(IntegrationError):
@@ -164,59 +168,102 @@ def port_address_config(value: Any) -> PortAddress:
     return PortAddress(net, sub_net, universe)
 
 
-def setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Your controller/hub specific code."""
-
-    log.info(f"Started setup of DMX")
-
-    platform_config = config.get(DOMAIN)
-
-    load_fixtures(hass, platform_config)
-
-    entities = []
-
-    artnet_config = platform_config.get(CONF_NODE_TYPE_ARTNET)
-    if artnet_config:
-        max_fps = artnet_config.get(CONF_MAX_FPS)
-        refresh_interval = artnet_config.get(CONF_REFRESH_EVERY)
-
-        node = ArtNetController(hass, max_fps=max_fps, refresh_every=refresh_interval)
-
-        universes_config = artnet_config.get(CONF_UNIVERSES)
-        for universe_config in universes_config:
-            port_address: PortAddress = next(iter(universe_config.keys()))
-            port_config = next(iter(universe_config.values()))
-
-            universe = node.add_universe(port_address.universe)
-
-            devices_config = port_config.get(CONF_DEVICES)
-            for device_config in devices_config:
-                device_name: str = next(iter(device_config.keys()))
-                fixture_config = next(iter(device_config.values()))
-
-                start_address = fixture_config[CONF_START_ADDRESS]
-                fixture_name = fixture_config[CONF_FIXTURE]
-                mode = fixture_config.get(CONF_MODE)
-
-                fixture = get_fixture(fixture_name)
-
-                new_entities = implement(fixture, device_name, port_address, universe, start_address, mode)
-                entities.extend(new_entities)
-
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][HASS_DATA_ENTITIES] = entities
-
-    log.info(f"Found {len(entities)} entities")
-
-    for platform in PLATFORMS:
-        hass.async_create_task(
-            hass.helpers.discovery.async_load_platform(platform, DOMAIN, {}, config)
-        )
-
-    # hass.helpers.discovery.load_platform('sensor', DOMAIN, {}, config)
-
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    print(f"async_setup_entry")
     return True
 
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Your controller/hub specific code."""
+
+    hass.data.setdefault(DOMAIN, {})
+
+    def _discovered_node(port_addresses):
+        print(f"Found some! {port_addresses}")
+        for port_address in port_addresses:
+            discovery_flow.async_create_flow(
+                hass,
+                DOMAIN,
+                context={"source": SOURCE_INTEGRATION_DISCOVERY},
+                data={
+                    "port_address": port_address,
+                },
+            )
+
+    ARTNET_CONTROLLER = ArtNetController(hass, new_node_callback=_discovered_node, max_fps=43)
+    ARTNET_CONTROLLER.start()
+
+    print(f"async_setup")
+    return True
+
+
+
+
+#
+#     print(hass.config_entries.async_entries(DOMAIN))
+#
+#     # for platform in PLATFORMS:
+#     #     hass.async_create_task(
+#     #         )
+#     #     )
+#
+#     hass.async_add_job(hass.config_entries.flow.async_init(
+#         DOMAIN, context={"source": SOURCE_INTEGRATION_DISCOVERY}, data={}
+#     ))
+#
+#
+#
+#     return True
+
+    #
+    # platform_config = config.get(DOMAIN)
+    #
+    # load_fixtures(hass, platform_config)
+    #
+    # entities = []
+    #
+    # artnet_config = platform_config.get(CONF_NODE_TYPE_ARTNET)
+    # if artnet_config:
+    #     max_fps = artnet_config.get(CONF_MAX_FPS)
+    #     refresh_interval = artnet_config.get(CONF_REFRESH_EVERY)
+    #
+    #     node = ArtNetController(hass, max_fps=max_fps, refresh_every=refresh_interval)
+    #
+    #     universes_config = artnet_config.get(CONF_UNIVERSES)
+    #     for universe_config in universes_config:
+    #         port_address: PortAddress = next(iter(universe_config.keys()))
+    #         port_config = next(iter(universe_config.values()))
+    #
+    #         universe = node.add_universe(port_address.universe)
+    #
+    #         devices_config = port_config.get(CONF_DEVICES)
+    #         for device_config in devices_config:
+    #             device_name: str = next(iter(device_config.keys()))
+    #             fixture_config = next(iter(device_config.values()))
+    #
+    #             start_address = fixture_config[CONF_START_ADDRESS]
+    #             fixture_name = fixture_config[CONF_FIXTURE]
+    #             mode = fixture_config.get(CONF_MODE)
+    #
+    #             fixture = get_fixture(fixture_name)
+    #
+    #             new_entities = implement(fixture, device_name, port_address, universe, start_address, mode)
+    #             entities.extend(new_entities)
+    #
+    # hass.data.setdefault(DOMAIN, {})
+    # hass.data[DOMAIN][HASS_DATA_ENTITIES] = entities
+    #
+    # log.info(f"Found {len(entities)} entities")
+    #
+    # for platform in PLATFORMS:
+    #     hass.async_create_task(
+    #         hass.helpers.discovery.async_load_platform(platform, DOMAIN, {}, config)
+    #     )
+
+    # hass.helpers.discovery.load_platform('sensor', DOMAIN, {}, config)
+    #
+    # return True
+    #
     # {
     #     vol.Required(CONF_NODE_HOST): cv.string,
     #     vol.Required(CONF_NODE_UNIVERSES): {

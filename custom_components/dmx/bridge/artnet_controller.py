@@ -18,12 +18,13 @@ HA_OEM = 0x2BE9
 
 class ArtNetController(BaseNode):
 
-    def __init__(self, hass: HomeAssistant, max_fps: int = 25, refresh_every: int = 2):
+    def __init__(self, hass: HomeAssistant, new_node_callback, max_fps: int = 25, refresh_every: int = 2):
         super().__init__("", 0, max_fps=max_fps, refresh_every=0, start_refresh_task=False)
 
         self._hass = hass
 
-        self.__server = ArtNetServer(hass, state_update_callback=self.update_dmx_data, oem=HA_OEM,
+        self.__server = ArtNetServer(hass, state_update_callback=self.update_dmx_data,
+                                     new_node_callback=new_node_callback, oem=HA_OEM,
                                      short_name="ha-artnet-led", long_name="HomeAssistant ArtNet integration",
                                      retransmit_time_ms=int(refresh_every * 1000.0)
                                      )
