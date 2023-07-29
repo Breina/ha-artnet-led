@@ -497,9 +497,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             log.info(f"Discovered new node at {inet_ntoa(source_ip)}@{bind_index} with "
                      f"{reply.net_switch}:{reply.sub_switch}:[{','.join([str(p.sw_out) for p in reply.ports if p.output])}]"
                      )
-            self.__new_node_callback(
-                [PortAddress(reply.net_switch, reply.sub_switch, u.sw_out) for u in reply.ports if u.output]
-            )
+            self.__new_node_callback(reply)
 
         else:
             node.last_seen = current_time

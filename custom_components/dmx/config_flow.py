@@ -3,7 +3,8 @@ import voluptuous
 from homeassistant import config_entries, data_entry_flow
 import voluptuous as vol
 
-from .const import DOMAIN
+from .bridge.artnet_controller import DiscoveredNode
+from .const import DOMAIN, DISCOVERED_NODE
 
 
 # @config_entries.HANDLERS.register(DOMAIN)
@@ -24,14 +25,27 @@ class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_integration_discovery(self, discovery_info):
         print("async_step_discovery: " + str(discovery_info))
 
-        return self.async_show_form(
-            step_id="discovery", data_schema=vol.Schema({})
-        )
+        discovered_node = discovery_info[DISCOVERED_NODE]
+
+        return await self.async_step_onboard()
 
         # return await self.async_step_edit()
         # return self.async_abort(
         #     reason='LOL!!'
         # )
+
+    async def async_step_onboard(self, user_input=None):
+        print("ONBOARD: " + str(user_input))
+
+        return self.async_show_menu()
+
+        # return self.async_show_form(
+        #     step_id="onboard",
+        #     data_schema=vol.Schema({
+        #         vol.Required("username"): str,
+        #     })
+        # )
+
 
     async def async_step_import(self, import_info):
         """Import a new bridge as a config entry.

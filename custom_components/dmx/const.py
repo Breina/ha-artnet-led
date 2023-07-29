@@ -1,6 +1,8 @@
 DOMAIN = 'dmx'
 HASS_DATA_ENTITIES = "entities"
 
+DISCOVERED_NODE = "discovered_node"
+
 # GATEWAY_DOMAIN = 'PowerTagGateway'
 # TAG_DOMAIN = 'PowerTag'
 #

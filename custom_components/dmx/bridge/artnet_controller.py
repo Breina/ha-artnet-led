@@ -1,5 +1,6 @@
 import logging
 from asyncio import sleep
+from dataclasses import dataclass
 
 from homeassistant.core import HomeAssistant
 from pyartnet import BaseUniverse
@@ -8,12 +9,21 @@ from pyartnet.base.base_node import TYPE_U
 from pyartnet.errors import InvalidUniverseAddressError
 
 from custom_components.dmx.bridge.universe_bridge import UniverseBridge
-from custom_components.dmx.client import PortAddress
+from custom_components.dmx.client import PortAddress, ArtPollReply
 from custom_components.dmx.client.artnet_server import ArtNetServer
 
 log = logging.getLogger(__name__)
 
 HA_OEM = 0x2BE9
+
+
+@dataclass
+class DiscoveredNode:
+    port_address: PortAddress
+    long_name: str
+    short_name: str
+    ip: bytes
+    index: int
 
 
 class ArtNetController(BaseNode):
@@ -22,6 +32,8 @@ class ArtNetController(BaseNode):
         super().__init__("", 0, max_fps=max_fps, refresh_every=0, start_refresh_task=False)
 
         self._hass = hass
+
+        self._new_node_callback = new_node_callback
 
         self.__server = ArtNetServer(hass, state_update_callback=self.update_dmx_data,
                                      new_node_callback=new_node_callback, oem=HA_OEM,
@@ -83,3 +95,13 @@ class ArtNetController(BaseNode):
                     job.fade_complete()
 
             await sleep(self._process_every)
+
+    def new_node_callback(self, reply: ArtPollReply):
+        port_addresses = [PortAddress(reply.net_switch, reply.sub_switch, u.sw_out) for u in reply.ports if u.output]
+        long_name = reply.long_name
+        short_name = reply.short_name
+        ip = reply.source_ip
+        index = reply.bind_index
+
+        for port_address in port_addresses:
+            self._new_node_callback(DiscoveredNode(port_address, long_name, short_name, ip, index))
