@@ -56,7 +56,8 @@ def parse_capability(name: str, capability_yaml: dict) -> Capability | None:
     kwargs = {}
 
     # noinspection PyTypeChecker
-    args[list.index(param_names, "name")] = name
+    if "name" in param_names:
+        args[list.index(param_names, "name")] = name
 
     startEndRegistry = {}
 
