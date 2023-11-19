@@ -1,6 +1,7 @@
 import logging
 
 from homeassistant.components.number import NumberEntity
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import DiscoveryInfoType, ConfigType
@@ -11,6 +12,12 @@ from custom_components.dmx.const import HASS_DATA_ENTITIES
 log = logging.getLogger(__name__)
 
 
+async def async_setup_entry(
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+        async_add_entities: AddEntitiesCallback,
+):
+    pass
 
 # async def async_setup_platform(
 #         hass: HomeAssistant,

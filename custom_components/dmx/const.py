@@ -1,7 +1,8 @@
 DOMAIN = 'dmx'
 HASS_DATA_ENTITIES = "entities"
 
-DISCOVERED_NODE = "discovered_node"
+ARTNET_CONTROLLER = "discovered_node"
+CONF_DATA = "config_data"
 
 # GATEWAY_DOMAIN = 'PowerTagGateway'
 # TAG_DOMAIN = 'PowerTag'
@@ -19,3 +20,5 @@ DISCOVERED_NODE = "discovered_node"
 # DPWS_PRESENTATION_URL = 'PresentationUrl'
 # DPWS_FRIENDLY_NAME = 'FriendlyName'
 # DPWS_SERIAL_NUMBER = 'SerialNumber'
+
+UNDO_UPDATE_LISTENER = "undo_update_listener"

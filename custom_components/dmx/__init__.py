@@ -8,8 +8,8 @@ import homeassistant.helpers.config_validation as cv
 import unicodedata
 import voluptuous as vol
 from homeassistant.components.light import ATTR_TRANSITION
-from homeassistant.config_entries import ConfigEntry, SOURCE_INTEGRATION_DISCOVERY
-from homeassistant.const import CONF_HOST, CONF_PORT, CONF_MODE, Platform
+from homeassistant.config_entries import ConfigEntry, SOURCE_IMPORT
+from homeassistant.const import CONF_HOST, CONF_PORT, CONF_MODE, Platform, CONF_SOURCE
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import IntegrationError
 from homeassistant.helpers import discovery_flow
@@ -17,7 +17,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.bridge.artnet_controller import ArtNetController, DiscoveredNode
 from custom_components.dmx.client import PortAddress
-from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, DISCOVERED_NODE
+from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER
 from custom_components.fixtures.fixture import parse_json
 from custom_components.fixtures.model import Fixture
 
@@ -168,32 +168,92 @@ def port_address_config(value: Any) -> PortAddress:
     return PortAddress(net, sub_net, universe)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    print(f"async_setup_entry")
-    return True
+async def reload_configuration_yaml(event: dict, hass: HomeAssistant):
+    """Reload configuration.yaml."""
+    await hass.services.async_call("homeassistant", "check_config", {})
+
+
+async def async_update_options(hass, config_entry: ConfigEntry):
+    """Update options."""
+    await hass.config_entries.async_reload(config_entry.entry_id)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Your controller/hub specific code."""
 
-    hass.data.setdefault(DOMAIN, {})
+    if DOMAIN not in config:
+        return True
 
-    def _discovered_node(discovered_node: DiscoveredNode):
-        print(f"Found some! {discovered_node.long_name}")
-        discovery_flow.async_create_flow(
-            hass,
-            DOMAIN,
-            context={"source": SOURCE_INTEGRATION_DISCOVERY},
-            data={
-                DISCOVERED_NODE: discovered_node,
-            },
-        )
+    discovery_flow.async_create_flow(
+        hass,
+        DOMAIN,
+        context={CONF_SOURCE: SOURCE_IMPORT},
+        data=config
+    )
 
-    ARTNET_CONTROLLER = ArtNetController(hass, new_node_callback=_discovered_node, max_fps=43)
-    ARTNET_CONTROLLER.start()
+    # hass.data.setdefault(DOMAIN, {})
+    #
+    # artnet_controller = None
+    #
+    # def _discovered_node(discovered_node: DiscoveredNode):
+    #     print(f"Found some! {discovered_node.long_name}")
+    #     discovery_flow.async_create_flow(
+    #         hass,
+    #         DOMAIN,
+    #         context={"source": SOURCE_INTEGRATION_DISCOVERY},
+    #         data={
+    #             ARTNET_CONTROLLER: artnet_controller,
+    #             CONF_DATA: config[DOMAIN]
+    #         },
+    #     )
+    #
+    # artnet_controller = ArtNetController(hass, new_node_callback=_discovered_node, max_fps=43)
+    # artnet_controller.start()
+    #
+    # # TODO parse config manual node discover also
 
     print(f"end of async_setup")
     return True
+
+
+async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
+    """Set up the component."""
+    print(f"async_setup_entry: {config_entry}")
+    data = hass.data.setdefault(DOMAIN, {})
+
+    fixtures_path = data.get(CONF_FIXTURES, {}).get(CONF_FOLDER, DEFAULT_FIXTURES_FOLDER)
+    for (dirpath, dirnames, filenames) in walk(fixtures_path):
+        for filename in filenames:
+            parser.parse(fixtures_path + "/" + filename)
+
+    # This will reload any changes the user made to any YAML configurations.
+    # Called during 'quick reload' or hass.reload_config_entry
+    hass.bus.async_listen("hass.config.entry_updated", reload_configuration_yaml)
+
+    undo_listener = config_entry.add_update_listener(async_update_options)
+    data[config_entry.entry_id] = {UNDO_UPDATE_LISTENER: undo_listener}
+    for platform in PLATFORMS:
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_setup(config_entry, platform),
+        )
+
+    return True
+
+
+async def async_unload_entry(hass, config_entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    unload_ok = await hass.config_entries.async_forward_entry_unload(
+        config_entry,
+        PLATFORMS,
+    )
+    data = hass.data[DOMAIN]
+    data[config_entry.entry_id][UNDO_UPDATE_LISTENER]()
+    if unload_ok:
+        data.pop(config_entry.entry_id)
+
+    data.pop(DOMAIN)
+
+    return unload_ok
 
 
 #

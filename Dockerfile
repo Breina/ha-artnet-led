@@ -1,4 +1,4 @@
-FROM ghcr.io/home-assistant/home-assistant:2023.6
+FROM ghcr.io/home-assistant/home-assistant:latest
 
 # HA
 EXPOSE 8123:8123/tcp
