@@ -1,21 +1,33 @@
 import inspect
 import json
+import os
 import re
 import typing
 from enum import EnumType
 from types import MappingProxyType, UnionType
 from typing import Union
 
+from homeassistant.exceptions import IntegrationError
+
 import capability
 from custom_components.dmx.fixture.capability import Capability, MenuClick
 from custom_components.dmx.fixture.entity import Entity
 
 underscore_pattern = re.compile(r"(?<!^)(?=[A-Z])")
-entity_value = re.compile(f"(\d*)(.*)")
+entity_value = re.compile(f"([-\d.]*)(.*)")
+
+
+class FixtureConfigurationError(IntegrationError):
+    def __init__(self, msg: str, *args):
+        super().__init__(*args)
+        self.msg = msg
+
+    def __str__(self) -> str:
+        return self.msg
 
 
 def parse(json_file: str):
-    with open(json_file) as json_data:
+    with open(json_file, encoding='utf-8') as json_data:
         data = json.load(json_data)
 
     channels = {}
@@ -62,15 +74,16 @@ def parse_capability(name: str, capability_yaml: dict) -> Capability | None:
     startEndRegistry = {}
 
     for key, value_yaml in capability_yaml.items():
-        if key in "type":
+        # TODO switchChannels
+        if key in ["type", "helpWanted", "switchChannels"]:
             continue
 
         # Spec is defined in camelCase, but Python likes parameters in snake_case.
         arg_name = underscore_pattern.sub('_', key).lower()
-        is_combined = False
 
         # Bundle the _start and _end capabilities into a list.
         # This reduces the amount of variables we have to write in capabilities.py.
+        is_combined = False
         isStart = arg_name.endswith("_start")
         if isStart or arg_name.endswith("_end"):
             shorthand = arg_name[0:arg_name.rfind("_")]
@@ -98,8 +111,7 @@ def parse_capability(name: str, capability_yaml: dict) -> Capability | None:
             kwargs[arg_name] = value
 
         else:
-            print(f"Could not find wtf {arg_name} is")
-            continue
+            raise FixtureConfigurationError(f"I don't know what kind of argument this is: {arg_name}")
 
     return capability_obj(*args, **kwargs)
 
@@ -132,35 +144,49 @@ def extract_value_type(name: str, value_yaml, is_combined: bool, params: Mapping
     return [value] if should_wrap else value
 
 
-def extract_single_value(value_str: str, type_annotation: type):
-    if not isinstance(value_str, str):
-        return value_str
+def extract_single_value(value_yaml: str, type_annotation: type):
+    if inspect.isclass(type_annotation) and issubclass(type_annotation, Entity):
+        if isinstance(value_yaml, int) or isinstance(value_yaml, float):
+            return type_annotation(value_yaml)
 
-    if issubclass(type_annotation, str):
-        return value_str
-
-    if isinstance(type_annotation, EnumType):
-        return type_annotation[value_str]
-
-    if issubclass(type_annotation, Entity):
-        value_parts = entity_value.findall(value_str)[0]
+        value_parts = entity_value.findall(value_yaml)[0]
         value = value_parts[0]
         if not value:
             value = value_parts[1]
             unit = None
         else:
-            value = int(value)
+            value = float(value)
             unit = value_parts[1] or None
 
         return type_annotation(value, unit)
 
+    if not isinstance(value_yaml, str):
+        return value_yaml
+
+    if issubclass(type_annotation, str):
+        return value_yaml
+
+    if isinstance(type_annotation, EnumType):
+        return type_annotation[value_yaml.replace(" ", "")]
+
     if issubclass(type_annotation, bool):
-        return bool(value_str)
+        return bool(value_yaml)
 
-    print(f"Wtf is type {type_annotation}")
-    return None
+    raise FixtureConfigurationError(f"I don't know what kind of type this is: {type_annotation}")
+
+# dir = "F:/Projects/Home/open-fixture-library/fixtures/"
+# for brand in os.listdir(dir):
+#     if brand.endswith("json"):
+#         continue
+#     # print(brand)
+#     for file in os.listdir(dir + brand):
+#         # print(f"  {file}")
+#         try:
+#             capabilities = parse(dir + brand + "/" + file)
+#             # print(f"  {capabilities}")
+#         except Exception as e:
+#             print(f"{file}: {e}")
 
 
-capabilities = parse("../../../staging/fixtures/dj_scan_led.json")
-# capabilities = parse("../../../staging/fixtures/hotbox-rgbw.json")
+capabilities = parse("../../../staging/fixtures/mac-viper-airfx.json")
 print(capabilities)

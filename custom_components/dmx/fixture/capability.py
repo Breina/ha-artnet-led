@@ -1,8 +1,6 @@
 from enum import Enum, auto
 from typing import Callable, List
 
-from matplotlib.testing.jpl_units import Duration
-
 from custom_components.dmx.fixture import entity
 from custom_components.dmx.fixture.entity import RotationAngle, RotationSpeed, Brightness, SlotNumber, \
     SwingAngle, Parameter, Percent, VerticalAngle, HorizontalAngle, Distance, IrisPercent, Insertion
@@ -25,6 +23,7 @@ class ShutterEffect(Enum):
     RampUpDown = auto()
     Lightning = auto()
     Spikes = auto()
+    Burst = auto()
 
 
 class SingleColor(Enum):
@@ -65,13 +64,16 @@ class FogTypeOutput(Enum):
     Haze = auto()
 
 
-def _make_interpolater(from_range_min: int, from_range_max: int,
-                       to_range_min: int, to_range_max: int) -> Callable[[int], int]:
-    valueRange = from_range_max - from_range_min
-    dmxRange = to_range_max - to_range_min
-    scaleFactor = float(dmxRange) / float(valueRange)
+def _make_interpolater(from_range_min: float, from_range_max: float,
+                       to_range_min: float, to_range_max: float) -> Callable[[float], float]:
+    if from_range_min == from_range_max:
+        return lambda _: to_range_min
 
-    def interp_fn(value: int) -> int:
+    from_range = from_range_max - from_range_min
+    to_range = to_range_max - to_range_min
+    scaleFactor = float(to_range) / float(from_range)
+
+    def interp_fn(value: float) -> float:
         return int(to_range_min + (value - from_range_min) * scaleFactor)
 
     return interp_fn
@@ -129,7 +131,7 @@ class Capability:
     def _define_as_static_value(self):
         self.__is_static = True
 
-    def _define_as_dynamic_value(self, range_start: int, range_end: int):
+    def _define_as_dynamic_value(self, range_start: float, range_end: float):
         self.__is_static = False
         self.__interpolate_to_dmx = _make_interpolater(
             range_start, range_end, self.dmxRangeStart, self.dmxRangeEnd
@@ -158,6 +160,8 @@ class Capability:
             if arg:
                 if isinstance(arg, Enum):
                     arg = arg.name
+                elif isinstance(arg, list) and len(arg) == 1:
+                    arg = arg[0]
                 s = s + f" {arg}"
 
         return s[1:]
@@ -178,15 +182,22 @@ class ShutterStrobe(Capability):
         self.duration = duration
 
         if speed:
-            assert not duration
-            self._define_from_entity(*speed)
+            if len(speed) == 2:
+                assert not duration or len(duration) != 2
+                self._define_from_entity(*speed)
 
         elif duration:
-            assert not speed
-            self._define_from_entity(*duration)
+            if len(duration) == 2:
+                assert not speed or len(speed) != 2
+                self._define_from_entity(*duration)
 
     def __str__(self):
-        return self.args_to_str(self.effect, self.sound_controlled, self.random_timing, self.speed, self.duration)
+        return self.args_to_str(self.effect,
+                                "sound controlled" if self.sound_controlled else None,
+                                "random timing" if self.random_timing else None,
+                                self.speed,
+                                self.duration
+                                )
 
 
 class StrobeSpeed(Capability):
@@ -309,7 +320,7 @@ class TiltContinuous(Capability):
 class PanTiltSpeed(Capability):
     def __init__(self,
                  speed: List[entity.Speed] | None,
-                 duration: List[Duration] | None,
+                 duration: List[entity.Time] | None,
                  **kwargs):
         super().__init__(**kwargs)
         self.speed = speed
@@ -465,7 +476,9 @@ class Effect(Capability):
 
     def __str__(self):
         return self.args_to_str(self.effect_name, self.effect_preset, self.speed, self.duration, self.parameter,
-                                self.sound_controlled, self.sound_sensitivity)
+                                "sound controlled" if self.sound_controlled else None,
+                                self.sound_sensitivity
+                                )
 
 
 class BeamAngle(Capability):
@@ -554,7 +567,7 @@ class Focus(Capability):
 
 
 class Zoom(Capability):
-    def __init__(self, angle: List[BeamAngle], **kwargs):
+    def __init__(self, angle: List[entity.BeamAngle], **kwargs):
         super().__init__(**kwargs)
         self.angle = angle
         self._define_from_entity(*angle)
@@ -737,7 +750,7 @@ class Rotation(Capability):
         if speed:
             self._define_from_entity(*speed)
         else:
-            self._define_from_entity(*speed)
+            self._define_from_entity(*angle)
 
     def __str__(self):
         return self.args_to_str(self.speed, self.angle)
@@ -770,7 +783,7 @@ class Time(Capability):
 class Maintenance(Capability):
     def __init__(self,
                  parameter: List[Parameter] | None = None,
-                 hold: Time | None = None,
+                 hold: entity.Time | None = None,
                  **kwargs):
         super().__init__(**kwargs)
         self.hold = hold

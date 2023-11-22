@@ -1,5 +1,7 @@
 class Entity:
-    def __init__(self, value: int, unit: str | None,
+    def __init__(self,
+                 value: float | str,
+                 unit: str | None,
                  allowed_units: list[str | None],
                  keywords: dict[str, int] | None = None):
         if type(value) is str:
@@ -9,7 +11,7 @@ class Entity:
             self.unit = "%"
         else:
             assert unit in allowed_units
-            self.input = f"{value}{unit}"
+            self.input = f"{value}{unit}" if unit else str(value)
             self.value = value
             self.unit = unit
 
@@ -21,7 +23,7 @@ class Entity:
 
 
 class Speed(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["Hz", "bpm", "%"],
                          {
@@ -34,7 +36,7 @@ class Speed(Entity):
 
 
 class RotationSpeed(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["Hz", "rpm", "%"],
                          {
@@ -47,7 +49,7 @@ class RotationSpeed(Entity):
 
 
 class Time(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["s", "ms", "%"],
                          {
@@ -58,7 +60,7 @@ class Time(Entity):
 
 
 class Distance(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["m", "%"],
                          {
@@ -68,7 +70,7 @@ class Distance(Entity):
 
 
 class Brightness(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["lm", "%"],
                          {
@@ -79,7 +81,7 @@ class Brightness(Entity):
 
 
 class ColorTemperature(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["K", "%"],
                          {
@@ -92,7 +94,7 @@ class ColorTemperature(Entity):
 
 
 class FogOutput(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["m^3/min", "%"],
                          {
@@ -103,12 +105,12 @@ class FogOutput(Entity):
 
 
 class RotationAngle(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit, ["deg", "%"])
 
 
 class BeamAngle(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["deg", "%"],
                          {
@@ -119,7 +121,7 @@ class BeamAngle(Entity):
 
 
 class HorizontalAngle(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["deg", "%"],
                          {
@@ -130,7 +132,7 @@ class HorizontalAngle(Entity):
 
 
 class VerticalAngle(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["deg", "%"],
                          {
@@ -141,7 +143,7 @@ class VerticalAngle(Entity):
 
 
 class SwingAngle(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["deg", "%"],
                          {
@@ -152,7 +154,7 @@ class SwingAngle(Entity):
 
 
 class Parameter(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          [None, "%"],
                          {
@@ -170,12 +172,12 @@ class Parameter(Entity):
 
 
 class SlotNumber(Entity):
-    def __init__(self, value: int | str):
+    def __init__(self, value: float | str):
         super().__init__(value, None, [None])
 
 
 class Percent(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["%"],
                          {
@@ -186,7 +188,7 @@ class Percent(Entity):
 
 
 class Insertion(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["%"],
                          {
@@ -196,7 +198,7 @@ class Insertion(Entity):
 
 
 class IrisPercent(Entity):
-    def __init__(self, value: int | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["%"],
                          {
