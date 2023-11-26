@@ -3,7 +3,7 @@ from typing import Callable, List
 
 from custom_components.dmx.fixture import entity
 from custom_components.dmx.fixture.entity import RotationAngle, RotationSpeed, Brightness, SlotNumber, \
-    SwingAngle, Parameter, Percent, VerticalAngle, HorizontalAngle, Distance, IrisPercent, Insertion
+    SwingAngle, Parameter, Percent, VerticalAngle, HorizontalAngle, Distance, IrisPercent, Insertion, Entity
 
 
 class MenuClick(Enum):
@@ -79,6 +79,27 @@ def _make_interpolater(from_range_min: float, from_range_max: float,
     return interp_fn
 
 
+class DynamicEntity:
+    def __init__(self, entity_start: Entity, entity_end: Entity, dmx_start: int, dmx_end: int):
+        super().__init__()
+
+        self.entity_start = entity_start
+        self.entity_end = entity_end
+
+        self.__interpolate_to_dmx = _make_interpolater(
+            entity_start.value, entity_end.value, dmx_start, dmx_end
+        )
+        self.__interpolate_from_dmx = _make_interpolater(
+            dmx_start, dmx_end, entity_start.value, entity_end.value
+        )
+
+    def to_dmx(self, value: float) -> int:
+        return round(self.__interpolate_to_dmx(value))
+
+    def from_dmx(self, value: int) -> float:
+        return self.__interpolate_from_dmx(value)
+
+
 class Capability:
 
     def __init__(self,
@@ -96,49 +117,27 @@ class Capability:
         self.dmxRangeEnd = dmx_range[1]
 
         self.menu_click = menu_click
+        self.menu_click_value = {
+            MenuClick.start: self.dmxRangeStart,
+            MenuClick.center: int((self.dmxRangeStart + self.dmxRangeEnd) / 2),
+            MenuClick.end: self.dmxRangeEnd,
+        }[menu_click]
+
         self.fine_channel_aliases = fine_channel_aliases or []
 
-        self.__is_static = True
-        self.__interpolate_to_dmx, self.__interpolate_from_dmx = [None, None]
+        self.static_entities = []
+        self.dynamic_entities = []
 
     def is_applicable(self, dmx_value: int):
         return self.dmxRangeStart <= dmx_value <= self.dmxRangeEnd
 
-    def to_dmx(self, *value) -> int:
-        if self.__is_static:
-            if self.menu_click == MenuClick.start:
-                return self.dmxRangeStart
-            elif self.menu_click == MenuClick.center:
-                return int((self.dmxRangeStart + self.dmxRangeEnd) / 2)
-            elif self.menu_click == MenuClick.end:
-                return self.dmxRangeEnd
-        else:
-            assert len(value) == 1
-            return self.__interpolate_to_dmx(value[0])
-
-    def from_dmx(self, dmx_value: int):
-        assert not self.__is_static
-        return self.__interpolate_from_dmx(dmx_value)
-
-    def _define_from_entity(self, *entities):
+    def _define_from_entity(self, entities: list[Entity] | None):
         size = len(entities)
         if size == 1:
-            self._define_as_static_value()
+            self.static_entities.append(entities[0])
         else:
             assert size == 2
-            self._define_as_dynamic_value(entities[0].value, entities[1].value)
-
-    def _define_as_static_value(self):
-        self.__is_static = True
-
-    def _define_as_dynamic_value(self, range_start: float, range_end: float):
-        self.__is_static = False
-        self.__interpolate_to_dmx = _make_interpolater(
-            range_start, range_end, self.dmxRangeStart, self.dmxRangeEnd
-        )
-        self.__interpolate_from_dmx = _make_interpolater(
-            self.dmxRangeStart, self.dmxRangeEnd, range_start, range_end
-        )
+            self.dynamic_entities.append(DynamicEntity(entities[0], entities[1], self.dmxRangeStart, self.dmxRangeEnd))
 
     def __str__(self):
         if self.comment:
@@ -181,10 +180,7 @@ class ShutterStrobe(Capability):
         self.speed = speed
         self.duration = duration
 
-        if speed:
-            if len(speed) == 2:
-                assert not duration or len(duration) != 2
-                self._define_from_entity(*speed)
+        self._define_from_entity(speed)
 
         elif duration:
             if len(duration) == 2:
