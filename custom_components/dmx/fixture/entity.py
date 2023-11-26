@@ -7,12 +7,12 @@ class Entity:
         if type(value) is str:
             assert keywords
             self.input = value
-            self.value = keywords[value]
+            self.value: float = keywords[value]
             self.unit = "%"
         else:
             assert unit in allowed_units
             self.input = f"{value}{unit}" if unit else str(value)
-            self.value = value
+            self.value: float = value
             self.unit = unit
 
     def __str__(self):

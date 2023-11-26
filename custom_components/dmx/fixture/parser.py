@@ -174,19 +174,19 @@ def extract_single_value(value_yaml: str, type_annotation: type):
 
     raise FixtureConfigurationError(f"I don't know what kind of type this is: {type_annotation}")
 
-# dir = "F:/Projects/Home/open-fixture-library/fixtures/"
-# for brand in os.listdir(dir):
-#     if brand.endswith("json"):
-#         continue
-#     # print(brand)
-#     for file in os.listdir(dir + brand):
-#         # print(f"  {file}")
-#         try:
-#             capabilities = parse(dir + brand + "/" + file)
-#             # print(f"  {capabilities}")
-#         except Exception as e:
-#             print(f"{file}: {e}")
+dir = "F:/Projects/Home/open-fixture-library/fixtures/"
+for brand in os.listdir(dir):
+    if brand.endswith("json"):
+        continue
+    # print(brand)
+    for file in os.listdir(dir + brand):
+        # print(f"  {file}")
+        try:
+            capabilities = parse(dir + brand + "/" + file)
+            # print(f"  {capabilities}")
+        except Exception as e:
+            print(f"{file}: {e}")
 
 
-capabilities = parse("../../../staging/fixtures/mac-viper-airfx.json")
-print(capabilities)
+# capabilities = parse("../../../staging/fixtures/spica-250m.json")
+# print(capabilities)

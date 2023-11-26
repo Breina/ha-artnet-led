@@ -79,18 +79,15 @@ def _make_interpolater(from_range_min: float, from_range_max: float,
     return interp_fn
 
 
-class DynamicEntity:
-    def __init__(self, entity_start: Entity, entity_end: Entity, dmx_start: int, dmx_end: int):
+class DynamicMapping:
+    def __init__(self, range_start: float, range_end: float, dmx_start: int, dmx_end: int):
         super().__init__()
 
-        self.entity_start = entity_start
-        self.entity_end = entity_end
-
         self.__interpolate_to_dmx = _make_interpolater(
-            entity_start.value, entity_end.value, dmx_start, dmx_end
+            range_start, range_end, dmx_start, dmx_end
         )
         self.__interpolate_from_dmx = _make_interpolater(
-            dmx_start, dmx_end, entity_start.value, entity_end.value
+            dmx_start, dmx_end, range_start, range_end
         )
 
     def to_dmx(self, value: float) -> int:
@@ -98,6 +95,14 @@ class DynamicEntity:
 
     def from_dmx(self, value: int) -> float:
         return self.__interpolate_from_dmx(value)
+
+
+class DynamicEntity(DynamicMapping):
+    def __init__(self, entity_start: Entity, entity_end: Entity, dmx_start: int, dmx_end: int):
+        super().__init__(entity_start.value, entity_end.value, dmx_start, dmx_end)
+
+        self.entity_start = entity_start
+        self.entity_end = entity_end
 
 
 class Capability:
@@ -118,10 +123,11 @@ class Capability:
 
         self.menu_click = menu_click
         self.menu_click_value = {
-            MenuClick.start: self.dmxRangeStart,
-            MenuClick.center: int((self.dmxRangeStart + self.dmxRangeEnd) / 2),
-            MenuClick.end: self.dmxRangeEnd,
-        }[menu_click]
+            MenuClick.start.name: self.dmxRangeStart,
+            MenuClick.center.name: int((self.dmxRangeStart + self.dmxRangeEnd) / 2),
+            MenuClick.end.name: self.dmxRangeEnd,
+            MenuClick.hidden.name: self.dmxRangeStart
+        }[menu_click.name or MenuClick.start.name]
 
         self.fine_channel_aliases = fine_channel_aliases or []
 
@@ -131,7 +137,13 @@ class Capability:
     def is_applicable(self, dmx_value: int):
         return self.dmxRangeStart <= dmx_value <= self.dmxRangeEnd
 
+    def _define_from_range(self, start: float, end: float):
+        self.dynamic_entities.append(DynamicMapping(start, end, self.dmxRangeStart, self.dmxRangeEnd))
+
     def _define_from_entity(self, entities: list[Entity] | None):
+        if not entities:
+            return
+
         size = len(entities)
         if size == 1:
             self.static_entities.append(entities[0])
@@ -181,11 +193,7 @@ class ShutterStrobe(Capability):
         self.duration = duration
 
         self._define_from_entity(speed)
-
-        elif duration:
-            if len(duration) == 2:
-                assert not speed or len(speed) != 2
-                self._define_from_entity(*duration)
+        self._define_from_entity(duration)
 
     def __str__(self):
         return self.args_to_str(self.effect,
@@ -200,7 +208,7 @@ class StrobeSpeed(Capability):
     def __init__(self, speed: List[entity.Speed], **kwargs):
         super().__init__(**kwargs)
         self.speed = speed
-        self._define_from_entity(*speed)
+        self._define_from_entity(speed)
 
     def __str__(self):
         return self.args_to_str(self.speed)
@@ -210,7 +218,7 @@ class StrobeDuration(Capability):
     def __init__(self, duration: List[entity.Time], **kwargs):
         super().__init__(**kwargs)
         self.duration = duration
-        self._define_from_entity(*duration)
+        self._define_from_entity(duration)
 
     def __str__(self):
         return self.args_to_str(self.duration)
@@ -220,7 +228,7 @@ class Intensity(Capability):
     def __init__(self, brightness: List[Brightness] | None = None, **kwargs):
         super().__init__(**kwargs)
         self.brightness = brightness or [Brightness("off"), Brightness("bright")]
-        self._define_from_entity(*self.brightness)
+        self._define_from_entity(self.brightness)
 
     def __str__(self):
         return self.args_to_str(self.brightness)
@@ -231,7 +239,7 @@ class ColorIntensity(Capability):
         super().__init__(**kwargs)
         self.color = color
         self.brightness = brightness or [Brightness("off"), Brightness("bright")]
-        self._define_from_entity(*self.brightness)
+        self._define_from_entity(self.brightness)
 
     def __str__(self):
         return self.args_to_str(self.color, self.brightness)
@@ -245,19 +253,10 @@ class ColorPreset(Capability):
         self.colors = colors
         self.color_temperature = color_temperature
 
-        if colors:
-            size = len(colors)
-            if size == 1:
-                self._define_as_static_value()
-            else:
-                assert size == 2
-                assert not color_temperature
-                self._define_as_dynamic_value(0, 100)
+        if colors and len(colors) == 2:
+            self._define_from_range(0, 100)
 
-        if color_temperature:
-            if len(color_temperature) == 2:
-                assert not colors
-            self._define_from_entity(*color_temperature)
+        self._define_from_entity(color_temperature)
 
     def __str__(self):
         return self.args_to_str(self.colors, self.color_temperature)
@@ -267,7 +266,7 @@ class ColorTemperature(Capability):
     def __init__(self, color_temperature: List[entity.ColorTemperature], **kwargs):
         super().__init__(**kwargs)
         self.color_temperature = color_temperature
-        self._define_from_entity(*self.color_temperature)
+        self._define_from_entity(self.color_temperature)
 
     def __str__(self):
         return self.args_to_str(self.color_temperature)
@@ -277,7 +276,7 @@ class Pan(Capability):
     def __init__(self, angle: List[RotationAngle], **kwargs):
         super().__init__(**kwargs)
         self.angle = angle
-        self._define_from_entity(*angle)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.angle)
@@ -287,7 +286,7 @@ class PanContinuous(Capability):
     def __init__(self, speed: List[RotationSpeed], **kwargs):
         super().__init__(**kwargs)
         self.speed = speed
-        self._define_from_entity(*speed)
+        self._define_from_entity(speed)
 
     def __str__(self):
         return self.args_to_str(self.speed)
@@ -297,7 +296,7 @@ class Tilt(Capability):
     def __init__(self, angle: List[RotationAngle], **kwargs):
         super().__init__(**kwargs)
         self.angle = angle
-        self._define_from_entity(*angle)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.angle)
@@ -307,7 +306,7 @@ class TiltContinuous(Capability):
     def __init__(self, speed: List[RotationSpeed], **kwargs):
         super().__init__(**kwargs)
         self.speed = speed
-        self._define_from_entity(*speed)
+        self._define_from_entity(speed)
 
     def __str__(self):
         return self.args_to_str(self.speed)
@@ -319,14 +318,12 @@ class PanTiltSpeed(Capability):
                  duration: List[entity.Time] | None,
                  **kwargs):
         super().__init__(**kwargs)
+        assert bool(speed) != bool(duration)
         self.speed = speed
         self.duration = duration
-        assert speed or duration
-        if speed:
-            assert not duration
-            self._define_from_entity(*speed)
-        elif duration:
-            self._define_from_entity(*duration)
+
+        self._define_from_entity(speed)
+        self._define_from_entity(duration)
 
     def __str__(self):
         return self.args_to_str(self.speed, self.duration)
@@ -337,7 +334,7 @@ class WheelSlot(Capability):
         super().__init__(**kwargs)
         self.wheel = wheel or name
         self.slot_number = slot_number
-        self._define_from_entity(*slot_number)
+        self._define_from_entity(slot_number)
 
     def __str__(self):
         return self.args_to_str(self.wheel, self.slot_number)
@@ -358,23 +355,9 @@ class WheelShake(Capability):
         self.shake_speed = shake_speed
         self.shake_angle = shake_angle
 
-        if slot_number:
-            if len(slot_number) == 2:
-                assert not shake_speed or len(shake_speed) != 2
-                assert not shake_angle or len(shake_angle) != 2
-                self._define_as_dynamic_value(slot_number[0].value, slot_number[1].value)
-
-        if shake_speed:
-            if len(shake_speed) == 2:
-                assert not slot_number or len(slot_number) != 2
-                assert not shake_angle or len(shake_angle) != 2
-                self._define_as_dynamic_value(shake_speed[0].value, shake_speed[1].value)
-
-        if shake_angle:
-            if len(shake_angle) == 2:
-                assert not slot_number or len(slot_number) != 2
-                assert not shake_speed or len(shake_speed) != 2
-                self._define_as_dynamic_value(shake_angle[0].value, shake_angle[1].value)
+        self._define_from_entity(slot_number)
+        self._define_from_entity(shake_speed)
+        self._define_from_entity(shake_angle)
 
     def __str__(self):
         return self.args_to_str(self.wheel, self.slot_number, self.shake_speed, self.shake_angle, self.is_shaking)
@@ -388,14 +371,12 @@ class WheelSlotRotation(Capability):
                  angle: List[RotationAngle] | None = None,
                  **kwargs):
         super().__init__(**kwargs)
+        assert bool(angle) != bool(speed)
         self.wheel = wheel or name
         self.slot_number = slot_number
 
-        if speed:
-            assert not angle
-            self._define_from_entity(*speed)
-        elif angle:
-            self._define_from_entity(*angle)
+        self._define_from_entity(speed)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.wheel, self.slot_number)
@@ -412,18 +393,15 @@ class WheelRotation(Capability):
         self.speed = speed
         self.angle = angle
 
-        if speed:
-            assert not angle
-            self._define_from_entity(*speed)
-        elif angle:
-            self._define_from_entity(*angle)
+        self._define_from_entity(speed)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.wheel, self.speed, self.angle)
 
 
 class Effect(Capability):
-    def __init__(self, name: str,
+    def __init__(self,
                  effect_name: str | None = None,
                  effect_preset: EffectPreset | None = None,
                  speed: List[entity.Speed] | None = None,
@@ -443,32 +421,10 @@ class Effect(Capability):
         self.parameter = parameter
         self.sound_sensitivity = sound_sensitivity
 
-        if speed:
-            if len(self.speed) == 2:
-                assert not duration or len(duration) != 2
-                assert not parameter or len(parameter) != 2
-                assert not sound_sensitivity or len(sound_sensitivity) != 2
-                self._define_as_dynamic_value(speed[0].value, speed[1].value)
-        if duration:
-            if len(self.duration) == 2:
-                assert not speed or len(speed) != 2
-                assert not parameter or len(parameter) != 2
-                assert not sound_sensitivity or len(sound_sensitivity) != 2
-                self._define_as_dynamic_value(duration[0].value, duration[1].value)
-
-        if parameter:
-            if len(self.parameter) == 2:
-                assert not speed or len(speed) != 2
-                assert not duration or len(duration) != 2
-                assert not sound_sensitivity or len(sound_sensitivity) != 2
-                self._define_as_dynamic_value(parameter[0].value, parameter[1].value)
-
-        if sound_sensitivity:
-            if len(self.sound_sensitivity) == 2:
-                assert not speed or len(speed) != 2
-                assert not duration or len(duration) != 2
-                assert not parameter or len(parameter) != 2
-                self._define_as_dynamic_value(sound_sensitivity[0].value, sound_sensitivity[1].value)
+        self._define_from_entity(speed)
+        self._define_from_entity(duration)
+        self._define_from_entity(parameter)
+        self._define_from_entity(sound_sensitivity)
 
     def __str__(self):
         return self.args_to_str(self.effect_name, self.effect_preset, self.speed, self.duration, self.parameter,
@@ -481,7 +437,7 @@ class BeamAngle(Capability):
     def __init__(self, angle: List[entity.BeamAngle], **kwargs):
         super().__init__(**kwargs)
         self.angle = angle
-        self._define_from_entity(*angle)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.angle)
@@ -498,15 +454,8 @@ class BeamPosition(Capability):
         self.horizontal_angle = horizontal_angle
         self.vertical_angle = vertical_angle
 
-        if horizontal_angle:
-            if len(horizontal_angle) == 2:
-                assert not vertical_angle or len(vertical_angle) != 2
-                self._define_from_entity(*horizontal_angle)
-
-        if vertical_angle:
-            if len(vertical_angle) == 2:
-                assert not horizontal_angle or len(horizontal_angle) != 2
-                self._define_from_entity(*vertical_angle)
+        self._define_from_entity(horizontal_angle)
+        self._define_from_entity(vertical_angle)
 
     def __str__(self):
         return self.args_to_str(self.horizontal_angle, self.vertical_angle)
@@ -516,7 +465,7 @@ class EffectSpeed(Capability):
     def __init__(self, speed: List[entity.Speed], **kwargs):
         super().__init__(**kwargs)
         self.speed = speed
-        self._define_from_entity(*speed)
+        self._define_from_entity(speed)
 
     def __str__(self):
         return self.args_to_str(self.speed)
@@ -526,7 +475,7 @@ class EffectDuration(Capability):
     def __init__(self, duration: List[entity.Time], **kwargs):
         super().__init__(**kwargs)
         self.duration = duration
-        self._define_from_entity(*duration)
+        self._define_from_entity(duration)
 
     def __str__(self):
         return self.args_to_str(self.duration)
@@ -536,7 +485,7 @@ class EffectParameter(Capability):
     def __init__(self, parameter: List[Parameter], **kwargs):
         super().__init__(**kwargs)
         self.parameter = parameter
-        self._define_from_entity(*parameter)
+        self._define_from_entity(parameter)
 
     def __str__(self):
         return self.args_to_str(self.parameter)
@@ -546,7 +495,7 @@ class SoundSensitivity(Capability):
     def __init__(self, sound_sensitivity: List[Percent], **kwargs):
         super().__init__(**kwargs)
         self.soundSensitivity = sound_sensitivity
-        self._define_from_entity(*sound_sensitivity)
+        self._define_from_entity(sound_sensitivity)
 
     def __str__(self):
         return self.args_to_str(self.soundSensitivity)
@@ -556,7 +505,7 @@ class Focus(Capability):
     def __init__(self, distance: List[Distance], **kwargs):
         super().__init__(**kwargs)
         self.distance = distance
-        self._define_from_entity(*distance)
+        self._define_from_entity(distance)
 
     def __str__(self):
         return self.args_to_str(self.distance)
@@ -566,7 +515,7 @@ class Zoom(Capability):
     def __init__(self, angle: List[entity.BeamAngle], **kwargs):
         super().__init__(**kwargs)
         self.angle = angle
-        self._define_from_entity(*angle)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.angle)
@@ -576,7 +525,7 @@ class Iris(Capability):
     def __init__(self, open_percent: List[IrisPercent], **kwargs):
         super().__init__(**kwargs)
         self.open_percent = open_percent
-        self._define_from_entity(*open_percent)
+        self._define_from_entity(open_percent)
 
     def __str__(self):
         return self.args_to_str(self.open_percent)
@@ -587,8 +536,7 @@ class IrisEffect(Capability):
         super().__init__(**kwargs)
         self.effect_name = effect_name
         self.speed = speed
-        if speed:
-            self._define_from_entity(*speed)
+        self._define_from_entity(speed)
 
     def __str__(self):
         return self.args_to_str(self.effect_name, self.speed)
@@ -598,7 +546,7 @@ class Frost(Capability):
     def __init__(self, frost_intensity: List[Percent], **kwargs):
         super().__init__(**kwargs)
         self.frost_intensity = frost_intensity
-        self._define_from_entity(*frost_intensity)
+        self._define_from_entity(frost_intensity)
 
     def __str__(self):
         return self.args_to_str(self.frost_intensity)
@@ -609,9 +557,7 @@ class FrostEffect(Capability):
         super().__init__(**kwargs)
         self.effect_name = effect_name
         self.speed = speed
-
-        if speed:
-            self._define_from_entity(*speed)
+        self._define_from_entity(speed)
 
     def __str__(self):
         return self.args_to_str(self.effect_name, self.speed)
@@ -623,14 +569,12 @@ class Prism(Capability):
                  angle: List[RotationAngle] | None = None,
                  **kwargs):
         super().__init__(**kwargs)
+        assert not (bool(speed) and bool(angle))
         self.speed = speed
         self.angle = angle
 
-        if speed:
-            assert not angle
-            self._define_from_entity(*speed)
-        elif angle:
-            self._define_from_entity(*angle)
+        self._define_from_entity(speed)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.speed, self.angle)
@@ -642,15 +586,12 @@ class PrismRotation(Capability):
                  angle: List[RotationAngle] | None = None,
                  **kwargs):
         super().__init__(**kwargs)
+        assert bool(speed) != bool(angle)
         self.speed = speed
         self.angle = angle
 
-        if speed:
-            assert not angle
-            self._define_from_entity(*speed)
-        else:
-            assert angle
-            self._define_from_entity(*angle)
+        self._define_from_entity(speed)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.speed, self.angle)
@@ -663,7 +604,7 @@ class BladeInsertion(Capability):
                  **kwargs):
         super().__init__(**kwargs)
         self.blade = blade
-        self._define_from_entity(*insertion)
+        self._define_from_entity(insertion)
 
     def __str__(self):
         return self.args_to_str(self.blade)
@@ -676,7 +617,7 @@ class BladeRotation(Capability):
                  **kwargs):
         super().__init__(**kwargs)
         self.blade = blade
-        self._define_from_entity(*angle)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.blade)
@@ -688,7 +629,7 @@ class BladeSystemRotation(Capability):
                  **kwargs):
         super().__init__(**kwargs)
         self.angle = angle
-        self._define_from_entity(*angle)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.angle)
@@ -702,9 +643,7 @@ class Fog(Capability):
         super().__init__(**kwargs)
         self.fog_type = fog_type
         self.fog_output = fog_output
-
-        if fog_output:
-            self._define_from_entity(*fog_output)
+        self._define_from_entity(fog_output)
 
     def __str__(self):
         return self.args_to_str(self.fog_type, self.fog_output)
@@ -716,7 +655,7 @@ class FogOutput(Capability):
                  **kwargs):
         super().__init__(**kwargs)
         self.fog_output = fog_output
-        self._define_from_entity(*fog_output)
+        self._define_from_entity(fog_output)
 
     def __str__(self):
         return self.args_to_str(self.fog_output)
@@ -739,14 +678,12 @@ class Rotation(Capability):
                  angle: List[RotationAngle] | None = None,
                  **kwargs):
         super().__init__(**kwargs)
-        assert speed or angle
+        assert bool(speed) != bool(angle)
         self.speed = speed
         self.angle = angle
 
-        if speed:
-            self._define_from_entity(*speed)
-        else:
-            self._define_from_entity(*angle)
+        self._define_from_entity(speed)
+        self._define_from_entity(angle)
 
     def __str__(self):
         return self.args_to_str(self.speed, self.angle)
@@ -758,7 +695,7 @@ class Speed(Capability):
                  **kwargs):
         super().__init__(**kwargs)
         self.speed = speed
-        self._define_from_entity(*speed)
+        self._define_from_entity(speed)
 
     def __str__(self):
         return self.args_to_str(self.speed)
@@ -770,7 +707,7 @@ class Time(Capability):
                  **kwargs):
         super().__init__(**kwargs)
         self.time = time
-        self._define_from_entity(*time)
+        self._define_from_entity(time)
 
     def __str__(self):
         return self.args_to_str(self.time)
@@ -784,9 +721,7 @@ class Maintenance(Capability):
         super().__init__(**kwargs)
         self.hold = hold
         self.parameter = parameter
-
-        if parameter:
-            self._define_from_entity(*parameter)
+        self._define_from_entity(parameter)
 
     def __str__(self):
         return self.args_to_str(self.hold, self.parameter)
