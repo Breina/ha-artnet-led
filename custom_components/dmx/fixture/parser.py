@@ -17,21 +17,16 @@ underscore_pattern = re.compile(r"(?<!^)(?=[A-Z])")
 entity_value = re.compile(f"([-\d.]*)(.*)")
 
 
-class FixtureConfigurationError(IntegrationError):
-    def __init__(self, msg: str, *args):
-        super().__init__(*args)
-        self.msg = msg
-
-    def __str__(self) -> str:
-        return self.msg
-
-
 def parse(json_file: str):
     with open(json_file, encoding='utf-8') as json_data:
         data = json.load(json_data)
 
+    matrix_yaml = data.get("matrix")
+    if matrix_yaml:
+        parse_matrix(matrix_yaml)
+
     channels = {}
-    for name, channel in data["availableChannels"].items():
+    for name, channel in data.get("availableChannels", {}).items():
         capability_yaml = channel.get("capability")
         if capability_yaml:
             channel = parse_capability(name, capability_yaml)
@@ -44,13 +39,16 @@ def parse(json_file: str):
             channel_buffer = []
             for capability_yaml in capabilities_yaml:
                 channel = parse_capability(name, capability_yaml)
-                if channel and channel.menu_click != MenuClick.hidden:
+                if channel and channel.menuClick != MenuClick.hidden:
                     channel_buffer.append(channel)
             channels[name] = channel_buffer
             continue
 
     return channels
 
+
+def parse_matrix(matrix_yaml: str):
+    print(matrix_yaml)
 
 def parse_capability(name: str, capability_yaml: dict) -> Capability | None:
     capability_type = capability_yaml["type"]
@@ -167,7 +165,12 @@ def extract_single_value(value_yaml: str, type_annotation: type):
         return value_yaml
 
     if isinstance(type_annotation, EnumType):
-        return type_annotation[value_yaml.replace(" ", "")]
+        # Python enums can't have spaces
+        enumName = value_yaml.replace(" ", "")
+        # Python enums can't start with a number
+        if value_yaml[0].isdigit():
+            enumName = f"_{enumName}"
+        return type_annotation[enumName]
 
     if issubclass(type_annotation, bool):
         return bool(value_yaml)
@@ -188,5 +191,6 @@ for brand in os.listdir(dir):
             print(f"{file}: {e}")
 
 
-# capabilities = parse("../../../staging/fixtures/spica-250m.json")
+# capabilities = parse("../../../staging/fixtures/dj_scan_led.json")
+# capabilities = parse("../../../staging/fixtures/l10-c.json")
 # print(capabilities)

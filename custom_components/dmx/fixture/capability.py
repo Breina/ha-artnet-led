@@ -64,6 +64,12 @@ class FogTypeOutput(Enum):
     Haze = auto()
 
 
+class DmxValueResolution(Enum):
+    _8bit = 1
+    _16bit = 2
+    _24bit = 3
+
+
 def _make_interpolater(from_range_min: float, from_range_max: float,
                        to_range_min: float, to_range_max: float) -> Callable[[float], float]:
     if from_range_min == from_range_max:
@@ -111,25 +117,34 @@ class Capability:
                  comment: str | None = None,
                  dmx_range: [int] = None,
                  menu_click: MenuClick = MenuClick.start,
-                 fine_channel_aliases: List[str] = None):
+                 fine_channel_aliases: List[str] = None,
+                 default_value: int = 0,
+                 dmx_value_resolution: DmxValueResolution | None = None,
+                 switch_channels: dict[str, str] | None = None
+                 ):
         super().__init__()
+
+        self.fineChannelAliases = fine_channel_aliases or []
+        self.defaultValue = default_value
+        self.dmxValueResolution = dmx_value_resolution or DmxValueResolution(len(self.fineChannelAliases) + 1)
+
         if dmx_range is None:
-            dmx_range = [0, 255]
+            dmx_range = [0, pow(255, self.dmxValueResolution.value)]
         assert len(dmx_range) == 2
 
         self.comment = comment
         self.dmxRangeStart = dmx_range[0]
         self.dmxRangeEnd = dmx_range[1]
 
-        self.menu_click = menu_click
-        self.menu_click_value = {
+        self.menuClick = menu_click
+        self.menuClickValue = {
             MenuClick.start.name: self.dmxRangeStart,
             MenuClick.center.name: int((self.dmxRangeStart + self.dmxRangeEnd) / 2),
             MenuClick.end.name: self.dmxRangeEnd,
             MenuClick.hidden.name: self.dmxRangeStart
         }[menu_click.name or MenuClick.start.name]
 
-        self.fine_channel_aliases = fine_channel_aliases or []
+        self.switchChannels = switch_channels or {}
 
         self.static_entities = []
         self.dynamic_entities = []
