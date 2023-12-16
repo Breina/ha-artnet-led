@@ -10,14 +10,14 @@ from pyartnet import Channel
 
 from custom_components.dmx import const, PortAddress
 from custom_components.dmx.bridge.channel_bridge import ChannelBridge
-from custom_components.fixtures.model import Fixture
+from custom_components.fixtures.model import HaFixture
 
 entity_char_matcher = re.compile('[^\da-zA-Z_]')
 
 
 class IntensityNumber(RestoreNumber):
 
-    def __init__(self, fixture: Fixture, device_name: str, channel_name: str, port_address: PortAddress,
+    def __init__(self, fixture: HaFixture, device_name: str, channel_name: str, port_address: PortAddress,
                  channel: Union[Channel, ChannelBridge],
                  lumen: Union[int, None] = None) -> None:
         super().__init__()

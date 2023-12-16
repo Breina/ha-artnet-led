@@ -11,7 +11,7 @@ from pyartnet import BaseUniverse
 
 from custom_components.dmx import PortAddress
 from custom_components.dmx.base_entities import IntensityNumber
-from custom_components.fixtures.model import Fixture
+from custom_components.fixtures.model import HaFixture
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class NotImplementedYet(IntegrationError):
                f"Consider creating a GitHub issue if this is what you need."
 
 
-def parse_json(filename: str) -> Fixture:
+def parse_json(filename: str) -> HaFixture:
     with open(filename) as user_file:
         fixture_json = json.load(user_file)
 
@@ -73,10 +73,10 @@ def parse_json(filename: str) -> Fixture:
         if help_wanted:
             log.info(f"Looks like {name}'s fixture JSON could use some love, please head over to {of_url}")
 
-        return Fixture(referenced_name, device_info, fixture_json)
+        return HaFixture(referenced_name, device_info, fixture_json)
 
 
-def implement(fixture: Fixture, device_name: str, port_address: PortAddress, universe: BaseUniverse, start_channel: int,
+def implement(fixture: HaFixture, device_name: str, port_address: PortAddress, universe: BaseUniverse, start_channel: int,
               target_mode: Union[str, None]):
     fixture_json = fixture.fixture_json
 

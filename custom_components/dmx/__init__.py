@@ -18,8 +18,8 @@ from homeassistant.helpers.typing import ConfigType
 from custom_components.dmx.bridge.artnet_controller import ArtNetController, DiscoveredNode
 from custom_components.dmx.client import PortAddress
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER
-from custom_components.fixtures.fixture import parse_json
-from custom_components.fixtures.model import Fixture
+from custom_components.fixtures.ha_fixture import parse_json
+from custom_components.fixtures.model import HaFixture
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ def load_fixtures(hass: HomeAssistant, platform_config: ConfigType):
         FIXTURES[fixture.fixture_key] = fixture
 
 
-def get_fixture(name: str) -> Fixture:
+def get_fixture(name: str) -> HaFixture:
     fixture = FIXTURES.get(name)
     if not fixture:
         raise UnknownFixtureError(name, list(FIXTURES.keys()))

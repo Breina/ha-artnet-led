@@ -4,7 +4,7 @@ from homeassistant.helpers.entity import DeviceInfo
 
 
 @dataclass
-class Fixture:
+class HaFixture:
     fixture_key: str
     device_info: DeviceInfo
     fixture_json: dict
