@@ -1,5 +1,6 @@
 import inspect
 import json
+import logging
 import os
 import re
 import typing
@@ -8,6 +9,7 @@ from types import MappingProxyType, UnionType
 from typing import Union
 
 import capability
+from custom_components.dmx.fixture import OFL_URL
 from custom_components.dmx.fixture.capability import Capability, MenuClick
 from custom_components.dmx.fixture.entity import Entity
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
@@ -17,21 +19,25 @@ from custom_components.dmx.fixture.matrix import matrix_from_pixel_count, matrix
 underscore_pattern = re.compile(r"(?<!^)(?=[A-Z])")
 entity_value = re.compile(f"([-\d.]*)(.*)")
 
+log = logging.getLogger(__name__)
+
 
 def parse(json_file: str) -> Fixture:
     with open(json_file, encoding='utf-8') as json_data:
         data = json.load(json_data)
 
-    matrix_json = data.get("matrix")
-    matrix = parse_matrix(matrix_json) if matrix_json else None
+    fixture_model = parse_fixture(data)
 
-    channels = {}
+    matrix_json = data.get("matrix")
+    if matrix_json:
+        fixture_model.define_matrix(parse_matrix(matrix_json))
+
     for name, channel in data.get("availableChannels", {}).items():
         capability_json = channel.get("capability")
         if capability_json:
             channel = parse_capability(name, capability_json)
             if channel:
-                channels[name] = channel
+                fixture_model.define_channel(name, channel)
             continue
 
         capabilities_json = channel.get("capabilities")
@@ -41,10 +47,26 @@ def parse(json_file: str) -> Fixture:
                 channel = parse_capability(name, capability_json)
                 if channel and channel.menuClick != MenuClick.hidden:
                     channel_buffer.append(channel)
-            channels[name] = channel_buffer
+            fixture_model.define_channel(name, channel_buffer)
             continue
 
-    return Fixture(channels, matrix)
+    return fixture_model
+
+
+def parse_fixture(fixture_json: dict) -> Fixture:
+    name = fixture_json['name']
+    short_name = fixture_json.get('shortName', name)
+    categories = fixture_json['categories']
+
+    help_wanted = fixture_json.get('helpWanted')
+    if help_wanted:
+        log.info(f"Looks like {name}'s fixture JSON could use some love: \"{help_wanted}\"")
+
+    fixture_key = fixture_json.get('fixtureKey')
+    manufacturer_key = fixture_json.get('manufacturerKey')
+    config_url = f"{OFL_URL}/{manufacturer_key}/{fixture_key}" if fixture_key and manufacturer_key else None
+
+    return Fixture(name, short_name, categories, config_url)
 
 
 def parse_matrix(matrix_json: dict) -> Matrix:
@@ -202,6 +224,7 @@ for brand in os.listdir(dir):
         print(f"  {file}")
         try:
             fixture = parse(dir + brand + "/" + file)
+            print(fixture)
         except Exception as e:
             print(f"{file}: {e}")
 
