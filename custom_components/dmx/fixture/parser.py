@@ -35,7 +35,7 @@ def parse(json_file: str) -> Fixture:
     for name, channel in data.get("availableChannels", {}).items():
         capability_json = channel.get("capability")
         if capability_json:
-            channel = parse_capability(name, capability_json)
+            channel = parse_capability(fixture_model, name, capability_json)
             if channel:
                 fixture_model.define_channel(name, channel)
             continue
@@ -44,7 +44,7 @@ def parse(json_file: str) -> Fixture:
         if capabilities_json:
             channel_buffer = []
             for capability_json in capabilities_json:
-                channel = parse_capability(name, capability_json)
+                channel = parse_capability(fixture_model, name, capability_json)
                 if channel and channel.menuClick != MenuClick.hidden:
                     channel_buffer.append(channel)
             fixture_model.define_channel(name, channel_buffer)
@@ -60,7 +60,7 @@ def parse_fixture(fixture_json: dict) -> Fixture:
 
     help_wanted = fixture_json.get('helpWanted')
     if help_wanted:
-        log.info(f"Looks like {name}'s fixture JSON could use some love: \"{help_wanted}\"")
+        log.warning(f"Looks like {name}'s fixture JSON could use some love: {help_wanted}")
 
     fixture_key = fixture_json.get('fixtureKey')
     manufacturer_key = fixture_json.get('manufacturerKey')
@@ -87,7 +87,7 @@ def parse_matrix(matrix_json: dict) -> Matrix:
     return matrix
 
 
-def parse_capability(name: str, capability_json: dict) -> Capability | None:
+def parse_capability(fixture_model: Fixture, name: str, capability_json: dict) -> Capability | None:
     capability_type = capability_json["type"]
     if capability_type == "NoFunction":
         return None
@@ -109,8 +109,12 @@ def parse_capability(name: str, capability_json: dict) -> Capability | None:
     startEndRegistry = {}
 
     for key, value_json in capability_json.items():
+        if key == "helpWanted":
+            log.warning(f"The capability '{name}' of '{fixture_model.name}' could use some help: {value_json}")
+            continue
+
         # TODO switchChannels
-        if key in ["type", "helpWanted", "switchChannels"]:
+        if key in ["type", "switchChannels"]:
             continue
 
         # Spec is defined in camelCase, but Python likes parameters in snake_case.
