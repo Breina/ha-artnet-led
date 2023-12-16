@@ -4,6 +4,7 @@ from math import floor
 from typing import Union
 
 from homeassistant.exceptions import IntegrationError
+from homeassistant.util.color import color_RGB_to_hsv, color_hsv_to_RGB, rgbww_to_color_temperature
 
 log = logging.getLogger(__name__)
 
@@ -12,9 +13,9 @@ allowed_chars_per_type = {
     "binary": "",
     "dimmer": "d",
     "color_temp": "dcChHtT",
-    "rgb": "drRgGbBwW",
-    "rgbw": "drRgGbBwW",
-    "rgbww": "dcChHtTrRgGbB"
+    "rgb": "drRgGbBuUwW",
+    "rgbw": "drRgGbBuUwW",
+    "rgbww": "dcChHtTrRgGbBuU"
 }
 
 
@@ -33,10 +34,15 @@ def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightn
               green: int = -1, blue: int = -1, cold_white: int = -1, warm_white: int = -1,
               color_temp_kelvin: int | None = None, min_kelvin: int | None = None, max_kelvin: int | None = None
               ) -> list[int]:
-    if cold_white == -1 and warm_white == -1 \
-            and color_temp_kelvin is not None and min_kelvin is not None and max_kelvin is not None:
-        cold_white = 255 * (color_temp_kelvin - min_kelvin) / (max_kelvin - min_kelvin)
-        warm_white = 255 - cold_white
+
+    if min_kelvin is not None and max_kelvin is not None:
+        kelvin_diff = (max_kelvin - min_kelvin)
+
+        if cold_white == -1 and warm_white == -1 and color_temp_kelvin is not None:
+            cold_white = 255 * (color_temp_kelvin - min_kelvin) / kelvin_diff
+            warm_white = 255 - cold_white
+        elif cold_white != -1 and warm_white != -1 and color_temp_kelvin is None:
+            color_temp_kelvin, _ = rgbww_to_color_temperature((red, green, blue, cold_white, warm_white), min_kelvin, max_kelvin)
 
     max_color = max(1, max(red, green, blue, cold_white, warm_white))
 
@@ -55,6 +61,8 @@ def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightn
     # H = hot (not scaled)
     # t = temperature (0 = hot, 255 = cold)
     # T = temperature (255 = hot, 0 = cold)
+    # u = hue
+    # U = saturation
     switcher = {
         "d": lambda: brightness,
         "r": lambda: is_on * red * brightness / max_color,
@@ -69,8 +77,10 @@ def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightn
         "C": lambda: is_on * cold_white * 255 / max_color,
         "h": lambda: is_on * warm_white * brightness / max_color,
         "H": lambda: is_on * warm_white * 255 / max_color,
-        "t": lambda: cold_white,
-        "T": lambda: warm_white
+        "t": lambda: (color_temp_kelvin - min_kelvin) * 255 / kelvin_diff,
+        "T": lambda: 255 - (color_temp_kelvin - min_kelvin) * 255 / kelvin_diff,
+        "u": lambda: color_RGB_to_hsv(red, green, blue)[0] * 255 / 360,
+        "U": lambda: color_RGB_to_hsv(red, green, blue)[1] * 255 / 100,
     }
 
     values: list[int] = list()
@@ -94,6 +104,8 @@ def from_values(channel_setup: str, channel_size: int, values: list[int],
     red: int | None = None
     green: int | None = None
     blue: int | None = None
+    hue: int | None = None
+    saturation: int | None = None
     cold_white: int | None = None
     warm_white: int | None = None
     color_temp_kelvin: int | None = None
@@ -145,6 +157,10 @@ def from_values(channel_setup: str, channel_size: int, values: list[int],
             cold_white = value
         elif channel == "T":
             warm_white = value
+        elif channel == "u":
+            hue = int(value * 360 / 255)
+        elif channel == "U":
+            saturation = int(value * 100 / 255)
 
     if cold_white is None and warm_white is not None:
         cold_white = 255 - warm_white
@@ -158,6 +174,9 @@ def from_values(channel_setup: str, channel_size: int, values: list[int],
         else:
             cold_ratio = cold_white / (white_sum)
             color_temp_kelvin = round(min_kelvin - min_kelvin * cold_ratio + max_kelvin * cold_ratio)
+
+    if hue is not None and saturation is not None and red is None and green is None and blue is None:
+        red, green, blue = color_hsv_to_RGB(hue, saturation, 1)
 
     return is_on, brightness, red, green, blue, cold_white, warm_white, color_temp_kelvin
 

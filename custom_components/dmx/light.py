@@ -24,7 +24,7 @@ from homeassistant.components.light import (
     SUPPORT_TRANSITION,
     PLATFORM_SCHEMA,
     LightEntity, COLOR_MODE_ONOFF, COLOR_MODE_WHITE, ATTR_WHITE, ATTR_COLOR_TEMP_KELVIN, SUPPORT_FLASH, ATTR_FLASH,
-    FLASH_SHORT, FLASH_LONG)
+    FLASH_SHORT, FLASH_LONG, COLOR_MODE_HS, ATTR_HS_COLOR)
 from homeassistant.const import CONF_DEVICES, STATE_OFF, STATE_ON
 from homeassistant.const import CONF_FRIENDLY_NAME as CONF_DEVICE_FRIENDLY_NAME
 from homeassistant.const import CONF_HOST as CONF_NODE_HOST
@@ -666,6 +666,7 @@ class DmxRGB(DmxBaseLight):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._supported_color_modes.add(COLOR_MODE_RGB)
+        self._supported_color_modes.add(COLOR_MODE_HS)
         self._features = SUPPORT_TRANSITION | SUPPORT_FLASH
         self._color_mode = COLOR_MODE_RGB
         self._vals = (255, 255, 255)
@@ -716,6 +717,10 @@ class DmxRGB(DmxBaseLight):
         if ATTR_RGB_COLOR in kwargs:
             self._vals = kwargs[ATTR_RGB_COLOR]
 
+        if ATTR_HS_COLOR in kwargs:
+            hue, sat = kwargs[ATTR_HS_COLOR]
+            self._vals = color_util.color_hs_to_RGB(hue, sat)
+
         if ATTR_BRIGHTNESS in kwargs:
             self._attr_brightness = kwargs[ATTR_BRIGHTNESS]
 
@@ -745,9 +750,10 @@ class DmxRGBW(DmxBaseLight):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._supported_color_modes.add(COLOR_MODE_RGBW)
+        self._supported_color_modes.add(COLOR_MODE_HS)
         self._features = SUPPORT_TRANSITION | SUPPORT_FLASH
         self._color_mode = COLOR_MODE_RGBW
-        self._vals = (255, 255, 255, 255)
+        self._vals = [255, 255, 255, 255]
 
         self._channel_setup = kwargs.get(CONF_CHANNEL_SETUP) or "rgbw"
         validate(self._channel_setup, self.CONF_TYPE)
@@ -757,13 +763,13 @@ class DmxRGBW(DmxBaseLight):
     @property
     def rgbw_color(self) -> tuple:
         """Return the rgbw color value."""
-        return self._vals
+        return tuple(self._vals)
 
     def _update_values(self, values: array[int]):
         self._state, self._attr_brightness, red, green, blue, white, _, _ = \
             from_values(self._channel_setup, self.channel_size[1], values)
 
-        self._vals = (red, green, blue, white)
+        self._vals = [red, green, blue, white]
 
         self._channel_value_change()
 
@@ -782,12 +788,16 @@ class DmxRGBW(DmxBaseLight):
         Instruct the light to turn on.
         """
 
-        old_values = self._vals
+        old_values = list(self._vals)
         old_brightness = self._attr_brightness
 
         # RGB already contains brightness information
         if ATTR_RGBW_COLOR in kwargs:
-            self._vals = kwargs[ATTR_RGBW_COLOR]
+            self._vals = list(kwargs[ATTR_RGBW_COLOR])
+
+        if ATTR_HS_COLOR in kwargs:
+            hue, sat = kwargs[ATTR_HS_COLOR]
+            self._vals[0:3] = list(color_util.color_hs_to_RGB(hue, sat))
 
         if ATTR_BRIGHTNESS in kwargs:
             self._attr_brightness = kwargs[ATTR_BRIGHTNESS]
@@ -819,12 +829,15 @@ class DmxRGBWW(DmxBaseLight):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._supported_color_modes.add(COLOR_MODE_RGBWW)
+        self._supported_color_modes.add(COLOR_MODE_COLOR_TEMP)
+        self._supported_color_modes.add(COLOR_MODE_HS)
+
         self._features = SUPPORT_TRANSITION | SUPPORT_FLASH
         self._color_mode = COLOR_MODE_RGBWW
         # Intentionally switching min and max here; it's inverted in the conversion.
         self._min_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MIN_TEMP])
         self._max_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MAX_TEMP])
-        self._vals = (255, 255, 255, 255, 255)
+        self._vals = [255, 255, 255, 255, 255, (self._max_kelvin - self._min_kelvin) / 2]
 
         self._channel_setup = kwargs.get(CONF_CHANNEL_SETUP) or "rgbch"
         validate(self._channel_setup, self.CONF_TYPE)
@@ -832,17 +845,17 @@ class DmxRGBWW(DmxBaseLight):
         self._channel_width = len(self._channel_setup)
 
     def _update_values(self, values: array[int]):
-        self._state, self._attr_brightness, red, green, blue, cold_white, warm_white, _ = \
+        self._state, self._attr_brightness, red, green, blue, cold_white, warm_white, color_temp = \
             from_values(self._channel_setup, self.channel_size[1], values)
 
-        self._vals = (red, green, blue, cold_white, warm_white)
+        self._vals = (red, green, blue, cold_white, warm_white, color_temp)
 
         self._channel_value_change()
 
     @property
     def rgbww_color(self) -> tuple:
         """Return the rgbww color value."""
-        return self._vals
+        return tuple(self._vals[0:5])
 
     @property
     def min_color_temp_kelvin(self) -> int:
@@ -856,8 +869,7 @@ class DmxRGBWW(DmxBaseLight):
 
     @property
     def color_temp_kelvin(self) -> int | None:
-        return color_util.rgbww_to_color_temperature(
-            self._vals, self.min_color_temp_kelvin, self.max_color_temp_kelvin)[0]
+        return self._vals[5]
 
     def get_target_values(self):
         red = self._vals[0]
@@ -865,26 +877,44 @@ class DmxRGBWW(DmxBaseLight):
         blue = self._vals[2]
         cold_white = self._vals[3]
         warm_white = self._vals[4]
+        color_temperature_kelvin = self._vals[5]
 
-        return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness, red, green,
-                         blue,
-                         cold_white, warm_white, min_kelvin=self.min_color_temp_kelvin,
+        return to_values(self._channel_setup, self._channel_size[1], self.is_on, self._attr_brightness,
+                         red, green, blue, cold_white, warm_white,
+                         color_temp_kelvin=color_temperature_kelvin,
+                         min_kelvin=self.min_color_temp_kelvin,
                          max_kelvin=self.max_color_temp_kelvin)
 
     async def async_turn_on(self, **kwargs):
         """
         Instruct the light to turn on.
         """
-
-        old_values = self._vals
+        old_values = list(self._vals)
         old_brightness = self._attr_brightness
 
         # RGB already contains brightness information
         if ATTR_RGBWW_COLOR in kwargs:
-            self._vals = kwargs[ATTR_RGBWW_COLOR]
+            self._vals[0:5] = kwargs[ATTR_RGBWW_COLOR]
+
+            if self._vals[3] != old_values[3] or self._vals[4] != old_values[4]:
+                self._vals[5], _ = color_util.rgbww_to_color_temperature(
+                    (self._vals[0], self._vals[1], self._vals[2], self._vals[3], self._vals[4]),
+                    self.min_color_temp_kelvin, self.max_color_temp_kelvin
+                )
+                self._channel_value_change()
+
+        if ATTR_HS_COLOR in kwargs:
+            hue, sat = kwargs[ATTR_HS_COLOR]
+            self._vals[0:3] = list(color_util.color_hs_to_RGB(hue, sat))
 
         if ATTR_BRIGHTNESS in kwargs:
             self._attr_brightness = kwargs[ATTR_BRIGHTNESS]
+
+        if ATTR_COLOR_TEMP_KELVIN in kwargs:
+            self._vals[5] = kwargs[ATTR_COLOR_TEMP_KELVIN]
+            _, _, _, self._vals[3], self._vals[4] = color_util.color_temperature_to_rgbww(
+                self._vals[5], self._attr_brightness, self.min_color_temp_kelvin, self.max_color_temp_kelvin)
+            self._channel_value_change()
 
         if ATTR_FLASH in kwargs:
             await super().flash(old_values, old_brightness, **kwargs)
@@ -898,7 +928,8 @@ class DmxRGBWW(DmxBaseLight):
 
         if old_state:
             prev_vals = old_state.attributes.get('values')
-            self._vals = prev_vals
+            if len(prev_vals) == 6:
+                self._vals = prev_vals
 
             prev_brightness = old_state.attributes.get('bright')
             self._attr_brightness = prev_brightness

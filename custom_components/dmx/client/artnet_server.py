@@ -74,7 +74,8 @@ class OwnPort:
 
 
 class ArtNetServer(asyncio.DatagramProtocol):
-    def __init__(self, hass: HomeAssistant, state_update_callback, new_node_callback, firmware_version: int = 0,
+    def __init__(self, hass: HomeAssistant, state_update_callback=None, new_node_callback=None,
+                 firmware_version: int = 0,
                  oem: int = 0, esta=0,
                  short_name: str = "PyArtNet", long_name: str = "Python ArtNet Server",
                  is_server_dhcp_configured: bool = True, polling: bool = True, sequencing: bool = True,
@@ -497,7 +498,9 @@ class ArtNetServer(asyncio.DatagramProtocol):
             log.info(f"Discovered new node at {inet_ntoa(source_ip)}@{bind_index} with "
                      f"{reply.net_switch}:{reply.sub_switch}:[{','.join([str(p.sw_out) for p in reply.ports if p.output])}]"
                      )
-            self.__new_node_callback(reply)
+
+            if self.__new_node_callback:
+                self.__new_node_callback(reply)
 
         else:
             node.last_seen = current_time
@@ -580,7 +583,8 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
         own_port.port.last_input_seen = datetime.datetime.now()
         self.__hass.async_create_task(self.disable_input_flag(own_port))
-        self.__state_update_callback(dmx.port_address, dmx.data)
+        if self.__state_update_callback:
+            self.__state_update_callback(dmx.port_address, dmx.data)
 
     async def disable_input_flag(self, own_port: OwnPort):
         await asyncio.sleep(4)

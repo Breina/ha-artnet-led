@@ -181,20 +181,22 @@ _Staticly sets the green channel on 50% brightness_
 - `B` = blue, unscaled
 - `w` = white, scaled for brightness
 - `W` = white, unscaled
+- `u` = hue
+- `U` = saturation
 - [`0`, `255`] = static value between the range [0, 255] 
 
 
 #### Compatibility
 
-| Type       |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       |           | Default value |
-|------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-------|-------|-----------|---------------|
-| fixed      |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
-| binary     |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
-| dimmer     | `d` |     |     |     |     |     |     |     |     |     |     |     |     |       |       | `[0,255]` | `0`           |
-| color_temp | `d` | `c` | `C` | `h` | `H` | `t` | `T` |     |     |     |     |     |     |       |       | `[0,255]` | `ch`          |
-| rgb        | `d` |     |     |     |     |     |     | `r` | `R` | `g` | `G` | `b` | `B` | `w`\* | `W`\* | `[0,255]` | `rgb`         |
-| rgbw       | `d` |     |     |     |     |     |     | `r` | `R` | `g` | `G` | `b` | `B` | `w`   | `W`   | `[0,255]` | `rgbw`        |
-| rgbww      | `d` | `c` | `C` | `h` | `H` | `t` | `T` | `r` | `R` | `g` | `G` | `b` | `B` |       |       | `[0,255]` | `rgbch`       |
+| Type       |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       |     |     |           | Default value |
+|------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-------|-------|-----|-----|-----------|---------------|
+| fixed      |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       |     |     | `[0,255]` | `0`           |
+| binary     |     |     |     |     |     |     |     |     |     |     |     |     |     |       |       |     |     | `[0,255]` | `0`           |
+| dimmer     | `d` |     |     |     |     |     |     |     |     |     |     |     |     |       |       |     |     | `[0,255]` | `0`           |
+| color_temp | `d` | `c` | `C` | `h` | `H` | `t` | `T` |     |     |     |     |     |     |       |       |     |     | `[0,255]` | `ch`          |
+| rgb        | `d` |     |     |     |     |     |     | `r` | `R` | `g` | `G` | `b` | `B` | `w`\* | `W`\* | `u` | `U` | `[0,255]` | `rgb`         |
+| rgbw       | `d` |     |     |     |     |     |     | `r` | `R` | `g` | `G` | `b` | `B` | `w`   | `W`   | `u` | `U` | `[0,255]` | `rgbw`        |
+| rgbww      | `d` | `c` | `C` | `h` | `H` | `t` | `T` | `r` | `R` | `g` | `G` | `b` | `B` |       |       | `u` | `U` | `[0,255]` | `rgbch`       |
 
 \* In the case of a white channel being used in an RGB light fixture, the white channel is automatically calculated.
 
