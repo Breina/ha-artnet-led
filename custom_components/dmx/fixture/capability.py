@@ -116,7 +116,7 @@ class Capability:
     def __init__(self,
                  comment: str | None = None,
                  dmx_range: [int] = None,
-                 menu_click: MenuClick = MenuClick.start,
+                 menu_click: MenuClick | None = None,
                  fine_channel_aliases: List[str] = None,
                  default_value: int = 0,
                  dmx_value_resolution: DmxValueResolution | None = None,
@@ -137,12 +137,15 @@ class Capability:
         self.dmxRangeEnd = dmx_range[1]
 
         self.menuClick = menu_click
-        self.menuClickValue = {
-            MenuClick.start.name: self.dmxRangeStart,
-            MenuClick.center.name: int((self.dmxRangeStart + self.dmxRangeEnd) / 2),
-            MenuClick.end.name: self.dmxRangeEnd,
-            MenuClick.hidden.name: self.dmxRangeStart
-        }[menu_click.name or MenuClick.start.name]
+        if self.menuClick:
+            self.menuClickValue = {
+                MenuClick.start.name: self.dmxRangeStart,
+                MenuClick.center.name: int((self.dmxRangeStart + self.dmxRangeEnd) / 2),
+                MenuClick.end.name: self.dmxRangeEnd,
+                MenuClick.hidden.name: self.dmxRangeStart
+            }[menu_click.name]
+        else:
+            self.menuClickValue = None
 
         self.switchChannels = switch_channels or {}
 

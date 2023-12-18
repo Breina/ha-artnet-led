@@ -22,5 +22,5 @@ class Fixture:
         self.matrix = matrix
 
     def __str__(self):
-        return f"{self.name} ({self.shortName}): {self.channels.keys()}"
+        return f"{self.name} ({self.shortName})"
 

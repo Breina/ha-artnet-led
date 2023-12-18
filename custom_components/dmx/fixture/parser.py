@@ -113,8 +113,7 @@ def parse_capability(fixture_model: Fixture, name: str, capability_json: dict) -
             log.warning(f"The capability '{name}' of '{fixture_model.name}' could use some help: {value_json}")
             continue
 
-        # TODO switchChannels
-        if key in ["type", "switchChannels"]:
+        if key in ["type"]:
             continue
 
         # Spec is defined in camelCase, but Python likes parameters in snake_case.
@@ -223,14 +222,20 @@ dir = "F:/Projects/Home/open-fixture-library/fixtures/"
 for brand in os.listdir(dir):
     if brand.endswith("json"):
         continue
-    print(brand)
+    # print(brand)
     for file in os.listdir(dir + brand):
-        print(f"  {file}")
+        # print(f"  {file}")
         try:
+            with open(dir + brand + "/" + file, encoding='utf-8') as json_data:
+                data = json.load(json_data)
+
+                if data.get("redirectTo"):
+                    continue
+
             fixture = parse(dir + brand + "/" + file)
-            print(fixture)
+            # print(fixture)
         except Exception as e:
-            print(f"{file}: {e}")
+            print(f"BIG ERROR!!! {brand}/{file}: {e}")
 
 # capabilities = parse("F:/Projects/Home/open-fixture-library/fixtures/chroma-q/color-force-ii-48.json")
 # capabilities = parse("../../../staging/fixtures/dj_scan_led.json")
