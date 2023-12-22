@@ -9,17 +9,20 @@ from types import MappingProxyType, UnionType
 from typing import Union
 
 import capability
+import wheel
 from custom_components.dmx.fixture import OFL_URL
 from custom_components.dmx.fixture.capability import Capability, MenuClick
 from custom_components.dmx.fixture.entity import Entity
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
 from custom_components.dmx.fixture.fixture import Fixture
-from custom_components.dmx.fixture.matrix import matrix_from_pixel_count, matrix_from_pixel_names, Matrix
+from custom_components.dmx.fixture.matrix import matrix_from_pixel_count, matrix_from_pixel_names
+from custom_components.dmx.fixture.wheel import WheelSlot, Wheel
 
 underscore_pattern = re.compile(r"(?<!^)(?=[A-Z])")
 entity_value = re.compile(f"([-\d.]*)(.*)")
 
 log = logging.getLogger(__name__)
+log.setLevel("ERROR")
 
 
 def parse(json_file: str) -> Fixture:
@@ -30,25 +33,13 @@ def parse(json_file: str) -> Fixture:
 
     matrix_json = data.get("matrix")
     if matrix_json:
-        fixture_model.define_matrix(parse_matrix(matrix_json))
+        parse_matrix(fixture_model, matrix_json)
 
-    for name, channel in data.get("availableChannels", {}).items():
-        capability_json = channel.get("capability")
-        if capability_json:
-            channel = parse_capability(fixture_model, name, capability_json)
-            if channel:
-                fixture_model.define_channel(name, channel)
-            continue
+    wheels_json = data.get("wheels")
+    if wheels_json:
+        parse_wheels(fixture_model, wheels_json)
 
-        capabilities_json = channel.get("capabilities")
-        if capabilities_json:
-            channel_buffer = []
-            for capability_json in capabilities_json:
-                channel = parse_capability(fixture_model, name, capability_json)
-                if channel and channel.menuClick != MenuClick.hidden:
-                    channel_buffer.append(channel)
-            fixture_model.define_channel(name, channel_buffer)
-            continue
+    parse_channels(data, fixture_model)
 
     return fixture_model
 
@@ -69,7 +60,7 @@ def parse_fixture(fixture_json: dict) -> Fixture:
     return Fixture(name, short_name, categories, config_url)
 
 
-def parse_matrix(matrix_json: dict) -> Matrix:
+def parse_matrix(fixture_model: Fixture, matrix_json: dict):
     pixel_count_json = matrix_json.get('pixelCount')
     pixel_keys_json = matrix_json.get("pixelKeys")
     if pixel_count_json:
@@ -84,7 +75,64 @@ def parse_matrix(matrix_json: dict) -> Matrix:
         for name, pixel_group_ref in pixel_groups_json.items():
             matrix.create_group(name, pixel_group_ref)
 
-    return matrix
+    fixture_model.define_matrix(matrix)
+
+
+def parse_wheels(fixture_model: Fixture, wheels_json: dict):
+    for wheel_name, wheel_json in wheels_json.items():
+        slots: list[WheelSlot] = []
+        direction = wheel_json.get("direction")
+
+        for wheel_slot_json in wheel_json["slots"]:
+            slot_type = wheel_slot_json["type"]
+
+            # This is directly mapped to the class names inside wheel.py.
+            slot_obj = getattr(wheel, slot_type)
+
+            params = inspect.signature(slot_obj.__init__).parameters
+            param_names = [name[0] for name in params.items() if name[0] != "self" and name[0] != "kwargs"]
+
+            args = [None] * len(param_names)
+
+            for key, value_json in wheel_slot_json.items():
+                if key in ["type"]:
+                    continue
+
+                # Spec is defined in camelCase, but Python likes parameters in snake_case.
+                arg_name = underscore_pattern.sub('_', key).lower()
+
+                if arg_name in params:
+                    value = extract_value_type(arg_name, value_json, False, params)
+                    args[list.index(param_names, arg_name)] = value
+
+                else:
+                    raise FixtureConfigurationError(f"For wheel {wheel_name}, "
+                                                    f"I don't know what kind of argument this is: {arg_name}")
+
+            slot = slot_obj(*args)
+            slots.append(slot)
+
+        fixture_model.define_wheel(Wheel(wheel_name, slots, direction))
+
+
+def parse_channels(data, fixture_model):
+    for name, channel in data.get("availableChannels", {}).items():
+        capability_json = channel.get("capability")
+        if capability_json:
+            channel = parse_capability(fixture_model, name, capability_json)
+            if channel:
+                fixture_model.define_channel(name, channel)
+            continue
+
+        capabilities_json = channel.get("capabilities")
+        if capabilities_json:
+            channel_buffer = []
+            for capability_json in capabilities_json:
+                channel = parse_capability(fixture_model, name, capability_json)
+                if channel and channel.menuClick != MenuClick.hidden:
+                    channel_buffer.append(channel)
+            fixture_model.define_channel(name, channel_buffer)
+            continue
 
 
 def parse_capability(fixture_model: Fixture, name: str, capability_json: dict) -> Capability | None:
@@ -149,7 +197,8 @@ def parse_capability(fixture_model: Fixture, name: str, capability_json: dict) -
             kwargs[arg_name] = value
 
         else:
-            raise FixtureConfigurationError(f"I don't know what kind of argument this is: {arg_name}")
+            raise FixtureConfigurationError(f"For capability {name}, "
+                                            f"I don't know what kind of argument this is: {arg_name}")
 
     return capability_obj(*args, **kwargs)
 
@@ -233,11 +282,17 @@ for brand in os.listdir(dir):
                     continue
 
             fixture = parse(dir + brand + "/" + file)
-            # print(fixture)
+            if fixture.wheels:
+                print(f"{brand}/{file}")
+                for name, wheel_object in fixture.wheels.items():
+                    if "None" in f"  {wheel_object}":
+                        print("HALF")
+                    print(f"  {wheel_object}")
+
         except Exception as e:
             print(f"BIG ERROR!!! {brand}/{file}: {e}")
 
-# capabilities = parse("F:/Projects/Home/open-fixture-library/fixtures/chroma-q/color-force-ii-48.json")
+# capabilities = parse("F:/Projects/Home/open-fixture-library/fixtures/american-dj/auto-spot-150.json")
 # capabilities = parse("../../../staging/fixtures/dj_scan_led.json")
 # capabilities = parse("../../../staging/fixtures/l10-c.json")
 # print(capabilities)

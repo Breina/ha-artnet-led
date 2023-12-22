@@ -16,7 +16,7 @@ class Entity:
             self.unit = unit
 
     def __str__(self):
-        return self.input
+        return str(self.input)
 
     def __repr__(self):
         return self.__str__()
