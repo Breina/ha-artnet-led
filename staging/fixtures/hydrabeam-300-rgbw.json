@@ -2,9 +2,15 @@
   "$schema": "https://raw.githubusercontent.com/OpenLightingProject/open-fixture-library/master/schemas/fixture.json",
   "name": "Hydrabeam 300 RGBW",
   "shortName": "CLHB300RGBW",
-  "categories": ["Moving Head", "Color Changer"],
+  "categories": [
+    "Moving Head",
+    "Color Changer"
+  ],
   "meta": {
-    "authors": ["Flo Edelmann", "Ryan Goodwin"],
+    "authors": [
+      "Flo Edelmann",
+      "Ryan Goodwin"
+    ],
     "createDate": "2017-07-24",
     "lastModifyDate": "2023-07-12"
   },
@@ -18,7 +24,11 @@
     ]
   },
   "physical": {
-    "dimensions": [380, 240, 380],
+    "dimensions": [
+      380,
+      240,
+      380
+    ],
     "weight": 5.5,
     "power": 60,
     "powerConnectors": {
@@ -29,14 +39,25 @@
       "type": "LED"
     },
     "lens": {
-      "degreesMinMax": [4.5, 4.5]
+      "degreesMinMax": [
+        4.5,
+        4.5
+      ]
     }
   },
   "matrix": {
     "pixelKeys": [
       [
-        [null, "1",  null],
-        ["2",  null, "3" ]
+        [
+          null,
+          "1",
+          null
+        ],
+        [
+          "2",
+          null,
+          "3"
+        ]
       ]
     ]
   },
@@ -51,11 +72,17 @@
       "highlightValue": 200,
       "capabilities": [
         {
-          "dmxRange": [0, 10],
+          "dmxRange": [
+            0,
+            10
+          ],
           "type": "NoFunction"
         },
         {
-          "dmxRange": [11, 255],
+          "dmxRange": [
+            11,
+            255
+          ],
           "type": "ShutterStrobe",
           "shutterEffect": "Strobe",
           "speedStart": "slow",
@@ -67,14 +94,20 @@
       "defaultValue": 0,
       "capabilities": [
         {
-          "dmxRange": [0, 7],
+          "dmxRange": [
+            0,
+            7
+          ],
           "type": "NoFunction",
           "switchChannels": {
             "Show mode speed / Sound sensitivity": "Show mode speed"
           }
         },
         {
-          "dmxRange": [8, 22],
+          "dmxRange": [
+            8,
+            22
+          ],
           "type": "Effect",
           "effectName": "Show mode 1",
           "switchChannels": {
@@ -82,7 +115,10 @@
           }
         },
         {
-          "dmxRange": [23, 37],
+          "dmxRange": [
+            23,
+            37
+          ],
           "type": "Effect",
           "effectName": "Show mode 2",
           "switchChannels": {
@@ -90,7 +126,10 @@
           }
         },
         {
-          "dmxRange": [38, 52],
+          "dmxRange": [
+            38,
+            52
+          ],
           "type": "Effect",
           "effectName": "Show mode 3",
           "switchChannels": {
@@ -98,7 +137,10 @@
           }
         },
         {
-          "dmxRange": [53, 67],
+          "dmxRange": [
+            53,
+            67
+          ],
           "type": "Effect",
           "effectName": "Show mode 4",
           "switchChannels": {
@@ -106,7 +148,10 @@
           }
         },
         {
-          "dmxRange": [68, 82],
+          "dmxRange": [
+            68,
+            82
+          ],
           "type": "Effect",
           "effectName": "Show mode 5",
           "switchChannels": {
@@ -114,7 +159,10 @@
           }
         },
         {
-          "dmxRange": [83, 97],
+          "dmxRange": [
+            83,
+            97
+          ],
           "type": "Effect",
           "effectName": "Show mode 6",
           "switchChannels": {
@@ -122,7 +170,10 @@
           }
         },
         {
-          "dmxRange": [98, 112],
+          "dmxRange": [
+            98,
+            112
+          ],
           "type": "Effect",
           "effectName": "Show mode 7",
           "switchChannels": {
@@ -130,7 +181,10 @@
           }
         },
         {
-          "dmxRange": [113, 127],
+          "dmxRange": [
+            113,
+            127
+          ],
           "type": "Effect",
           "effectName": "Show mode 8",
           "switchChannels": {
@@ -138,7 +192,10 @@
           }
         },
         {
-          "dmxRange": [128, 142],
+          "dmxRange": [
+            128,
+            142
+          ],
           "type": "Effect",
           "effectName": "Show mode 9",
           "switchChannels": {
@@ -146,7 +203,10 @@
           }
         },
         {
-          "dmxRange": [143, 157],
+          "dmxRange": [
+            143,
+            157
+          ],
           "type": "Effect",
           "effectName": "Show mode 10",
           "switchChannels": {
@@ -154,7 +214,10 @@
           }
         },
         {
-          "dmxRange": [158, 172],
+          "dmxRange": [
+            158,
+            172
+          ],
           "type": "Effect",
           "effectName": "Show mode 11",
           "switchChannels": {
@@ -162,7 +225,10 @@
           }
         },
         {
-          "dmxRange": [173, 187],
+          "dmxRange": [
+            173,
+            187
+          ],
           "type": "Effect",
           "effectName": "Show mode 12",
           "switchChannels": {
@@ -170,7 +236,10 @@
           }
         },
         {
-          "dmxRange": [188, 202],
+          "dmxRange": [
+            188,
+            202
+          ],
           "type": "Effect",
           "effectName": "Show mode 13",
           "switchChannels": {
@@ -178,7 +247,10 @@
           }
         },
         {
-          "dmxRange": [203, 217],
+          "dmxRange": [
+            203,
+            217
+          ],
           "type": "Effect",
           "effectName": "Show mode 14",
           "switchChannels": {
@@ -186,7 +258,10 @@
           }
         },
         {
-          "dmxRange": [218, 232],
+          "dmxRange": [
+            218,
+            232
+          ],
           "type": "Effect",
           "effectName": "Show mode 15",
           "switchChannels": {
@@ -194,7 +269,10 @@
           }
         },
         {
-          "dmxRange": [233, 247],
+          "dmxRange": [
+            233,
+            247
+          ],
           "type": "Effect",
           "effectName": "Show mode 16",
           "switchChannels": {
@@ -202,7 +280,10 @@
           }
         },
         {
-          "dmxRange": [248, 255],
+          "dmxRange": [
+            248,
+            255
+          ],
           "type": "Effect",
           "effectName": "Sound Control",
           "soundControlled": true,
@@ -229,99 +310,177 @@
     "Light control": {
       "capabilities": [
         {
-          "dmxRange": [0, 30],
+          "dmxRange": [
+            0,
+            30
+          ],
           "type": "Effect",
           "effectName": "Auto color change"
         },
         {
-          "dmxRange": [31, 45],
+          "dmxRange": [
+            31,
+            45
+          ],
           "type": "ColorPreset",
           "comment": "Red",
-          "colors": ["#ff0000"]
+          "colors": [
+            "#ff0000"
+          ]
         },
         {
-          "dmxRange": [46, 60],
+          "dmxRange": [
+            46,
+            60
+          ],
           "type": "ColorPreset",
           "comment": "Green",
-          "colors": ["#00ff00"]
+          "colors": [
+            "#00ff00"
+          ]
         },
         {
-          "dmxRange": [61, 75],
+          "dmxRange": [
+            61,
+            75
+          ],
           "type": "ColorPreset",
           "comment": "Blue",
-          "colors": ["#0000ff"]
+          "colors": [
+            "#0000ff"
+          ]
         },
         {
-          "dmxRange": [76, 90],
+          "dmxRange": [
+            76,
+            90
+          ],
           "type": "ColorPreset",
           "comment": "White",
-          "colors": ["#ffffff"]
+          "colors": [
+            "#ffffff"
+          ]
         },
         {
-          "dmxRange": [91, 105],
+          "dmxRange": [
+            91,
+            105
+          ],
           "type": "ColorPreset",
           "comment": "Red + Green",
-          "colors": ["#ffff00"]
+          "colors": [
+            "#ffff00"
+          ]
         },
         {
-          "dmxRange": [106, 120],
+          "dmxRange": [
+            106,
+            120
+          ],
           "type": "ColorPreset",
           "comment": "Red + Blue",
-          "colors": ["#ff00ff"]
+          "colors": [
+            "#ff00ff"
+          ]
         },
         {
-          "dmxRange": [121, 135],
+          "dmxRange": [
+            121,
+            135
+          ],
           "type": "ColorPreset",
           "comment": "Red + White",
-          "colors": ["#ff8080"]
+          "colors": [
+            "#ff8080"
+          ]
         },
         {
-          "dmxRange": [136, 150],
+          "dmxRange": [
+            136,
+            150
+          ],
           "type": "ColorPreset",
           "comment": "Green + Blue",
-          "colors": ["#00ffff"]
+          "colors": [
+            "#00ffff"
+          ]
         },
         {
-          "dmxRange": [151, 165],
+          "dmxRange": [
+            151,
+            165
+          ],
           "type": "ColorPreset",
           "comment": "Green + White",
-          "colors": ["#80ff80"]
+          "colors": [
+            "#80ff80"
+          ]
         },
         {
-          "dmxRange": [166, 180],
+          "dmxRange": [
+            166,
+            180
+          ],
           "type": "ColorPreset",
           "comment": "Blue + White",
-          "colors": ["#8080ff"]
+          "colors": [
+            "#8080ff"
+          ]
         },
         {
-          "dmxRange": [181, 195],
+          "dmxRange": [
+            181,
+            195
+          ],
           "type": "ColorPreset",
           "comment": "Red + Green + Blue",
-          "colors": ["#ffffff"]
+          "colors": [
+            "#ffffff"
+          ]
         },
         {
-          "dmxRange": [196, 210],
+          "dmxRange": [
+            196,
+            210
+          ],
           "type": "ColorPreset",
           "comment": "Red + Green + White",
-          "colors": ["#ffff80"]
+          "colors": [
+            "#ffff80"
+          ]
         },
         {
-          "dmxRange": [211, 225],
+          "dmxRange": [
+            211,
+            225
+          ],
           "type": "ColorPreset",
           "comment": "Red + Blue + White",
-          "colors": ["#ff80ff"]
+          "colors": [
+            "#ff80ff"
+          ]
         },
         {
-          "dmxRange": [226, 240],
+          "dmxRange": [
+            226,
+            240
+          ],
           "type": "ColorPreset",
           "comment": "Green + Blue + White",
-          "colors": ["#80ffff"]
+          "colors": [
+            "#80ffff"
+          ]
         },
         {
-          "dmxRange": [241, 255],
+          "dmxRange": [
+            241,
+            255
+          ],
           "type": "ColorPreset",
           "comment": "Red + Green + Blue + White",
-          "colors": ["#ffffff"]
+          "colors": [
+            "#ffffff"
+          ]
         }
       ]
     },
@@ -333,7 +492,9 @@
       }
     },
     "Master Pan": {
-      "fineChannelAliases": ["Master Pan fine"],
+      "fineChannelAliases": [
+        "Master Pan fine"
+      ],
       "defaultValue": "50%",
       "capability": {
         "type": "Pan",
@@ -342,7 +503,9 @@
       }
     },
     "Master Tilt": {
-      "fineChannelAliases": ["Master Tilt fine"],
+      "fineChannelAliases": [
+        "Master Tilt fine"
+      ],
       "defaultValue": "50%",
       "capability": {
         "type": "Tilt",
@@ -384,12 +547,18 @@
     "Head Speed 1": {
       "capabilities": [
         {
-          "dmxRange": [0, 10],
+          "dmxRange": [
+            0,
+            10
+          ],
           "type": "PanTiltSpeed",
           "speed": "slow"
         },
         {
-          "dmxRange": [11, 255],
+          "dmxRange": [
+            11,
+            255
+          ],
           "type": "PanTiltSpeed",
           "speedStart": "slow",
           "speedEnd": "fast"
@@ -399,20 +568,32 @@
     "Sound mode / Reset": {
       "capabilities": [
         {
-          "dmxRange": [0, 199],
+          "dmxRange": [
+            0,
+            199
+          ],
           "type": "NoFunction"
         },
         {
-          "dmxRange": [200, 209],
+          "dmxRange": [
+            200,
+            209
+          ],
           "type": "Maintenance",
           "comment": "Reset"
         },
         {
-          "dmxRange": [210, 240],
+          "dmxRange": [
+            210,
+            240
+          ],
           "type": "NoFunction"
         },
         {
-          "dmxRange": [241, 255],
+          "dmxRange": [
+            241,
+            255
+          ],
           "type": "Effect",
           "effectName": "Sound Control",
           "soundControlled": true
@@ -422,7 +603,9 @@
   },
   "templateChannels": {
     "Pan $pixelKey": {
-      "fineChannelAliases": ["Pan $pixelKey fine"],
+      "fineChannelAliases": [
+        "Pan $pixelKey fine"
+      ],
       "defaultValue": "50%",
       "capability": {
         "type": "Pan",
@@ -431,7 +614,9 @@
       }
     },
     "Tilt $pixelKey": {
-      "fineChannelAliases": ["Tilt $pixelKey fine"],
+      "fineChannelAliases": [
+        "Tilt $pixelKey fine"
+      ],
       "defaultValue": "50%",
       "capability": {
         "type": "Tilt",
@@ -455,12 +640,18 @@
     "Head Speed $pixelKey": {
       "capabilities": [
         {
-          "dmxRange": [0, 10],
+          "dmxRange": [
+            0,
+            10
+          ],
           "type": "Maintenance",
           "comment": "Use Head Speed 1"
         },
         {
-          "dmxRange": [11, 255],
+          "dmxRange": [
+            11,
+            255
+          ],
           "type": "PanTiltSpeed",
           "speedStart": "fast",
           "speedEnd": "slow"
@@ -472,11 +663,17 @@
       "highlightValue": 200,
       "capabilities": [
         {
-          "dmxRange": [0, 10],
+          "dmxRange": [
+            0,
+            10
+          ],
           "type": "NoFunction"
         },
         {
-          "dmxRange": [11, 255],
+          "dmxRange": [
+            11,
+            255
+          ],
           "type": "ShutterStrobe",
           "shutterEffect": "Strobe",
           "speedStart": "slow",
@@ -487,99 +684,177 @@
     "Color $pixelKey": {
       "capabilities": [
         {
-          "dmxRange": [0, 30],
+          "dmxRange": [
+            0,
+            30
+          ],
           "type": "NoFunction",
           "comment": "Use master color dimmers"
         },
         {
-          "dmxRange": [31, 45],
+          "dmxRange": [
+            31,
+            45
+          ],
           "type": "ColorPreset",
           "comment": "Red",
-          "colors": ["#ff0000"]
+          "colors": [
+            "#ff0000"
+          ]
         },
         {
-          "dmxRange": [46, 60],
+          "dmxRange": [
+            46,
+            60
+          ],
           "type": "ColorPreset",
           "comment": "Green",
-          "colors": ["#00ff00"]
+          "colors": [
+            "#00ff00"
+          ]
         },
         {
-          "dmxRange": [61, 75],
+          "dmxRange": [
+            61,
+            75
+          ],
           "type": "ColorPreset",
           "comment": "Blue",
-          "colors": ["#0000ff"]
+          "colors": [
+            "#0000ff"
+          ]
         },
         {
-          "dmxRange": [76, 90],
+          "dmxRange": [
+            76,
+            90
+          ],
           "type": "ColorPreset",
           "comment": "White",
-          "colors": ["#ffffff"]
+          "colors": [
+            "#ffffff"
+          ]
         },
         {
-          "dmxRange": [91, 105],
+          "dmxRange": [
+            91,
+            105
+          ],
           "type": "ColorPreset",
           "comment": "Red + Green",
-          "colors": ["#ffff00"]
+          "colors": [
+            "#ffff00"
+          ]
         },
         {
-          "dmxRange": [106, 120],
+          "dmxRange": [
+            106,
+            120
+          ],
           "type": "ColorPreset",
           "comment": "Red + Blue",
-          "colors": ["#ff00ff"]
+          "colors": [
+            "#ff00ff"
+          ]
         },
         {
-          "dmxRange": [121, 135],
+          "dmxRange": [
+            121,
+            135
+          ],
           "type": "ColorPreset",
           "comment": "Red + White",
-          "colors": ["#ff8080"]
+          "colors": [
+            "#ff8080"
+          ]
         },
         {
-          "dmxRange": [136, 150],
+          "dmxRange": [
+            136,
+            150
+          ],
           "type": "ColorPreset",
           "comment": "Green + Blue",
-          "colors": ["#00ffff"]
+          "colors": [
+            "#00ffff"
+          ]
         },
         {
-          "dmxRange": [151, 165],
+          "dmxRange": [
+            151,
+            165
+          ],
           "type": "ColorPreset",
           "comment": "Green + White",
-          "colors": ["#80ff80"]
+          "colors": [
+            "#80ff80"
+          ]
         },
         {
-          "dmxRange": [166, 180],
+          "dmxRange": [
+            166,
+            180
+          ],
           "type": "ColorPreset",
           "comment": "Blue + White",
-          "colors": ["#8080ff"]
+          "colors": [
+            "#8080ff"
+          ]
         },
         {
-          "dmxRange": [181, 195],
+          "dmxRange": [
+            181,
+            195
+          ],
           "type": "ColorPreset",
           "comment": "Red + Green + Blue",
-          "colors": ["#ffffff"]
+          "colors": [
+            "#ffffff"
+          ]
         },
         {
-          "dmxRange": [196, 210],
+          "dmxRange": [
+            196,
+            210
+          ],
           "type": "ColorPreset",
           "comment": "Red + Green + White",
-          "colors": ["#ffff80"]
+          "colors": [
+            "#ffff80"
+          ]
         },
         {
-          "dmxRange": [211, 225],
+          "dmxRange": [
+            211,
+            225
+          ],
           "type": "ColorPreset",
           "comment": "Red + Blue + White",
-          "colors": ["#ff80ff"]
+          "colors": [
+            "#ff80ff"
+          ]
         },
         {
-          "dmxRange": [226, 240],
+          "dmxRange": [
+            226,
+            240
+          ],
           "type": "ColorPreset",
           "comment": "Green + Blue + White",
-          "colors": ["#80ffff"]
+          "colors": [
+            "#80ffff"
+          ]
         },
         {
-          "dmxRange": [241, 255],
+          "dmxRange": [
+            241,
+            255
+          ],
           "type": "ColorPreset",
           "comment": "Red + Green + Blue + White",
-          "colors": ["#ffffff"]
+          "colors": [
+            "#ffffff"
+          ]
         }
       ]
     },
@@ -611,14 +886,20 @@
       "defaultValue": 0,
       "capabilities": [
         {
-          "dmxRange": [0, 7],
+          "dmxRange": [
+            0,
+            7
+          ],
           "type": "NoFunction",
           "switchChannels": {
             "Show mode speed / Sound sensitivity $pixelKey": "Show mode speed $pixelKey"
           }
         },
         {
-          "dmxRange": [8, 30],
+          "dmxRange": [
+            8,
+            30
+          ],
           "type": "Effect",
           "effectName": "Show mode 1",
           "switchChannels": {
@@ -626,7 +907,10 @@
           }
         },
         {
-          "dmxRange": [31, 53],
+          "dmxRange": [
+            31,
+            53
+          ],
           "type": "Effect",
           "effectName": "Show mode 2",
           "switchChannels": {
@@ -634,7 +918,10 @@
           }
         },
         {
-          "dmxRange": [54, 76],
+          "dmxRange": [
+            54,
+            76
+          ],
           "type": "Effect",
           "effectName": "Show mode 3",
           "switchChannels": {
@@ -642,7 +929,10 @@
           }
         },
         {
-          "dmxRange": [77, 99],
+          "dmxRange": [
+            77,
+            99
+          ],
           "type": "Effect",
           "effectName": "Show mode 4",
           "switchChannels": {
@@ -650,7 +940,10 @@
           }
         },
         {
-          "dmxRange": [100, 122],
+          "dmxRange": [
+            100,
+            122
+          ],
           "type": "Effect",
           "effectName": "Sound control",
           "soundControlled": true,
@@ -659,14 +952,20 @@
           }
         },
         {
-          "dmxRange": [123, 199],
+          "dmxRange": [
+            123,
+            199
+          ],
           "type": "NoFunction",
           "switchChannels": {
             "Show mode speed / Sound sensitivity $pixelKey": "Show mode speed $pixelKey"
           }
         },
         {
-          "dmxRange": [200, 224],
+          "dmxRange": [
+            200,
+            224
+          ],
           "type": "Maintenance",
           "comment": "reset",
           "switchChannels": {
@@ -674,7 +973,10 @@
           }
         },
         {
-          "dmxRange": [225, 255],
+          "dmxRange": [
+            225,
+            255
+          ],
           "type": "NoFunction",
           "switchChannels": {
             "Show mode speed / Sound sensitivity $pixelKey": "Show mode speed $pixelKey"

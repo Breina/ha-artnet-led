@@ -16,6 +16,7 @@ from custom_components.dmx.fixture.entity import Entity
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.fixture.matrix import matrix_from_pixel_count, matrix_from_pixel_names
+from custom_components.dmx.fixture.mode import MatrixChannelInsertBlock, RepeatFor, ChannelOrder, Mode
 from custom_components.dmx.fixture.wheel import WheelSlot, Wheel
 
 underscore_pattern = re.compile(r"(?<!^)(?=[A-Z])")
@@ -39,7 +40,18 @@ def parse(json_file: str) -> Fixture:
     if wheels_json:
         parse_wheels(fixture_model, wheels_json)
 
-    parse_channels(data, fixture_model)
+    available_channels_json = data.get("availableChannels")
+    available_template_channels_json = data.get("templateChannels")
+
+    assert available_channels_json or available_template_channels_json
+
+    if available_channels_json:
+        parse_channels(available_channels_json, fixture_model.define_capability)
+
+    if available_template_channels_json:
+        parse_channels(available_template_channels_json, fixture_model.define_template_channel)
+
+    parse_modes(fixture_model, data['modes'])
 
     return fixture_model
 
@@ -115,27 +127,28 @@ def parse_wheels(fixture_model: Fixture, wheels_json: dict):
         fixture_model.define_wheel(Wheel(wheel_name, slots, direction))
 
 
-def parse_channels(data, fixture_model):
-    for name, channel in data.get("availableChannels", {}).items():
+def parse_channels(available_channels_json: dict,
+                   add_channel: typing.Callable[[str, Capability | list[Capability]], None]):
+    for name, channel in available_channels_json.items():
         capability_json = channel.get("capability")
         if capability_json:
-            channel = parse_capability(fixture_model, name, capability_json)
+            channel = parse_capability(name, capability_json)
             if channel:
-                fixture_model.define_channel(name, channel)
+                add_channel(name, channel)
             continue
 
         capabilities_json = channel.get("capabilities")
         if capabilities_json:
             channel_buffer = []
             for capability_json in capabilities_json:
-                channel = parse_capability(fixture_model, name, capability_json)
+                channel = parse_capability(name, capability_json)
                 if channel and channel.menuClick != MenuClick.hidden:
                     channel_buffer.append(channel)
-            fixture_model.define_channel(name, channel_buffer)
+            add_channel(name, channel_buffer)
             continue
 
 
-def parse_capability(fixture_model: Fixture, name: str, capability_json: dict) -> Capability | None:
+def parse_capability(name: str, capability_json: dict) -> Capability | None:
     capability_type = capability_json["type"]
     if capability_type == "NoFunction":
         return None
@@ -158,7 +171,7 @@ def parse_capability(fixture_model: Fixture, name: str, capability_json: dict) -
 
     for key, value_json in capability_json.items():
         if key == "helpWanted":
-            log.warning(f"The capability '{name}' of '{fixture_model.name}' could use some help: {value_json}")
+            log.warning(f"The capability '{name}' could use some help: {value_json}")
             continue
 
         if key in ["type"]:
@@ -267,6 +280,38 @@ def extract_single_value(value_json: str, type_annotation: type):
     raise FixtureConfigurationError(f"I don't know what kind of type this is: {type_annotation}")
 
 
+def parse_modes(fixture_model: Fixture, modes_yaml: dict):
+    for mode_yaml in modes_yaml:
+        name = mode_yaml['name']
+        shortName = mode_yaml.get('shortName')
+        channels = mode_yaml['channels']
+
+        channels = list(map(parse_mode_channel, channels))
+
+        mode = Mode(name, channels, shortName)
+        fixture_model.define_mode(mode)
+
+
+def parse_mode_channel(mode_channel: None | str | dict) -> None | str | MatrixChannelInsertBlock:
+    if mode_channel is None or isinstance(mode_channel, str):
+        return mode_channel
+
+    insert = mode_channel['insert']
+    if insert != 'matrixChannels':
+        raise FixtureConfigurationError(f"Unknown insert mode: {insert}")
+
+    repeatForJson = mode_channel['repeatFor']
+    if isinstance(repeatForJson, str):
+        repeatFor = RepeatFor[repeatForJson]
+    else:
+        # It's a list of strings otherwise
+        repeatFor = repeatForJson
+
+    channelOrder = ChannelOrder[mode_channel['channelOrder']]
+    templateChannels = mode_channel['templateChannels']
+    return MatrixChannelInsertBlock(repeatFor, channelOrder, templateChannels)
+
+
 dir = "F:/Projects/Home/open-fixture-library/fixtures/"
 for brand in os.listdir(dir):
     if brand.endswith("json"):
@@ -282,17 +327,14 @@ for brand in os.listdir(dir):
                     continue
 
             fixture = parse(dir + brand + "/" + file)
-            if fixture.wheels:
-                print(f"{brand}/{file}")
-                for name, wheel_object in fixture.wheels.items():
-                    if "None" in f"  {wheel_object}":
-                        print("HALF")
-                    print(f"  {wheel_object}")
+            print(fixture.name)
+            for mode in fixture.modes.values():
+                print(f"  {mode}")
 
         except Exception as e:
             print(f"BIG ERROR!!! {brand}/{file}: {e}")
 
 # capabilities = parse("F:/Projects/Home/open-fixture-library/fixtures/american-dj/auto-spot-150.json")
-# capabilities = parse("../../../staging/fixtures/dj_scan_led.json")
+# capabilities = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
 # capabilities = parse("../../../staging/fixtures/l10-c.json")
 # print(capabilities)

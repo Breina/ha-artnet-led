@@ -17,7 +17,7 @@ class Pixel:
         if self.name:
             return self.name
         else:
-            return f"({self.x},{self.y},{self.z})"
+            return f"({self.x + 1},{self.y + 1},{self.z + 1})"
 
     def __repr__(self):
         return self.__str__()
@@ -59,10 +59,13 @@ class Matrix:
 
         self.pixelGroups = {}
 
-    def __getitem__(self, __name):
-        if isinstance(__name, str):
-            return self.pixelsByName[__name]
-        return self.pixels[__name]
+    def __getitem__(self, name):
+        if isinstance(name, str):
+            return self.pixelsByName[name]
+        return self.pixels[name]
+
+    def dimensions(self) -> (int, int, int):
+        return self.xSize, self.ySize, self.zSize
 
     def group(self, name: str) -> PixelGroup:
         return self.pixelGroups[name]
