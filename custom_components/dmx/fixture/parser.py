@@ -312,29 +312,29 @@ def parse_mode_channel(mode_channel: None | str | dict) -> None | str | MatrixCh
     return MatrixChannelInsertBlock(repeatFor, channelOrder, templateChannels)
 
 
-dir = "F:/Projects/Home/open-fixture-library/fixtures/"
-for brand in os.listdir(dir):
-    if brand.endswith("json"):
-        continue
-    # print(brand)
-    for file in os.listdir(dir + brand):
-        # print(f"  {file}")
-        try:
-            with open(dir + brand + "/" + file, encoding='utf-8') as json_data:
-                data = json.load(json_data)
-
-                if data.get("redirectTo"):
-                    continue
-
-            fixture = parse(dir + brand + "/" + file)
-            print(fixture.name)
-            for mode in fixture.modes.values():
-                print(f"  {mode}")
-
-        except Exception as e:
-            print(f"BIG ERROR!!! {brand}/{file}: {e}")
+# dir = "F:/Projects/Home/open-fixture-library/fixtures/"
+# for brand in os.listdir(dir):
+#     if brand.endswith("json"):
+#         continue
+#     # print(brand)
+#     for file in os.listdir(dir + brand):
+#         # print(f"  {file}")
+#         try:
+#             with open(dir + brand + "/" + file, encoding='utf-8') as json_data:
+#                 data = json.load(json_data)
+#
+#                 if data.get("redirectTo"):
+#                     continue
+#
+#             fixture = parse(dir + brand + "/" + file)
+#             print(fixture.name)
+#             for mode in fixture.modes.values():
+#                 print(f"  {mode}")
+#
+#         except Exception as e:
+#             print(f"BIG ERROR!!! {brand}/{file}: {e}")
 
 # capabilities = parse("F:/Projects/Home/open-fixture-library/fixtures/american-dj/auto-spot-150.json")
-# capabilities = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
+capabilities = parse("../../../staging/fixtures/ultrapanelpro-dual-color-30.json")
 # capabilities = parse("../../../staging/fixtures/l10-c.json")
-# print(capabilities)
+print(capabilities)

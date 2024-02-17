@@ -11,7 +11,8 @@ class ChannelOrder(Enum):
     perChannel = auto()
 
 
-def matrix_pixel_order(axis0: int, axis1: int, axis2: int) -> Callable[[Matrix], (int, int, int)]:
+def matrix_pixel_order(axis0: int, axis1: int, axis2: int):
+# def matrix_pixel_order(axis0: int, axis1: int, axis2: int) -> Callable[[Matrix], (int, int, int)]:
     return lambda matrix: [matrix[x][y][z] for x, y, z in
                            sorted(product(matrix.dimensions()), key=lambda k: (k[axis2], k[axis1], k[axis0]))
                            ]
