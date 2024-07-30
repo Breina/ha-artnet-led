@@ -6,6 +6,12 @@ from custom_components.dmx.fixture.entity import RotationAngle, RotationSpeed, B
     SwingAngle, Parameter, Percent, VerticalAngle, HorizontalAngle, Distance, IrisPercent, Insertion, Entity
 
 
+class DmxValueResolution(Enum):
+    _8bit = 1
+    _16bit = 2
+    _24bit = 3
+
+
 class MenuClick(Enum):
     start = auto()
     center = auto()
@@ -64,12 +70,6 @@ class FogTypeOutput(Enum):
     Haze = auto()
 
 
-class DmxValueResolution(Enum):
-    _8bit = 1
-    _16bit = 2
-    _24bit = 3
-
-
 def _make_interpolater(from_range_min: float, from_range_max: float,
                        to_range_min: float, to_range_max: float) -> Callable[[float], float]:
     if from_range_min == from_range_max:
@@ -114,22 +114,17 @@ class DynamicEntity(DynamicMapping):
 class Capability:
 
     def __init__(self,
+                 dmx_value_resolution: DmxValueResolution,
                  comment: str | None = None,
                  dmx_range: [int] = None,
                  menu_click: MenuClick | None = None,
-                 fine_channel_aliases: List[str] = None,
-                 default_value: int = 0,
-                 dmx_value_resolution: DmxValueResolution | None = None,
                  switch_channels: dict[str, str] | None = None
                  ):
         super().__init__()
 
-        self.fineChannelAliases = fine_channel_aliases or []
-        self.defaultValue = default_value
-        self.dmxValueResolution = dmx_value_resolution or DmxValueResolution(len(self.fineChannelAliases) + 1)
-
         if dmx_range is None:
-            dmx_range = [0, pow(255, self.dmxValueResolution.value)]
+            dmx_range = [0, pow(255, dmx_value_resolution.value)]
+
         assert len(dmx_range) == 2
 
         self.comment = comment

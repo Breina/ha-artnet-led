@@ -1,7 +1,6 @@
 import inspect
 import json
 import logging
-import os
 import re
 import typing
 from enum import EnumType
@@ -12,6 +11,7 @@ import capability
 import wheel
 from custom_components.dmx.fixture import OFL_URL
 from custom_components.dmx.fixture.capability import Capability, MenuClick
+from custom_components.dmx.fixture.channel import Channel, DmxValueResolution
 from custom_components.dmx.fixture.entity import Entity
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
 from custom_components.dmx.fixture.fixture import Fixture
@@ -46,7 +46,7 @@ def parse(json_file: str) -> Fixture:
     assert available_channels_json or available_template_channels_json
 
     if available_channels_json:
-        parse_channels(available_channels_json, fixture_model.define_capability)
+        parse_channels(available_channels_json, fixture_model.define_channel)
 
     if available_template_channels_json:
         parse_channels(available_template_channels_json, fixture_model.define_template_channel)
@@ -127,28 +127,44 @@ def parse_wheels(fixture_model: Fixture, wheels_json: dict):
         fixture_model.define_wheel(Wheel(wheel_name, slots, direction))
 
 
-def parse_channels(available_channels_json: dict,
-                   add_channel: typing.Callable[[str, Capability | list[Capability]], None]):
-    for name, channel in available_channels_json.items():
-        capability_json = channel.get("capability")
+def parse_channels(available_channels_json: dict, add_channel: typing.Callable[[Channel], None]):
+    for name, channel_json in available_channels_json.items():
+
+        dmx_value_resolution_str = channel_json.get("dmxValueResolution")
+        if dmx_value_resolution_str:
+            dmx_value_resolution = [dvr for dvr in DmxValueResolution if dvr.name.endswith(dmx_value_resolution_str)][0]
+        else:
+            dmx_value_resolution = DmxValueResolution._8bit
+
+        channel = Channel(
+            name,
+            channel_json.get("fineChannelAliases", []),
+            dmx_value_resolution,
+            channel_json.get("defaultValue"),
+            channel_json.get("highlightValue"),
+            channel_json.get("constant")
+        )
+        add_channel(channel)
+
+        capability_json = channel_json.get("capability")
         if capability_json:
-            channel = parse_capability(name, capability_json)
-            if channel:
-                add_channel(name, channel)
+            channel_json = parse_capability(channel, capability_json)
+            if channel_json:
+                channel.define_capability(channel_json)
             continue
 
-        capabilities_json = channel.get("capabilities")
+        capabilities_json = channel_json.get("capabilities")
         if capabilities_json:
             channel_buffer = []
             for capability_json in capabilities_json:
-                channel = parse_capability(name, capability_json)
-                if channel and channel.menuClick != MenuClick.hidden:
-                    channel_buffer.append(channel)
-            add_channel(name, channel_buffer)
+                channel_json = parse_capability(channel, capability_json)
+                if channel_json and channel_json.menuClick != MenuClick.hidden:
+                    channel_buffer.append(channel_json)
+            channel.define_capability(channel_buffer)
             continue
 
 
-def parse_capability(name: str, capability_json: dict) -> Capability | None:
+def parse_capability(channel: Channel, capability_json: dict) -> Capability | None:
     capability_type = capability_json["type"]
     if capability_type == "NoFunction":
         return None
@@ -162,16 +178,17 @@ def parse_capability(name: str, capability_json: dict) -> Capability | None:
 
     args = [None] * len(param_names)
     kwargs = {}
+    kwargs["dmx_value_resolution"] = channel.dmxValueResolution
 
     if "name" in param_names:
         # noinspection PyTypeChecker
-        args[list.index(param_names, "name")] = name
+        args[list.index(param_names, "name")] = channel.name
 
     startEndRegistry = {}
 
     for key, value_json in capability_json.items():
         if key == "helpWanted":
-            log.warning(f"The capability '{name}' could use some help: {value_json}")
+            log.warning(f"The channel '{channel.name}' could use some help: {value_json}")
             continue
 
         if key in ["type"]:
@@ -210,7 +227,7 @@ def parse_capability(name: str, capability_json: dict) -> Capability | None:
             kwargs[arg_name] = value
 
         else:
-            raise FixtureConfigurationError(f"For capability {name}, "
+            raise FixtureConfigurationError(f"For channel {channel.name}, "
                                             f"I don't know what kind of argument this is: {arg_name}")
 
     return capability_obj(*args, **kwargs)
@@ -335,6 +352,10 @@ def parse_mode_channel(mode_channel: None | str | dict) -> None | str | MatrixCh
 #             print(f"BIG ERROR!!! {brand}/{file}: {e}")
 
 # capabilities = parse("F:/Projects/Home/open-fixture-library/fixtures/american-dj/auto-spot-150.json")
-capabilities = parse("../../../staging/fixtures/ultrapanelpro-dual-color-30.json")
+fixture = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
+# fixture = parse("../../../staging/fixtures/ultrapanelpro-dual-color-30.json")
 # capabilities = parse("../../../staging/fixtures/l10-c.json")
-print(capabilities)
+print(fixture)
+
+print(fixture.select_channels("26-channel"))
+# print(fixture.select_channels("42-channel"))
