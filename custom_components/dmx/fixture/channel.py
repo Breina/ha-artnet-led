@@ -40,10 +40,13 @@ class Channel:
 
         self.constant = constant
 
-        self.capabilities: [Capabilities] = []
+        self.capabilities: Capabilities = []
 
     def define_capability(self, capability: Capabilities):
-        self.capabilities.append(capability)
+        if isinstance(capability, list):
+            self.capabilities = capability
+        else:
+            self.capabilities = [capability]
 
     def __str__(self):
         return f"{self.name}: {self.capabilities}"
@@ -60,3 +63,12 @@ class ChannelOffset:
 
     def __repr__(self):
         return f"{self.channel.__repr__()}#{self.byte_offset}"
+
+
+class SwitchingChannel:
+    def __init__(self, name: str, channel_offsets: list[ChannelOffset]):
+        self.name = name
+        self.channels = {channel_offset.channel.name: channel_offset for channel_offset in channel_offsets}
+
+    def __repr__(self):
+        return f"{self.name}{self.channels}"

@@ -1,9 +1,8 @@
 import functools
 from enum import Enum, auto
 from itertools import product
-from typing import Callable
 
-from custom_components.dmx.fixture.matrix import Matrix
+from custom_components.dmx.fixture.matrix import matrix_from_pixel_count, matrix_from_pixel_names
 
 
 class ChannelOrder(Enum):
@@ -12,22 +11,21 @@ class ChannelOrder(Enum):
 
 
 def matrix_pixel_order(axis0: int, axis1: int, axis2: int):
-# def matrix_pixel_order(axis0: int, axis1: int, axis2: int) -> Callable[[Matrix], (int, int, int)]:
-    return lambda matrix: [matrix[x][y][z] for x, y, z in
-                           sorted(product(matrix.dimensions()), key=lambda k: (k[axis2], k[axis1], k[axis0]))
+    return lambda matrix: [matrix[x][y][z] for z, y, x in
+                           sorted(product(*map(range, matrix.dimensions())),
+                                  key=lambda k: (k[axis2], k[axis1], k[axis0])
+                                  )
                            ]
 
 
 class RepeatFor(Enum):
-    eachPixelABC = functools.partial(
-        lambda matrix: [matrix[name] for name in sorted(matrix.pixelsByName.keys())]
-    )
-    eachPixelXYZ = matrix_pixel_order(0, 1, 2)
-    eachPixelXZY = matrix_pixel_order(0, 2, 1)
-    eachPixelYXZ = matrix_pixel_order(1, 0, 2)
-    eachPixelYZX = matrix_pixel_order(1, 2, 0)
-    eachPixelZXY = matrix_pixel_order(2, 0, 1)
-    eachPixelZYX = matrix_pixel_order(2, 1, 0)
+    eachPixelABC = functools.partial(lambda matrix: [matrix[name] for name in sorted(matrix.pixelsByName.keys())])
+    eachPixelXYZ = functools.partial(matrix_pixel_order(0, 1, 2))
+    eachPixelXZY = functools.partial(matrix_pixel_order(0, 2, 1))
+    eachPixelYXZ = functools.partial(matrix_pixel_order(1, 0, 2))
+    eachPixelYZX = functools.partial(matrix_pixel_order(1, 2, 0))
+    eachPixelZXY = functools.partial(matrix_pixel_order(2, 0, 1))
+    eachPixelZYX = functools.partial(matrix_pixel_order(2, 1, 0))
     eachPixelGroup = functools.partial(
         lambda matrix: [pixel for name in sorted(matrix.pixelGroups.keys()) for pixel in matrix.pixelGroups[name]]
     )

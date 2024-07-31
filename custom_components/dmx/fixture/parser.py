@@ -1,6 +1,7 @@
 import inspect
 import json
 import logging
+import os
 import re
 import typing
 from enum import EnumType
@@ -50,6 +51,8 @@ def parse(json_file: str) -> Fixture:
 
     if available_template_channels_json:
         parse_channels(available_template_channels_json, fixture_model.define_template_channel)
+
+    fixture_model.resolve_channels()
 
     parse_modes(fixture_model, data['modes'])
 
@@ -128,8 +131,8 @@ def parse_wheels(fixture_model: Fixture, wheels_json: dict):
 
 
 def parse_channels(available_channels_json: dict, add_channel: typing.Callable[[Channel], None]):
-    for name, channel_json in available_channels_json.items():
 
+    for name, channel_json in available_channels_json.items():
         dmx_value_resolution_str = channel_json.get("dmxValueResolution")
         if dmx_value_resolution_str:
             dmx_value_resolution = [dvr for dvr in DmxValueResolution if dvr.name.endswith(dmx_value_resolution_str)][0]
@@ -144,13 +147,13 @@ def parse_channels(available_channels_json: dict, add_channel: typing.Callable[[
             channel_json.get("highlightValue"),
             channel_json.get("constant")
         )
-        add_channel(channel)
 
         capability_json = channel_json.get("capability")
         if capability_json:
             channel_json = parse_capability(channel, capability_json)
             if channel_json:
                 channel.define_capability(channel_json)
+            add_channel(channel)
             continue
 
         capabilities_json = channel_json.get("capabilities")
@@ -161,6 +164,7 @@ def parse_channels(available_channels_json: dict, add_channel: typing.Callable[[
                 if channel_json and channel_json.menuClick != MenuClick.hidden:
                     channel_buffer.append(channel_json)
             channel.define_capability(channel_buffer)
+            add_channel(channel)
             continue
 
 
@@ -347,15 +351,20 @@ def parse_mode_channel(mode_channel: None | str | dict) -> None | str | MatrixCh
 #             print(fixture.name)
 #             for mode in fixture.modes.values():
 #                 print(f"  {mode}")
+#                 print(f"    {fixture.select_channels(mode.name)}")
 #
 #         except Exception as e:
 #             print(f"BIG ERROR!!! {brand}/{file}: {e}")
+#             print()
 
-# capabilities = parse("F:/Projects/Home/open-fixture-library/fixtures/american-dj/auto-spot-150.json")
-fixture = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
+# fixture = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
 # fixture = parse("../../../staging/fixtures/ultrapanelpro-dual-color-30.json")
 # capabilities = parse("../../../staging/fixtures/l10-c.json")
+fixture = parse("F:/Projects/Home/open-fixture-library/fixtures/american-dj/crazy-pocket-8.json")
 print(fixture)
+for mode in fixture.modes.values():
+    print(f"  {mode}")
+    print(f"    {fixture.select_channels(mode.name)}")
 
-print(fixture.select_channels("26-channel"))
+# print(fixture.select_channels("26-channel"))
 # print(fixture.select_channels("42-channel"))
