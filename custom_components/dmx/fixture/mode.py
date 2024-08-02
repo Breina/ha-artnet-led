@@ -2,8 +2,6 @@ import functools
 from enum import Enum, auto
 from itertools import product
 
-from custom_components.dmx.fixture.matrix import matrix_from_pixel_count, matrix_from_pixel_names
-
 
 class ChannelOrder(Enum):
     perPixel = auto()
@@ -27,7 +25,10 @@ class RepeatFor(Enum):
     eachPixelZXY = functools.partial(matrix_pixel_order(2, 0, 1))
     eachPixelZYX = functools.partial(matrix_pixel_order(2, 1, 0))
     eachPixelGroup = functools.partial(
-        lambda matrix: [pixel for name in sorted(matrix.pixelGroups.keys()) for pixel in matrix.pixelGroups[name]]
+        lambda matrix: [pixel
+                        for name in sorted(matrix.pixelGroups.keys())
+                        for pixel in matrix.pixelGroups[name].pixels
+                        ]
     )
 
 

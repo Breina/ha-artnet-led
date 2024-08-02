@@ -333,38 +333,38 @@ def parse_mode_channel(mode_channel: None | str | dict) -> None | str | MatrixCh
     return MatrixChannelInsertBlock(repeatFor, channelOrder, templateChannels)
 
 
-# dir = "F:/Projects/Home/open-fixture-library/fixtures/"
-# for brand in os.listdir(dir):
-#     if brand.endswith("json"):
-#         continue
-#     # print(brand)
-#     for file in os.listdir(dir + brand):
-#         # print(f"  {file}")
-#         try:
-#             with open(dir + brand + "/" + file, encoding='utf-8') as json_data:
-#                 data = json.load(json_data)
-#
-#                 if data.get("redirectTo"):
-#                     continue
-#
-#             fixture = parse(dir + brand + "/" + file)
-#             print(fixture.name)
-#             for mode in fixture.modes.values():
-#                 print(f"  {mode}")
-#                 print(f"    {fixture.select_channels(mode.name)}")
-#
-#         except Exception as e:
-#             print(f"BIG ERROR!!! {brand}/{file}: {e}")
-#             print()
+dir = "F:/Projects/Home/open-fixture-library/fixtures/"
+for brand in os.listdir(dir):
+    if brand.endswith("json"):
+        continue
+    # print(brand)
+    for file in os.listdir(dir + brand):
+        # print(f"  {file}")
+        try:
+            with open(dir + brand + "/" + file, encoding='utf-8') as json_data:
+                data = json.load(json_data)
+
+                if data.get("redirectTo"):
+                    continue
+
+            fixture = parse(dir + brand + "/" + file)
+            print(fixture.name)
+            for mode in fixture.modes.values():
+                print(f"  {mode}")
+                print(f"    {fixture.select_channels(mode.name)}")
+
+        except Exception as e:
+            print(f"BIG ERROR!!! {brand}/{file}: {e}")
+            print()
 
 # fixture = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
 # fixture = parse("../../../staging/fixtures/ultrapanelpro-dual-color-30.json")
 # capabilities = parse("../../../staging/fixtures/l10-c.json")
-fixture = parse("F:/Projects/Home/open-fixture-library/fixtures/american-dj/crazy-pocket-8.json")
-print(fixture)
-for mode in fixture.modes.values():
-    print(f"  {mode}")
-    print(f"    {fixture.select_channels(mode.name)}")
+# fixture = parse("F:/Projects/Home/open-fixture-library/fixtures/chauvet-dj/megastrobe-fx12.json")
+# print(fixture)
+# for mode in fixture.modes.values():
+#     print(f"  {mode}")
+#     print(f"    {fixture.select_channels(mode.name)}")
 
 # print(fixture.select_channels("26-channel"))
 # print(fixture.select_channels("42-channel"))
