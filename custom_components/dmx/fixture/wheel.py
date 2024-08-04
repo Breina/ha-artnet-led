@@ -1,29 +1,53 @@
+"""
+The wheel module contains all wheel related model classes.
+https://github.com/OpenLightingProject/open-fixture-library/blob/master/docs/fixture-format.md#wheels
+
+Most arguments, instance attributes and class names are directly mapped to
+values of the fixture format. Therefore, we will excuse the python linter.
+"""
+# pylint: disable=too-few-public-methods
+
+
 from custom_components.dmx.fixture import entity
 from custom_components.dmx.fixture.entity import IrisPercent, Percent
 
 
 class WheelSlot:
+    """
+    A wheel slot superclass, just to group all wheel slots together under one
+    umbrella.
+    """
+
     def __init__(self):
         pass
 
 
 class Open(WheelSlot):
-    def __init__(self):
-        super().__init__()
+    """
+    An Open wheel slot.
+    Class name matches the fixture format exactly.
+    """
 
     def __repr__(self):
         return "Open"
 
 
 class Closed(WheelSlot):
-    def __init__(self):
-        super().__init__()
+    """
+    An Closed wheel slot.
+    Class name matches the fixture format exactly.
+    """
 
     def __repr__(self):
         return "Closed"
 
 
 class Color(WheelSlot):
+    """
+    A Color wheel slot.
+    Class name and instance arguments match the fixture format exactly.
+    """
+
     def __init__(self, name: str | None = None,
                  colors: list[str] | None = None,
                  color_temperature: entity.ColorTemperature | None = None):
@@ -36,15 +60,19 @@ class Color(WheelSlot):
     def __repr__(self):
         if self.name:
             return self.name
-        elif self.color_temperature:
+        if self.color_temperature:
             return str(self.color_temperature)
-        elif self.color:
+        if self.color:
             return str(self.color)
-        else:
-            return "Color"
+        return "Color"
 
 
 class Gobo(WheelSlot):
+    """
+    A Gobo wheel slot.
+    Class name and instance arguments match the fixture format exactly.
+    """
+
     def __init__(self, name: str | None, resource: str | None):
         super().__init__()
         self.name = name
@@ -55,6 +83,11 @@ class Gobo(WheelSlot):
 
 
 class Prism(WheelSlot):
+    """
+    A Prism wheel slot.
+    Class name and instance arguments match the fixture format exactly.
+    """
+
     def __init__(self, name: str | None, facets: int | None = None):
         super().__init__()
         assert facets >= 2
@@ -66,6 +99,11 @@ class Prism(WheelSlot):
 
 
 class Iris(WheelSlot):
+    """
+    A Iris wheel slot.
+    Class name and instance arguments match the fixture format exactly.
+    """
+
     def __init__(self, open_percent: IrisPercent | None = None):
         super().__init__()
         self.iris_percent = open_percent
@@ -73,11 +111,15 @@ class Iris(WheelSlot):
     def __repr__(self):
         if self.iris_percent:
             return f"Iris {self.iris_percent}"
-        else:
-            return "Iris"
+        return "Iris"
 
 
 class Frost(WheelSlot):
+    """
+    A Frost wheel slot.
+    Class name and instance arguments match the fixture format exactly.
+    """
+
     def __init__(self, frost_intensity: Percent | None = None):
         super().__init__()
         self.frost_intensity = frost_intensity
@@ -85,11 +127,15 @@ class Frost(WheelSlot):
     def __repr__(self):
         if self.frost_intensity:
             return f"Frost {self.frost_intensity}"
-        else:
-            return "Frost"
+        return "Frost"
 
 
 class AnimationGoboStart(WheelSlot):
+    """
+    A AnimationGoboStart wheel slot.
+    Class name and instance arguments match the fixture format exactly.
+    """
+
     def __init__(self, name: str):
         super().__init__()
         self.name = name
@@ -99,15 +145,21 @@ class AnimationGoboStart(WheelSlot):
 
 
 class AnimationGoboEnd(WheelSlot):
-    def __init__(self):
-        super().__init__()
+    """
+    A AnimationGoboEnd wheel slot.
+    Class name and instance arguments match the fixture format exactly.
+    """
 
     def __repr__(self):
         return "AnimationGoboEnd"
 
 
 class Wheel:
-    def __init__(self, name: str, slots: list[WheelSlot], direction: str | None = None):
+    """
+    The Wheel model class, containing all of its wheel slots.
+    """
+    def __init__(self, name: str, slots: list[WheelSlot],
+                 direction: str | None = None):
         assert len(slots) >= 2
 
         self.name = name

@@ -1,18 +1,34 @@
-import math
+"""
+One Channel maps to one DMX value.
+"""
 
-from custom_components.dmx.fixture.capability import Capability, DmxValueResolution
+import math
+from dataclasses import dataclass
+
+from custom_components.dmx.fixture.capability import Capability, \
+    DmxValueResolution
 
 Capabilities = Capability | list[Capability]
 
 
 def percent_to_byte(default_value: str | int):
-    if type(default_value) is str:
+    """
+    Converts a percent string (75%) into a byte (196).
+    :param default_value: If a string, converts it into byte. Otherwise pass
+                          through the number.
+    :return: The converted byte.
+    """
+    if isinstance(default_value, str):
         assert default_value[-1] == '%'
         return int(2.55 * int(default_value[:-1]))
     return default_value
 
 
 class Channel:
+    """
+    One DMX channel.
+    """
+    # pylint: disable=too-many-arguments
     def __init__(self, name: str,
                  fine_channel_aliases: [str],
                  dmx_value_resolution: DmxValueResolution,
@@ -24,25 +40,29 @@ class Channel:
 
         if fine_channel_aliases is None:
             fine_channel_aliases = []
-        self.fineChannelAliases = fine_channel_aliases
+        self.fine_channel_aliases = fine_channel_aliases
 
-        self.dmxValueResolution = dmx_value_resolution
+        self.dmx_value_resolution = dmx_value_resolution
 
         if default_value:
-            self.defaultValue = percent_to_byte(default_value)
+            self.default_value = percent_to_byte(default_value)
         else:
-            self.defaultValue = 0
+            self.default_value = 0
 
         if not highlight_value:
-            self.highlightValue = math.pow(255, dmx_value_resolution.value)
+            self.highlight_value = math.pow(255, dmx_value_resolution.value)
         else:
-            self.highlightValue = percent_to_byte(highlight_value)
+            self.highlight_value = percent_to_byte(highlight_value)
 
         self.constant = constant
 
         self.capabilities: Capabilities = []
 
-    def define_capability(self, capability: Capabilities):
+    def define_capability(self, capability: Capabilities) -> None:
+        """
+        Defines capabilities, add it to this channel.
+        :param capability: The capabilities to define.
+        """
         if isinstance(capability, list):
             self.capabilities = capability
         else:
@@ -55,20 +75,27 @@ class Channel:
         return self.name
 
 
+@dataclass
 class ChannelOffset:
-    def __init__(self, channel: Channel, byte_offset: int):
-        super().__init__()
-        self.channel = channel
-        self.byte_offset = byte_offset
+    """
+    A channel, combined with its offset for fine channels.
+    Offset starts at 0 and increments per fine channel.
+    """
+
+    channel: Channel
+    byte_offset: int
 
     def __repr__(self):
         return f"{self.channel.__repr__()}#{self.byte_offset}"
 
 
+@dataclass
 class SwitchingChannel:
-    def __init__(self, name: str, channel_offsets: list[ChannelOffset]):
-        self.name = name
-        self.channels = {channel_offset.channel.name: channel_offset for channel_offset in channel_offsets}
+    """
+    A switching channel, which can forward itself to multiple other channels.
+    """
+    name: str
+    channel_offsets: dict[str, ChannelOffset]
 
     def __repr__(self):
-        return f"{self.name}{self.channels}"
+        return f"{self.name}{self.channel_offsets}"

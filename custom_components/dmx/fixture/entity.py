@@ -1,10 +1,19 @@
+"""
+Entities represent possible units or keywords which are used in capabilities.
+"""
+
+
 class Entity:
+    """
+    Base class for all entities.
+    """
+
     def __init__(self,
                  value: float | str,
                  unit: str | None,
                  allowed_units: list[str | None],
                  keywords: dict[str, int] | None = None):
-        if type(value) is str:
+        if isinstance(value, str):
             assert keywords
             self.input = value
             self.value: float = keywords[value]
@@ -23,6 +32,12 @@ class Entity:
 
 
 class Speed(Entity):
+    """
+    Speed entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["Hz", "bpm", "%"],
@@ -36,6 +51,12 @@ class Speed(Entity):
 
 
 class RotationSpeed(Entity):
+    """
+    RotationSpeed entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["Hz", "rpm", "%"],
@@ -49,6 +70,12 @@ class RotationSpeed(Entity):
 
 
 class Time(Entity):
+    """
+    Time entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["s", "ms", "%"],
@@ -60,6 +87,12 @@ class Time(Entity):
 
 
 class Distance(Entity):
+    """
+    Distance entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["m", "%"],
@@ -70,6 +103,12 @@ class Distance(Entity):
 
 
 class Brightness(Entity):
+    """
+    Brightness entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["lm", "%"],
@@ -81,6 +120,12 @@ class Brightness(Entity):
 
 
 class ColorTemperature(Entity):
+    """
+    ColorTemperature entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["K", "%"],
@@ -94,6 +139,12 @@ class ColorTemperature(Entity):
 
 
 class FogOutput(Entity):
+    """
+    FogOutput entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["m^3/min", "%"],
@@ -105,11 +156,23 @@ class FogOutput(Entity):
 
 
 class RotationAngle(Entity):
+    """
+    RotationAngle entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit, ["deg", "%"])
 
 
 class BeamAngle(Entity):
+    """
+    BeamAngle entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["deg", "%"],
@@ -121,6 +184,12 @@ class BeamAngle(Entity):
 
 
 class HorizontalAngle(Entity):
+    """
+    HorizontalAngle entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["deg", "%"],
@@ -132,6 +201,12 @@ class HorizontalAngle(Entity):
 
 
 class VerticalAngle(Entity):
+    """
+    VerticalAngle entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["deg", "%"],
@@ -143,6 +218,12 @@ class VerticalAngle(Entity):
 
 
 class SwingAngle(Entity):
+    """
+    SwingAngle entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["deg", "%"],
@@ -154,6 +235,12 @@ class SwingAngle(Entity):
 
 
 class Parameter(Entity):
+    """
+    Parameter entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          [None, "%"],
@@ -172,11 +259,23 @@ class Parameter(Entity):
 
 
 class SlotNumber(Entity):
+    """
+    SlotNumber entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str):
         super().__init__(value, None, [None])
 
 
 class Percent(Entity):
+    """
+    Percent entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["%"],
@@ -188,6 +287,12 @@ class Percent(Entity):
 
 
 class Insertion(Entity):
+    """
+    Insertion entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["%"],
@@ -198,6 +303,12 @@ class Insertion(Entity):
 
 
 class IrisPercent(Entity):
+    """
+    IrisPercent entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: float | str, unit: str | None = None):
         super().__init__(value, unit,
                          ["%"],
@@ -208,5 +319,11 @@ class IrisPercent(Entity):
 
 
 class ColorHex(Entity):
+    """
+    ColorHex entity.
+    Class name and instance attributes match fixture format exactly.
+    """
+
+    # pylint: disable=too-few-public-methods
     def __init__(self, value: int):
         super().__init__(value, None, [None])
