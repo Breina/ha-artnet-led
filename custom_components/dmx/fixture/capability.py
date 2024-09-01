@@ -177,8 +177,10 @@ class DynamicEntity(DynamicMapping):
 
     def __init__(self, entity_start: Entity, entity_end: Entity, dmx_start: int,
                  dmx_end: int):
-        super().__init__(entity_start.value, entity_end.value, dmx_start,
-                         dmx_end)
+        super().__init__(
+            entity_start.value, entity_end.value,
+            dmx_start, dmx_end
+        )
 
         self.entity_start = entity_start
         self.entity_end = entity_end
@@ -224,7 +226,10 @@ class Capability:
         self.switch_channels = switch_channels or {}
 
         self.static_entities = []
-        self.dynamic_entities = []
+        self.dynamic_entities: List[DynamicMapping] = []
+
+    def is_dynamic_entity(self) -> bool:
+        return len(self.dynamic_entities) != 0
 
     def is_applicable(self, dmx_value: int):
         """
@@ -237,7 +242,11 @@ class Capability:
 
     def _define_from_range(self, start: float, end: float):
         self.dynamic_entities.append(
-            DynamicMapping(start, end, self.dmx_range_start, self.dmx_range_end))
+            DynamicMapping(
+                start, end,
+                self.dmx_range_start, self.dmx_range_end
+            )
+        )
 
     def _define_from_entity(self, entities: list[Entity] | None):
         if not entities:
@@ -249,8 +258,11 @@ class Capability:
         else:
             assert size == 2
             self.dynamic_entities.append(
-                DynamicEntity(entities[0], entities[1], self.dmx_range_start,
-                              self.dmx_range_end))
+                DynamicEntity(
+                    entities[0], entities[1],
+                    self.dmx_range_start, self.dmx_range_end
+                )
+            )
 
     def __str__(self):
         if self.comment:

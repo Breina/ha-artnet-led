@@ -28,6 +28,7 @@ class Channel:
     """
     One DMX channel.
     """
+
     # pylint: disable=too-many-arguments
     def __init__(self, name: str,
                  fine_channel_aliases: [str],
@@ -67,6 +68,9 @@ class Channel:
             self.capabilities = capability
         else:
             self.capabilities = [capability]
+
+    def has_multiple_capabilities(self) -> bool:
+        return len(self.capabilities) > 1
 
     def __str__(self):
         return f"{self.name}: {self.capabilities}"

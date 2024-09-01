@@ -70,7 +70,8 @@ class Fixture:
 
         dest[channel.name] = ChannelOffset(channel, 0)
         for byte_offset, fine_channel_alias in enumerate(
-                channel.fine_channel_aliases, start=1):
+                channel.fine_channel_aliases, start=1
+        ):
             dest[fine_channel_alias] = ChannelOffset(channel, byte_offset)
 
         for capability in channel.capabilities:
@@ -112,7 +113,8 @@ class Fixture:
 
         self.__resolve_switching_channels(self.switching_channel_names,
                                           self.channels,
-                                          self.switching_channels)
+                                          self.switching_channels
+                                          )
 
         del self.switching_channel_names
 
