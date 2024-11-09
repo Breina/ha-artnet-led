@@ -32,6 +32,7 @@ class DmxNumberEntity(NumberEntity):
         self._attr_mode = NumberMode.SLIDER
         self._attr_available = available
 
+        self.capability = capability
         self.dynamic_entity = capability.dynamic_entities[0]
         assert isinstance(self.dynamic_entity, DynamicEntity)
 
@@ -69,3 +70,6 @@ class DmxNumberEntity(NumberEntity):
     def available(self, is_available: bool) -> None:
         self._attr_available = is_available
         self.async_schedule_update_ha_state()
+
+    def __str__(self) -> str:
+        return f"{self._attr_name}: {self.capability.__repr__()}"

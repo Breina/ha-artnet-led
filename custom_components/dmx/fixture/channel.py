@@ -99,7 +99,7 @@ class SwitchingChannel:
     A switching channel, which can forward itself to multiple other channels.
     """
     name: str
-    channel_offsets: dict[str, ChannelOffset]
+    controlled_channels: dict[str, ChannelOffset]
 
     def __repr__(self):
-        return f"{self.name}{self.channel_offsets}"
+        return f"{self.name}{self.controlled_channels}"

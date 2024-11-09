@@ -15,6 +15,19 @@ class MappedChannel:
     channel: Channel
 
 
+def __get_channel(source: tuple[int, None | ChannelOffset | SwitchingChannel]):
+    if isinstance(source[1], ChannelOffset):
+        return [source]
+    elif isinstance(source[1], SwitchingChannel):
+        return [(source[0], c) for c in source[1].controlled_channels.values()]
+    else:
+        return [source]
+
+
+def __get_all_channels(index_channels: list[tuple[int, None | ChannelOffset | SwitchingChannel]]):
+    return [c for channel_sub in index_channels for c in __get_channel(channel_sub)]
+
+
 def create_entities(
         dmx_start: int,
         channels: list[None | ChannelOffset | SwitchingChannel]
@@ -22,16 +35,11 @@ def create_entities(
     universe = Universe()
     entities = []
 
-    for name, group in groupby(enumerate(channels), lambda c: c[1].channel):
-        # print(list(sorted(group, key=lambda channel: channel[1].byte_offset)))
+    for channel, group in groupby(__get_all_channels(enumerate(channels)),
+                                  lambda c: c[1].channel):
         dmx_indexes = []
-        channel: Channel | None = None
         for channel_group in sorted(group, key=lambda g: g[1].byte_offset):
-            if not channel:
-                channel = channel_group[1].channel
             dmx_indexes.append(channel_group[0] + dmx_start)
-
-        print(channel, dmx_indexes)
 
         if not channel.has_multiple_capabilities():
             entities.append(
@@ -58,9 +66,14 @@ def create_entities(
             entities.append(select_entity)
             entities.extend(number_entities)
 
+    return entities
 
 
 fixture = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
 channels = fixture.select_mode("42-channel")
 
-create_entities(100, channels)
+entities = create_entities(100, channels)
+
+print("\nThe entities:")
+for entity in entities:
+    print(entity)

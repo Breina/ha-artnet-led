@@ -63,3 +63,6 @@ class DmxSelectEntity(SelectEntity):
         self.capability_entities[self._attr_current_option].available = False
         self._attr_current_option = new_option
         self.capability_entities[self._attr_current_option].available = True
+
+    def __str__(self) -> str:
+        return f"{self._attr_name}: {self.capability_attributes['options']}"
