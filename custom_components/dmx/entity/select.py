@@ -1,3 +1,5 @@
+import logging
+
 from homeassistant.components.select import SelectEntity
 
 from custom_components.dmx import DOMAIN
@@ -5,6 +7,8 @@ from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.fixture.channel import Channel
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
 from custom_components.dmx.io.dmx_io import Universe
+
+log = logging.getLogger(__name__)
 
 
 class DmxSelectEntity(SelectEntity):
@@ -26,17 +30,20 @@ class DmxSelectEntity(SelectEntity):
             str(capability): capability for capability in channel.capabilities
         }
         self.capability_entities = capability_entities
+        for capability_entity in self.capability_entities.values():
+            capability_entity.available = False
 
         self.dmx_index = dmx_index
 
         self._attr_options = list(self.capability_types.keys())
 
+        self.switching_entities = {}
+
         self._attr_current_option = self._attr_options[0] # TODO isn't there something for this?
+        self.__set_availability(True)
 
         self.universe = universe
         self.universe.register_channel_listener(dmx_index, self.update_value)
-
-        self.switching_entities = {}
 
     def link_switching_entities(self, entities: list[DmxNumberEntity]) -> None:
         for capability_name, capability in self.capability_types.items():
@@ -47,7 +54,10 @@ class DmxSelectEntity(SelectEntity):
                 for entity in entities:
                     if entity.name == channel_name:
                         self.switching_entities[capability_name] = entity
+                        entity.available = False
                         break
+
+        self.__set_availability(True)
 
     def update_value(self, value: int) -> None:
         # TODO maybe update self._attr_attribution from source ArtNet node?
@@ -80,9 +90,10 @@ class DmxSelectEntity(SelectEntity):
         self.__set_availability(True)
 
     def __set_availability(self, availability: bool) -> None:
-        self.capability_entities[
-            self._attr_current_option].available = availability
-        if self.switching_entities[self._attr_current_option]:
+        if self._attr_current_option in self.capability_entities:
+            self.capability_entities[self._attr_current_option].available = availability
+
+        if self._attr_current_option in self.switching_entities:
             self.switching_entities[
                 self._attr_current_option].available = availability
 

@@ -46,6 +46,8 @@ class DmxNumberEntity(NumberEntity):
 
         if capability.menu_click:
             self._attr_native_value = capability.menu_click_value
+        else:
+            self._attr_native_value = 0
 
         self._attr_native_unit_of_measurement = \
             self.dynamic_entity.entity_start.unit
@@ -69,7 +71,10 @@ class DmxNumberEntity(NumberEntity):
     @available.setter
     def available(self, is_available: bool) -> None:
         self._attr_available = is_available
-        self.async_schedule_update_ha_state()
+
+        # Only refresh state after added to hass
+        if self.hass:
+            self.async_schedule_update_ha_state()
 
     def __str__(self) -> str:
         return f"{self._attr_name}: {self.capability.__repr__()}"

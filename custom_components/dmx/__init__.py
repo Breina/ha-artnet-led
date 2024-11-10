@@ -18,6 +18,8 @@ from homeassistant.helpers.typing import ConfigType
 from custom_components.dmx.bridge.artnet_controller import ArtNetController, DiscoveredNode
 from custom_components.dmx.client import PortAddress
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER
+from custom_components.dmx.fixture.parser import parse
+from custom_components.dmx.fixture_delegator.delegator import create_entities
 from custom_components.fixtures.ha_fixture import parse_json
 from custom_components.fixtures.model import HaFixture
 
@@ -58,7 +60,7 @@ CONF_FOLDER = 'folder'
 
 DEFAULT_FIXTURES_FOLDER = 'fixtures'
 
-PLATFORMS = [Platform.NUMBER]
+PLATFORMS = [Platform.NUMBER, Platform.SELECT]
 
 FIXTURES = {}
 
@@ -216,13 +218,24 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up the component."""
 
 
     # print(f"async_setup_entry: {config_entry}")
-    # data = hass.data.setdefault(DOMAIN, {})
-    #
+    hass.data.setdefault(DOMAIN, {})
+
+    fixture = parse("fixtures/hydrabeam-300-rgbw.json")
+    channels = fixture.select_mode("42-channel")
+
+    entities = create_entities(100, channels)
+
+    # log.info(f"The data: {entry.data}")
+    # entry.data[DOMAIN]['entities'] = entities
+    hass.data[DOMAIN][entry.entry_id] = {
+        'entities': entities
+    }
+
     # fixtures_path = data.get(CONF_FIXTURES, {}).get(CONF_FOLDER, DEFAULT_FIXTURES_FOLDER)
     # for (dirpath, dirnames, filenames) in walk(fixtures_path):
     #     for filename in filenames:
@@ -236,7 +249,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     # data[config_entry.entry_id] = {UNDO_UPDATE_LISTENER: undo_listener}
 
     for platform in PLATFORMS:
-        await hass.config_entries.async_forward_entry_setup(config_entry, platform)
+        await hass.config_entries.async_forward_entry_setup(entry, platform)
 
     return True
 
