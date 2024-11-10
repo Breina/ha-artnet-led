@@ -1,6 +1,7 @@
 from typing import List
 
-from homeassistant.components.number import NumberEntity, NumberMode
+from homeassistant.components.number import NumberMode, \
+    RestoreNumber
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from custom_components.dmx import DOMAIN
@@ -8,11 +9,11 @@ from custom_components.dmx.fixture.capability import DynamicEntity, Capability
 from custom_components.dmx.io.dmx_io import Universe
 
 
-class DmxNumberEntity(NumberEntity):
+class DmxNumberEntity(RestoreNumber):
     def __init__(self, name: str, capability: Capability,
                  universe: Universe, dmx_indexes: List[int],
                  device: DeviceInfo,
-                 available: bool = True, # TODO something wrong here?
+                 available: bool = True,  # TODO something wrong here?
                  ) -> None:
         super().__init__()
 
@@ -24,12 +25,10 @@ class DmxNumberEntity(NumberEntity):
         self._attr_unique_id = f"{DOMAIN}_{name}"  # TODO add device
 
         self._attr_icon = capability.icon()
+        self._attr_extra_state_attributes = capability.extra_attributes()  # TODO not working?
 
         self.universe = universe
         self.dmx_indexes = dmx_indexes
-
-        # TODO lobby for Angle device class
-        self._attr_device_class = None
 
         self._attr_mode = NumberMode.SLIDER
         self._attr_available = available
@@ -77,9 +76,12 @@ class DmxNumberEntity(NumberEntity):
         if self.hass:
             self.async_schedule_update_ha_state()
 
+    @property
+    def native_value(self) -> float | None:
+        return round(self._attr_native_value, 2)
+
     def __str__(self) -> str:
         return f"{self._attr_name}: {self.capability.__repr__()}"
 
     def __repr__(self) -> str:
         return self.__str__()
-

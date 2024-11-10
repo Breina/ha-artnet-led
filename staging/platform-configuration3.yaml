@@ -8,17 +8,17 @@ dmx:
 
     universes:
       - 1/2/0: # Net = 1 / Sub-net = 2 / Universe = 0
+          devices:
+            - Epic triple lights:
+                start_address: 11
+                fixture: hydrabeam-300-rgbw
+                mode: 42-channel
+
           compatibility:
             send_partial_universe: False
             manual_nodes:
               - { host: 192.168.1.11, port: 6454 }
               - { host: 192.168.1.12 }
-
-          devices:
-            - Hotbox:
-                start_address: 11
-                fixture: hotbox-rgbw
-                mode: 9bCh
 
       - 3: # Net and Sub-net default to 0, universe = 3
           devices:

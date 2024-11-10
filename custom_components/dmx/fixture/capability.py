@@ -5,12 +5,13 @@ https://github.com/OpenLightingProject/open-fixture-library/blob/master/docs/cap
 Most arguments, instance attributes and class names are directly mapped to
 values of the fixture format. Therefore, we will excuse the python linter.
 """
+import logging
 # pylint: disable=too-many-lines, too-many-arguments
 # pylint: disable=too-many-instance-attributes
 
 
 from enum import Enum, auto
-from typing import Callable, List
+from typing import Callable, List, Any
 
 from custom_components.dmx.fixture import entity
 from custom_components.dmx.fixture.entity import RotationAngle, RotationSpeed, \
@@ -264,8 +265,23 @@ class Capability:
                 )
             )
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:percent"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = {
+            "DMX range start": self.dmx_range_start,
+            "DMX range end": self.dmx_range_end
+        }
+        if self.comment:
+            attributes["Comment"] = self.comment
+
+        for dynamic_entity in self.dynamic_entities:
+            if isinstance(dynamic_entity, DynamicEntity):
+                attributes["Value start"] = str(dynamic_entity.entity_start)
+                attributes["Value end"] = str(dynamic_entity.entity_end)
+
+        return attributes
 
     def __str__(self):
         if self.comment:
@@ -333,8 +349,21 @@ class ShutterStrobe(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(duration)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:flash-alert"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+
+        attributes["Effect"] = self.effect
+        attributes["Sound controlled"] = self.sound_controlled
+        attributes["Random timing"] = self.random_timing
+        if self.speed and len(self.speed) == 1:
+            attributes["Speed"] = self.speed[0]
+        if self.duration and len(self.duration) == 1:
+            attributes["Duration"] = self.duration[0]
+
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.effect,
@@ -356,7 +385,7 @@ class StrobeSpeed(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:flash-auto"
 
     def __str__(self):
@@ -374,7 +403,7 @@ class StrobeDuration(Capability):
         self.duration = duration
         self._define_from_entity(duration)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:timer-outline"
 
     def __str__(self):
@@ -393,7 +422,7 @@ class Intensity(Capability):
                                          Brightness("bright")]
         self._define_from_entity(self.brightness)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:brightness-7"
 
     def __str__(self):
@@ -414,8 +443,13 @@ class ColorIntensity(Capability):
                                          Brightness("bright")]
         self._define_from_entity(self.brightness)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:brightness-percent"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        attributes["Color"] = self.color
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.color, self.brightness)
@@ -444,7 +478,7 @@ class ColorPreset(Capability):
 
         self._define_from_entity(color_temperature)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:palette-swatch"
 
     def __str__(self):
@@ -463,7 +497,7 @@ class ColorTemperature(Capability):
         self.color_temperature = color_temperature
         self._define_from_entity(self.color_temperature)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:thermometer"
 
     def __str__(self):
@@ -481,7 +515,7 @@ class Pan(Capability):
         self.angle = angle
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:arrow-left-right"
 
     def __str__(self):
@@ -499,7 +533,7 @@ class PanContinuous(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:format-text-rotation-none"
 
     def __str__(self):
@@ -517,7 +551,7 @@ class Tilt(Capability):
         self.angle = angle
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:arrow-up-down"
 
     def __str__(self):
@@ -535,7 +569,7 @@ class TiltContinuous(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:format-text-rotation-up"
 
     def __str__(self):
@@ -560,8 +594,18 @@ class PanTiltSpeed(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(duration)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:swap-horizontal-circle"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+
+        if self.speed and len(self.speed) == 1:
+            attributes["Speed"] = self.speed[0]
+        if self.duration and len(self.duration) == 1:
+            attributes["Duration"] = self.duration[0]
+
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.speed, self.duration)
@@ -580,8 +624,13 @@ class WheelSlot(Capability):
         self.slot_number = slot_number
         self._define_from_entity(slot_number)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:view-carousel"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        attributes["Wheel"] = self.wheel
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.wheel, self.slot_number)
@@ -611,8 +660,29 @@ class WheelShake(Capability):
         self._define_from_entity(shake_speed)
         self._define_from_entity(shake_angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:vibrate"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+
+        attributes["Is shaking"] = self.is_shaking
+        if self.wheel:
+            if isinstance(self.wheel, str):
+                attributes["Wheel"] = self.wheel
+            elif len(self.wheel) == 1:
+                attributes["Wheel"] = self.wheel[0]
+
+        if self.slot_number and len(self.slot_number) == 1:
+            attributes["Slot number"] = self.slot_number[0]
+
+        if self.shake_speed and len(self.shake_speed) == 1:
+            attributes["Shake speed"] = self.shake_speed[0]
+
+        if self.shake_angle and len(self.shake_angle) == 1:
+            attributes["Shake angle"] = self.shake_angle[0]
+
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.wheel, self.slot_number, self.shake_speed,
@@ -636,11 +706,34 @@ class WheelSlotRotation(Capability):
         self.wheel = wheel or name
         self.slot_number = slot_number
 
+        self.speed = speed
+        self.angle = angle
+
         self._define_from_entity(speed)
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:screen-rotation"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+
+        if self.wheel:
+            if isinstance(self.wheel, str):
+                attributes["Wheel"] = self.wheel
+            elif len(self.wheel) == 1:
+                attributes["Wheel"] = self.wheel[0]
+
+        if self.slot_number:
+            attributes["Slot number"] = self.slot_number
+
+        if self.speed and len(self.speed) == 1:
+            attributes["Rotation speed"] = self.speed[0]
+
+        if self.angle and len(self.angle) == 1:
+            attributes["Rotation angle"] = self.angle[0]
+
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.wheel, self.slot_number)
@@ -665,8 +758,25 @@ class WheelRotation(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:rotate-3d-variant"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+
+        if self.wheel:
+            if isinstance(self.wheel, str):
+                attributes["Wheel"] = self.wheel
+            elif len(self.wheel) == 1:
+                attributes["Wheel"] = self.wheel[0]
+
+        if self.speed and len(self.speed) == 1:
+            attributes["Rotation speed"] = self.speed[0]
+
+        if self.angle and len(self.angle) == 1:
+            attributes["Rotation angle"] = self.angle[0]
+
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.wheel, self.speed, self.angle)
@@ -703,7 +813,7 @@ class Effect(Capability):
         self._define_from_entity(parameter)
         self._define_from_entity(sound_sensitivity)
 
-    def icon(self):
+    def icon(self) -> str:
         if self.speed:
             return "mdi:run-fast"
         if self.duration:
@@ -713,6 +823,31 @@ class Effect(Capability):
         if self.sound_sensitivity:
             return "mdi:microphone-outline"
         return "mdi:star-four-points-outline"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+
+        if self.effect_name:
+            attributes["Effect"] = self.effect_name
+
+        if self.effect_preset:
+            attributes["Effect preset"] = self.effect_preset
+
+        if self.speed and len(self.speed) == 1:
+            attributes["Effect speed"] = self.speed[0]
+
+        if self.duration and len(self.duration) == 1:
+            attributes["Effect duration"] = self.duration[0]
+
+        if self.parameter and len(self.parameter) == 1:
+            attributes["Effect parameter"] = self.parameter[0]
+
+        attributes["Sound controlled"] = self.sound_controlled
+
+        if self.sound_sensitivity and len(self.sound_sensitivity) == 1:
+            attributes["Sound sensitivity"] = self.sound_sensitivity[0]
+
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.effect_name, self.effect_preset,
@@ -733,7 +868,7 @@ class BeamAngle(Capability):
         self.angle = angle
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:angle-acute"
 
     def __str__(self):
@@ -759,8 +894,19 @@ class BeamPosition(Capability):
         self._define_from_entity(horizontal_angle)
         self._define_from_entity(vertical_angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:crosshairs"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+
+        if self.horizontal_angle and len(self.horizontal_angle) == 1:
+            attributes["Horizontal angle"] = self.horizontal_angle[0]
+
+        if self.vertical_angle and len(self.vertical_angle) == 1:
+            attributes["Vertical angle"] = self.vertical_angle[0]
+
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.horizontal_angle, self.vertical_angle)
@@ -777,7 +923,7 @@ class EffectSpeed(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:speedometer"
 
     def __str__(self):
@@ -795,7 +941,7 @@ class EffectDuration(Capability):
         self.duration = duration
         self._define_from_entity(duration)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:timer-sand"
 
     def __str__(self):
@@ -813,7 +959,7 @@ class EffectParameter(Capability):
         self.parameter = parameter
         self._define_from_entity(parameter)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:format-list-bulleted-type"
 
     def __str__(self):
@@ -831,7 +977,7 @@ class SoundSensitivity(Capability):
         self.sound_sensitivity = sound_sensitivity
         self._define_from_entity(sound_sensitivity)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:microphone-outline"
 
     def __str__(self):
@@ -849,7 +995,7 @@ class Focus(Capability):
         self.distance = distance
         self._define_from_entity(distance)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:image-filter-center-focus"
 
     def __str__(self):
@@ -867,7 +1013,7 @@ class Zoom(Capability):
         self.angle = angle
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:magnify-plus-outline"
 
     def __str__(self):
@@ -885,7 +1031,7 @@ class Iris(Capability):
         self.open_percent = open_percent
         self._define_from_entity(open_percent)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:circle-slice-8"
 
     def __str__(self):
@@ -905,8 +1051,13 @@ class IrisEffect(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:blur-radial"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        attributes["Effect name"] = self.effect_name
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.effect_name, self.speed)
@@ -923,7 +1074,7 @@ class Frost(Capability):
         self.frost_intensity = frost_intensity
         self._define_from_entity(frost_intensity)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:snowflake"
 
     def __str__(self):
@@ -943,8 +1094,13 @@ class FrostEffect(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:snowflake-alert"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        attributes["Effect name"] = self.effect_name
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.effect_name, self.speed)
@@ -968,8 +1124,19 @@ class Prism(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:diamond-outline"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+
+        if self.speed and len(self.speed) == 1:
+            attributes["Speed"] = self.speed
+
+        if self.angle and len(self.angle) == 1:
+            attributes["Angle"] = self.angle
+
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.speed, self.angle)
@@ -993,8 +1160,19 @@ class PrismRotation(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:rotate-right"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+
+        if self.speed and len(self.speed) == 1:
+            attributes["Speed"] = self.speed
+
+        if self.angle and len(self.angle) == 1:
+            attributes["Angle"] = self.angle
+
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.speed, self.angle)
@@ -1014,8 +1192,13 @@ class BladeInsertion(Capability):
         self.blade = blade
         self._define_from_entity(insertion)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:pan-horizontal"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        attributes["Blade position"] = self.blade
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.blade)
@@ -1035,8 +1218,13 @@ class BladeRotation(Capability):
         self.blade = blade
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:rotate-right"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        attributes["Blade position"] = self.blade
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.blade)
@@ -1055,7 +1243,7 @@ class BladeSystemRotation(Capability):
         self.angle = angle
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:rotate-orbit"
 
     def __str__(self):
@@ -1077,8 +1265,13 @@ class Fog(Capability):
         self.fog_output = fog_output
         self._define_from_entity(fog_output)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:weather-fog"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        attributes["Fog type output"] = self.fog_type
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.fog_type, self.fog_output)
@@ -1097,8 +1290,13 @@ class FogOutput(Capability):
         self.fog_output = fog_output
         self._define_from_entity(fog_output)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:weather-fog"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        attributes["Fog type output"] = self.fog_output
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.fog_output)
@@ -1116,8 +1314,13 @@ class FogType(Capability):
         super().__init__(**kwargs)
         self.fog_type = fog_type
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:weather-partly-cloudy"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        attributes["Fog type output"] = self.fog_type
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.fog_type)
@@ -1141,8 +1344,19 @@ class Rotation(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(angle)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:rotate-left"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+
+        if self.speed and len(self.speed) == 1:
+            attributes["Speed"] = self.speed
+
+        if self.angle and len(self.angle) == 1:
+            attributes["Angle"] = self.angle
+
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.speed, self.angle)
@@ -1161,7 +1375,7 @@ class Speed(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:run-fast"
 
     def __str__(self):
@@ -1181,7 +1395,7 @@ class Time(Capability):
         self.time = time
         self._define_from_entity(time)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:clock-outline"
 
     def __str__(self):
@@ -1203,8 +1417,13 @@ class Maintenance(Capability):
         self.parameter = parameter
         self._define_from_entity(parameter)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:wrench"
+
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        attributes["Hold"] = self.hold
+        return attributes
 
     def __str__(self):
         return self.args_to_str(self.hold, self.parameter)
@@ -1219,7 +1438,7 @@ class Generic(Capability):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def icon(self):
+    def icon(self) -> str:
         return "mdi:dots-horizontal-circle-outline"
 
 
