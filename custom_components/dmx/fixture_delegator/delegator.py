@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from itertools import groupby
 
+from homeassistant.helpers.device_registry import DeviceInfo
+
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.entity.select import DmxSelectEntity
 from custom_components.dmx.fixture.channel import ChannelOffset, \
@@ -30,7 +32,8 @@ def __get_all_channels(index_channels: list[tuple[int, None | ChannelOffset | Sw
 
 def create_entities(
         dmx_start: int,
-        channels: list[None | ChannelOffset | SwitchingChannel]
+        channels: list[None | ChannelOffset | SwitchingChannel],
+        device: DeviceInfo
 ):
     universe = Universe()
     entities = []
@@ -44,7 +47,8 @@ def create_entities(
         if not channel.has_multiple_capabilities():
             entities.append(
                 DmxNumberEntity(
-                    channel.name, channel.capabilities[0], universe, dmx_indexes
+                    channel.name, channel.capabilities[0], universe,
+                    dmx_indexes, device
                 )
             )
         else:
@@ -52,7 +56,7 @@ def create_entities(
             number_entities = {
                 str(capability): DmxNumberEntity(
                     f"{channel.name} {str(capability)}", capability,
-                    universe, dmx_indexes,
+                    universe, dmx_indexes, device,
                     available=False
                 )
                 for capability in channel.capabilities
@@ -60,7 +64,7 @@ def create_entities(
             }
 
             select_entity = DmxSelectEntity(
-                channel, number_entities, universe, dmx_indexes[0]
+                channel, number_entities, universe, dmx_indexes[0], device
             )
 
             entities.append(select_entity)

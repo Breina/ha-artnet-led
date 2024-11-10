@@ -264,6 +264,9 @@ class Capability:
                 )
             )
 
+    def icon(self):
+        return "mdi:percent"
+
     def __str__(self):
         if self.comment:
             return self.comment
@@ -330,6 +333,9 @@ class ShutterStrobe(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(duration)
 
+    def icon(self):
+        return "mdi:flash-alert"
+
     def __str__(self):
         return self.args_to_str(self.effect,
                                 "sound controlled" if self.sound_controlled else None,
@@ -350,6 +356,9 @@ class StrobeSpeed(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
+    def icon(self):
+        return "mdi:flash-auto"
+
     def __str__(self):
         return self.args_to_str(self.speed)
 
@@ -364,6 +373,9 @@ class StrobeDuration(Capability):
         super().__init__(**kwargs)
         self.duration = duration
         self._define_from_entity(duration)
+
+    def icon(self):
+        return "mdi:timer-outline"
 
     def __str__(self):
         return self.args_to_str(self.duration)
@@ -380,6 +392,9 @@ class Intensity(Capability):
         self.brightness = brightness or [Brightness("off"),
                                          Brightness("bright")]
         self._define_from_entity(self.brightness)
+
+    def icon(self):
+        return "mdi:brightness-7"
 
     def __str__(self):
         return self.args_to_str(self.brightness)
@@ -398,6 +413,9 @@ class ColorIntensity(Capability):
         self.brightness = brightness or [Brightness("off"),
                                          Brightness("bright")]
         self._define_from_entity(self.brightness)
+
+    def icon(self):
+        return "mdi:brightness-percent"
 
     def __str__(self):
         return self.args_to_str(self.color, self.brightness)
@@ -426,6 +444,9 @@ class ColorPreset(Capability):
 
         self._define_from_entity(color_temperature)
 
+    def icon(self):
+        return "mdi:palette-swatch"
+
     def __str__(self):
         return self.args_to_str(self.colors, self.color_temperature)
 
@@ -442,6 +463,9 @@ class ColorTemperature(Capability):
         self.color_temperature = color_temperature
         self._define_from_entity(self.color_temperature)
 
+    def icon(self):
+        return "mdi:thermometer"
+
     def __str__(self):
         return self.args_to_str(self.color_temperature)
 
@@ -456,6 +480,9 @@ class Pan(Capability):
         super().__init__(**kwargs)
         self.angle = angle
         self._define_from_entity(angle)
+
+    def icon(self):
+        return "mdi:arrow-left-right"
 
     def __str__(self):
         return self.args_to_str(self.angle)
@@ -472,6 +499,9 @@ class PanContinuous(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
+    def icon(self):
+        return "mdi:format-text-rotation-none"
+
     def __str__(self):
         return self.args_to_str(self.speed)
 
@@ -487,6 +517,9 @@ class Tilt(Capability):
         self.angle = angle
         self._define_from_entity(angle)
 
+    def icon(self):
+        return "mdi:arrow-up-down"
+
     def __str__(self):
         return self.args_to_str(self.angle)
 
@@ -501,6 +534,9 @@ class TiltContinuous(Capability):
         super().__init__(**kwargs)
         self.speed = speed
         self._define_from_entity(speed)
+
+    def icon(self):
+        return "mdi:format-text-rotation-up"
 
     def __str__(self):
         return self.args_to_str(self.speed)
@@ -524,6 +560,9 @@ class PanTiltSpeed(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(duration)
 
+    def icon(self):
+        return "mdi:swap-horizontal-circle"
+
     def __str__(self):
         return self.args_to_str(self.speed, self.duration)
 
@@ -540,6 +579,9 @@ class WheelSlot(Capability):
         self.wheel = wheel or name
         self.slot_number = slot_number
         self._define_from_entity(slot_number)
+
+    def icon(self):
+        return "mdi:view-carousel"
 
     def __str__(self):
         return self.args_to_str(self.wheel, self.slot_number)
@@ -569,6 +611,9 @@ class WheelShake(Capability):
         self._define_from_entity(shake_speed)
         self._define_from_entity(shake_angle)
 
+    def icon(self):
+        return "mdi:vibrate"
+
     def __str__(self):
         return self.args_to_str(self.wheel, self.slot_number, self.shake_speed,
                                 self.shake_angle, self.is_shaking)
@@ -594,6 +639,9 @@ class WheelSlotRotation(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(angle)
 
+    def icon(self):
+        return "mdi:screen-rotation"
+
     def __str__(self):
         return self.args_to_str(self.wheel, self.slot_number)
 
@@ -616,6 +664,9 @@ class WheelRotation(Capability):
 
         self._define_from_entity(speed)
         self._define_from_entity(angle)
+
+    def icon(self):
+        return "mdi:rotate-3d-variant"
 
     def __str__(self):
         return self.args_to_str(self.wheel, self.speed, self.angle)
@@ -652,6 +703,17 @@ class Effect(Capability):
         self._define_from_entity(parameter)
         self._define_from_entity(sound_sensitivity)
 
+    def icon(self):
+        if self.speed:
+            return "mdi:run-fast"
+        if self.duration:
+            return "mdi:timer-sand"
+        if self.parameter:
+            return "mdi:format-list-bulleted-type"
+        if self.sound_sensitivity:
+            return "mdi:microphone-outline"
+        return "mdi:star-four-points-outline"
+
     def __str__(self):
         return self.args_to_str(self.effect_name, self.effect_preset,
                                 self.speed, self.duration, self.parameter,
@@ -670,6 +732,9 @@ class BeamAngle(Capability):
         super().__init__(**kwargs)
         self.angle = angle
         self._define_from_entity(angle)
+
+    def icon(self):
+        return "mdi:angle-acute"
 
     def __str__(self):
         return self.args_to_str(self.angle)
@@ -694,6 +759,9 @@ class BeamPosition(Capability):
         self._define_from_entity(horizontal_angle)
         self._define_from_entity(vertical_angle)
 
+    def icon(self):
+        return "mdi:crosshairs"
+
     def __str__(self):
         return self.args_to_str(self.horizontal_angle, self.vertical_angle)
 
@@ -708,6 +776,9 @@ class EffectSpeed(Capability):
         super().__init__(**kwargs)
         self.speed = speed
         self._define_from_entity(speed)
+
+    def icon(self):
+        return "mdi:speedometer"
 
     def __str__(self):
         return self.args_to_str(self.speed)
@@ -724,6 +795,9 @@ class EffectDuration(Capability):
         self.duration = duration
         self._define_from_entity(duration)
 
+    def icon(self):
+        return "mdi:timer-sand"
+
     def __str__(self):
         return self.args_to_str(self.duration)
 
@@ -738,6 +812,9 @@ class EffectParameter(Capability):
         super().__init__(**kwargs)
         self.parameter = parameter
         self._define_from_entity(parameter)
+
+    def icon(self):
+        return "mdi:format-list-bulleted-type"
 
     def __str__(self):
         return self.args_to_str(self.parameter)
@@ -754,6 +831,9 @@ class SoundSensitivity(Capability):
         self.sound_sensitivity = sound_sensitivity
         self._define_from_entity(sound_sensitivity)
 
+    def icon(self):
+        return "mdi:microphone-outline"
+
     def __str__(self):
         return self.args_to_str(self.sound_sensitivity)
 
@@ -768,6 +848,9 @@ class Focus(Capability):
         super().__init__(**kwargs)
         self.distance = distance
         self._define_from_entity(distance)
+
+    def icon(self):
+        return "mdi:image-filter-center-focus"
 
     def __str__(self):
         return self.args_to_str(self.distance)
@@ -784,6 +867,9 @@ class Zoom(Capability):
         self.angle = angle
         self._define_from_entity(angle)
 
+    def icon(self):
+        return "mdi:magnify-plus-outline"
+
     def __str__(self):
         return self.args_to_str(self.angle)
 
@@ -798,6 +884,9 @@ class Iris(Capability):
         super().__init__(**kwargs)
         self.open_percent = open_percent
         self._define_from_entity(open_percent)
+
+    def icon(self):
+        return "mdi:circle-slice-8"
 
     def __str__(self):
         return self.args_to_str(self.open_percent)
@@ -816,6 +905,9 @@ class IrisEffect(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
+    def icon(self):
+        return "mdi:blur-radial"
+
     def __str__(self):
         return self.args_to_str(self.effect_name, self.speed)
 
@@ -830,6 +922,9 @@ class Frost(Capability):
         super().__init__(**kwargs)
         self.frost_intensity = frost_intensity
         self._define_from_entity(frost_intensity)
+
+    def icon(self):
+        return "mdi:snowflake"
 
     def __str__(self):
         return self.args_to_str(self.frost_intensity)
@@ -847,6 +942,9 @@ class FrostEffect(Capability):
         self.effect_name = effect_name
         self.speed = speed
         self._define_from_entity(speed)
+
+    def icon(self):
+        return "mdi:snowflake-alert"
 
     def __str__(self):
         return self.args_to_str(self.effect_name, self.speed)
@@ -870,6 +968,9 @@ class Prism(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(angle)
 
+    def icon(self):
+        return "mdi:diamond-outline"
+
     def __str__(self):
         return self.args_to_str(self.speed, self.angle)
 
@@ -892,6 +993,9 @@ class PrismRotation(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(angle)
 
+    def icon(self):
+        return "mdi:rotate-right"
+
     def __str__(self):
         return self.args_to_str(self.speed, self.angle)
 
@@ -909,6 +1013,9 @@ class BladeInsertion(Capability):
         super().__init__(**kwargs)
         self.blade = blade
         self._define_from_entity(insertion)
+
+    def icon(self):
+        return "mdi:pan-horizontal"
 
     def __str__(self):
         return self.args_to_str(self.blade)
@@ -928,6 +1035,9 @@ class BladeRotation(Capability):
         self.blade = blade
         self._define_from_entity(angle)
 
+    def icon(self):
+        return "mdi:rotate-right"
+
     def __str__(self):
         return self.args_to_str(self.blade)
 
@@ -944,6 +1054,9 @@ class BladeSystemRotation(Capability):
         super().__init__(**kwargs)
         self.angle = angle
         self._define_from_entity(angle)
+
+    def icon(self):
+        return "mdi:rotate-orbit"
 
     def __str__(self):
         return self.args_to_str(self.angle)
@@ -964,6 +1077,9 @@ class Fog(Capability):
         self.fog_output = fog_output
         self._define_from_entity(fog_output)
 
+    def icon(self):
+        return "mdi:weather-fog"
+
     def __str__(self):
         return self.args_to_str(self.fog_type, self.fog_output)
 
@@ -981,6 +1097,9 @@ class FogOutput(Capability):
         self.fog_output = fog_output
         self._define_from_entity(fog_output)
 
+    def icon(self):
+        return "mdi:weather-fog"
+
     def __str__(self):
         return self.args_to_str(self.fog_output)
 
@@ -996,6 +1115,9 @@ class FogType(Capability):
                  **kwargs):
         super().__init__(**kwargs)
         self.fog_type = fog_type
+
+    def icon(self):
+        return "mdi:weather-partly-cloudy"
 
     def __str__(self):
         return self.args_to_str(self.fog_type)
@@ -1019,6 +1141,9 @@ class Rotation(Capability):
         self._define_from_entity(speed)
         self._define_from_entity(angle)
 
+    def icon(self):
+        return "mdi:rotate-left"
+
     def __str__(self):
         return self.args_to_str(self.speed, self.angle)
 
@@ -1036,6 +1161,9 @@ class Speed(Capability):
         self.speed = speed
         self._define_from_entity(speed)
 
+    def icon(self):
+        return "mdi:run-fast"
+
     def __str__(self):
         return self.args_to_str(self.speed)
 
@@ -1052,6 +1180,9 @@ class Time(Capability):
         super().__init__(**kwargs)
         self.time = time
         self._define_from_entity(time)
+
+    def icon(self):
+        return "mdi:clock-outline"
 
     def __str__(self):
         return self.args_to_str(self.time)
@@ -1072,6 +1203,9 @@ class Maintenance(Capability):
         self.parameter = parameter
         self._define_from_entity(parameter)
 
+    def icon(self):
+        return "mdi:wrench"
+
     def __str__(self):
         return self.args_to_str(self.hold, self.parameter)
 
@@ -1084,3 +1218,8 @@ class Generic(Capability):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+    def icon(self):
+        return "mdi:dots-horizontal-circle-outline"
+
+

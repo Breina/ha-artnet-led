@@ -1,6 +1,7 @@
 import logging
 
 from homeassistant.components.select import SelectEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from custom_components.dmx import DOMAIN
 from custom_components.dmx.entity.number import DmxNumberEntity
@@ -16,11 +17,13 @@ class DmxSelectEntity(SelectEntity):
                  channel: Channel,
                  capability_entities: dict[str, DmxNumberEntity],
                  universe: Universe,
-                 dmx_index: int
+                 dmx_index: int,
+                 device: DeviceInfo
                  ) -> None:
         super().__init__()
 
         self._attr_name = channel.name
+        self._attr_device_info = device
         self._attr_unique_id = f"{DOMAIN}_{channel.name}"  # TODO add device
 
         # TODO icon

@@ -1,6 +1,7 @@
 from typing import List
 
 from homeassistant.components.number import NumberEntity, NumberMode
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from custom_components.dmx import DOMAIN
 from custom_components.dmx.fixture.capability import DynamicEntity, Capability
@@ -10,7 +11,8 @@ from custom_components.dmx.io.dmx_io import Universe
 class DmxNumberEntity(NumberEntity):
     def __init__(self, name: str, capability: Capability,
                  universe: Universe, dmx_indexes: List[int],
-                 available: bool = True
+                 device: DeviceInfo,
+                 available: bool = True, # TODO something wrong here?
                  ) -> None:
         super().__init__()
 
@@ -18,10 +20,10 @@ class DmxNumberEntity(NumberEntity):
                and len(capability.dynamic_entities) == 1
 
         self._attr_name = name
+        self._attr_device_info = device
         self._attr_unique_id = f"{DOMAIN}_{name}"  # TODO add device
 
-        # TODO icon
-        # self._attr_icon
+        self._attr_icon = capability.icon()
 
         self.universe = universe
         self.dmx_indexes = dmx_indexes
