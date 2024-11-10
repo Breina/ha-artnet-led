@@ -295,6 +295,19 @@ class Capability:
         return s[1:]
 
 
+class NoFunction(Capability):
+    """
+    A NoFunction capability.
+    Class name and instance arguments match the fixture format exactly.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def __str__(self):
+        return self.comment or "NoFunction"
+
+
 class ShutterStrobe(Capability):
     """
     A ShutterStrobe capability.

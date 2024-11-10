@@ -225,8 +225,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     # print(f"async_setup_entry: {config_entry}")
     hass.data.setdefault(DOMAIN, {})
 
-    # fixture = parse("fixtures/hydrabeam-300-rgbw.json")
-    # channels = fixture.select_mode("42-channel")
+    fixture = parse("fixtures/hydrabeam-300-rgbw.json")
+    channels = fixture.select_mode("42-channel")
 
     # fixture = parse("fixtures/dj_scan_led.json")
     # channels = fixture.select_mode("Normal")
@@ -234,8 +234,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     # fixture = parse("fixtures/hotbox-rgbw.json")
     # channels = fixture.select_mode("9-channel B")
 
-    fixture = parse("fixtures/jbled-a7.json")
-    channels = fixture.select_mode("Standard 16bit")
+    # fixture = parse("fixtures/jbled-a7.json")
+    # channels = fixture.select_mode("Standard 16bit")
 
     entities = create_entities(100, channels)
 

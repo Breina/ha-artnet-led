@@ -213,8 +213,8 @@ def __parse_channels(available_channels_json: dict,
 def __parse_capability(channel: Channel,
                        capability_json: dict) -> Capability | None:
     capability_type = capability_json["type"]
-    if capability_type == "NoFunction":
-        return None
+    # if capability_type == "NoFunction":
+    #     return None
 
     # This is directly mapped to the class names inside capability.py.
     capability_obj = getattr(capability, capability_type)
