@@ -66,6 +66,10 @@ def create_entities(
             entities.append(select_entity)
             entities.extend(number_entities)
 
+    for entity in entities:
+        if isinstance(entity, DmxSelectEntity):
+            entity.link_switching_entities(entities)
+
     return entities
 
 

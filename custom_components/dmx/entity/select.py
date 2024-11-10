@@ -34,6 +34,19 @@ class DmxSelectEntity(SelectEntity):
         self.universe = universe
         self.universe.register_channel_listener(dmx_index, self.update_value)
 
+        self.switching_entities = {}
+
+    def link_switching_entities(self, entities: list[DmxNumberEntity]) -> None:
+        for capability_name, capability in self.capability_types.items():
+            if not capability.switch_channels:
+                continue
+
+            for channel_name in capability.switch_channels.values():
+                for entity in entities:
+                    if entity.name == channel_name:
+                        self.switching_entities[capability_name] = entity
+                        break
+
     def update_value(self, value: int) -> None:
         # TODO maybe update self._attr_attribution from source ArtNet node?
         capability = [
@@ -60,9 +73,19 @@ class DmxSelectEntity(SelectEntity):
         await self.universe.update_value(self.dmx_index, dmx_value)
 
     def update_current_option(self, new_option: str) -> None:
-        self.capability_entities[self._attr_current_option].available = False
+        self.__set_availability(False)
         self._attr_current_option = new_option
-        self.capability_entities[self._attr_current_option].available = True
+        self.__set_availability(True)
+
+    def __set_availability(self, availability: bool) -> None:
+        self.capability_entities[
+            self._attr_current_option].available = availability
+        if self.switching_entities[self._attr_current_option]:
+            self.switching_entities[
+                self._attr_current_option].available = availability
 
     def __str__(self) -> str:
         return f"{self._attr_name}: {self.capability_attributes['options']}"
+
+    def __repr__(self) -> str:
+        return self.__str__()

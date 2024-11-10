@@ -73,3 +73,7 @@ class DmxNumberEntity(NumberEntity):
 
     def __str__(self) -> str:
         return f"{self._attr_name}: {self.capability.__repr__()}"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
