@@ -64,7 +64,7 @@ def create_entities(
             )
 
             entities.append(select_entity)
-            entities.extend(number_entities)
+            entities.extend(number_entities.values())
 
     for entity in entities:
         if isinstance(entity, DmxSelectEntity):
@@ -73,8 +73,12 @@ def create_entities(
     return entities
 
 
+# fixture = parse("../../../staging/fixtures/hotbox-rgbw.json")
+# channels = fixture.select_mode("9-channel B")
 # fixture = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
 # channels = fixture.select_mode("42-channel")
+# fixture = parse("../../../staging/fixtures/jbled-a7.json")
+# channels = fixture.select_mode("Standard 16bit")
 #
 # entities = create_entities(100, channels)
 #

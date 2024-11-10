@@ -325,5 +325,7 @@ class ColorHex(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: int):
+    def __init__(self, value: int, hex: str):
         super().__init__(value, None, [None])
+
+        self.hex = hex

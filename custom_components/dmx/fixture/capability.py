@@ -16,7 +16,7 @@ from custom_components.dmx.fixture import entity
 from custom_components.dmx.fixture.entity import RotationAngle, RotationSpeed, \
     Brightness, SlotNumber, SwingAngle, Parameter, Percent, VerticalAngle, \
     HorizontalAngle, Distance, \
-    IrisPercent, Insertion, Entity
+    IrisPercent, Insertion, Entity, ColorHex
 
 
 class DmxValueResolution(Enum):
@@ -405,7 +405,11 @@ class ColorPreset(Capability):
         self.color_temperature = color_temperature
 
         if colors and len(colors) == 2:
-            self._define_from_range(0, 100)
+            # TODO this isn't ideal, how to map multiple color ranges at once?
+            self._define_from_entity([
+                ColorHex(0, colors[0][0]),
+                ColorHex(100, colors[1][0])
+            ])
 
         self._define_from_entity(color_temperature)
 

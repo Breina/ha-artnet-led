@@ -38,6 +38,8 @@ class DmxNumberEntity(NumberEntity):
 
         self._attr_native_min_value = self.dynamic_entity.entity_start.value
         self._attr_native_max_value = self.dynamic_entity.entity_end.value
+        self._attr_native_unit_of_measurement = \
+            self.dynamic_entity.entity_start.unit
 
         possible_dmx_states = pow(2, len(dmx_indexes) * 8)
         native_value_range = (
@@ -48,9 +50,6 @@ class DmxNumberEntity(NumberEntity):
             self._attr_native_value = capability.menu_click_value
         else:
             self._attr_native_value = 0
-
-        self._attr_native_unit_of_measurement = \
-            self.dynamic_entity.entity_start.unit
 
         self.universe.register_channel_listener(dmx_indexes, self.update_value)
 
