@@ -31,6 +31,8 @@ class DmxSelectEntity(SelectEntity):
 
         self._attr_options = list(self.capability_types.keys())
 
+        self._attr_current_option = self._attr_options[0] # TODO isn't there something for this?
+
         self.universe = universe
         self.universe.register_channel_listener(dmx_index, self.update_value)
 

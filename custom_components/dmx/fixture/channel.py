@@ -55,6 +55,7 @@ class Channel:
         else:
             self.highlight_value = percent_to_byte(highlight_value)
 
+        # TODO use this somewhere?
         self.constant = constant
 
         self.capabilities: Capabilities = []

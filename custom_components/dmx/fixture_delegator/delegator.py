@@ -73,11 +73,11 @@ def create_entities(
     return entities
 
 
-fixture = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
-channels = fixture.select_mode("42-channel")
-
-entities = create_entities(100, channels)
-
-print("\nThe entities:")
-for entity in entities:
-    print(entity)
+# fixture = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
+# channels = fixture.select_mode("42-channel")
+#
+# entities = create_entities(100, channels)
+#
+# print("\nThe entities:")
+# for entity in entities:
+#     print(entity)
