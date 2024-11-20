@@ -2,6 +2,8 @@ import datetime
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
+import unicodedata
+from typing import Optional
 
 CLIENT_VERSION = 1
 
@@ -373,6 +375,8 @@ class TimeCodeType(Enum):
 
 
 class ArtBase:
+    __ENCODINGS__ = ['ascii', 'utf8', 'utf16', 'utf32']
+
     def __init__(self, opcode: OpCode) -> None:
         super().__init__()
         self.__opcode = opcode
@@ -450,9 +454,32 @@ class ArtBase:
 
     @staticmethod
     def _consume_str(packet: bytearray, index: int, length: int) -> (str, int):
-        str_bytes = str(packet[index:index + length - 1], "ASCII")
-        string = str_bytes.split('\0')[0]
-        return string, index + length
+        raw_string_from_packet = packet[index:index + length]
+        decoded_str = ArtBase._decode_bytes(raw_string_from_packet)
+
+        # check if decoding has failed
+        if decoded_str is None:
+            # use hexdecimal representation
+            normalized_string = raw_string_from_packet.hex(":")
+        else:
+            normalized_string = unicodedata.normalize('NFKD', decoded_str).encode('ascii', 'ignore')
+
+        return normalized_string.decode('ascii'), index + length
+
+    @staticmethod
+    def _decode_bytes(byte_str: bytearray) -> Optional[str]:
+        for encoding in ArtBase.__ENCODINGS__:
+            try:
+                decoded_str = byte_str.decode(encoding).split('\0')[0]
+                return decoded_str
+            except UnicodeDecodeError as e:
+                log.warning(
+                    "failed to decode as {failed_encoding}: {hex_representation}".format(
+                        failed_encoding=encoding,
+                        hex_representation=bytes(byte_str).hex(":"))
+                )
+
+
 
     @staticmethod
     def peek_opcode(packet: bytearray) -> OpCode | None:
