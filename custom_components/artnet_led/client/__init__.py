@@ -3,8 +3,6 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-import unicodedata
-from lib2to3.pgen2.tokenize import group
 from typing import Optional
 
 CLIENT_VERSION = 1
