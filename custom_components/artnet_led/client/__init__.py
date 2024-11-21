@@ -1,8 +1,10 @@
 import datetime
 import logging
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 import unicodedata
+from lib2to3.pgen2.tokenize import group
 from typing import Optional
 
 CLIENT_VERSION = 1
@@ -375,7 +377,7 @@ class TimeCodeType(Enum):
 
 
 class ArtBase:
-    __ENCODINGS__ = ['ascii', 'utf8', 'utf16', 'utf32']
+    __ENCODINGS__ = ['ascii', 'utf8']
 
     def __init__(self, opcode: OpCode) -> None:
         super().__init__()
@@ -453,33 +455,45 @@ class ArtBase:
         packet.extend(map(ord, padded_text))
 
     @staticmethod
-    def _consume_str(packet: bytearray, index: int, length: int) -> (str, int):
+    def _consume_str(packet: bytearray, index: int, length: int) -> (Optional[str], int):
+        decoded_str: Optional[str] = None
         raw_string_from_packet = packet[index:index + length]
-        decoded_str = ArtBase._decode_bytes(raw_string_from_packet)
+
+        # assume the data is ascii
+        try:
+            # if there is a NUL character in the bytearry, it terminates earlier
+            nul_terminator = re.compile(b"([^\\x00]+)")
+
+            terminated_string = nul_terminator.match(raw_string_from_packet).group(1)  \
+                if nul_terminator.match(raw_string_from_packet) else raw_string_from_packet
+
+            # remove every other control character
+            sanitized_str = re.sub(b"[^\x00-\x7F]",b"", terminated_string)
+
+            # decode
+            decoded_str = sanitized_str.decode('ascii')
+            log.info(f"decoded string: {decoded_str}")
+
+        except UnicodeDecodeError:
+            # data not ascii, try to use the decoding shotgun
+            decoded_str = ArtBase._decode_bytes(raw_string_from_packet)
 
         # check if decoding has failed
         if decoded_str is None:
-            # use hexdecimal representation
-            normalized_string = raw_string_from_packet.hex(":")
-        else:
-            normalized_string = unicodedata.normalize('NFKD', decoded_str).encode('ascii', 'ignore')
+            log.error("Unable to convert bytes to string: {raw_hex}".format(raw_hex=bytes(raw_string_from_packet).hex()))
 
-        return normalized_string.decode('ascii'), index + length
+        return decoded_str, index + length
 
     @staticmethod
     def _decode_bytes(byte_str: bytearray) -> Optional[str]:
         for encoding in ArtBase.__ENCODINGS__:
             try:
-                decoded_str = byte_str.decode(encoding).split('\0')[0]
-                return decoded_str
+                decoded_str = byte_str.decode(encoding)
+                sanitized_str = str(decoded_str).strip().strip('\x00')
+                log.debug(f"decoded as {encoding}: {sanitized_str}")
+                return sanitized_str
             except UnicodeDecodeError as e:
-                log.warning(
-                    "failed to decode as {failed_encoding}: {hex_representation}".format(
-                        failed_encoding=encoding,
-                        hex_representation=bytes(byte_str).hex(":"))
-                )
-
-
+                log.warning(f"failed ({e.reason} to decode as {encoding}: {bytes(byte_str).hex()}")
 
     @staticmethod
     def peek_opcode(packet: bytearray) -> OpCode | None:
