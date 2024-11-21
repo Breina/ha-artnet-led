@@ -375,7 +375,7 @@ class TimeCodeType(Enum):
 
 
 class ArtBase:
-    __ENCODINGS__ = ['ascii', 'utf8']
+    __ENCODINGS__ = ['iso-8859-1', 'utf8']
 
     def __init__(self, opcode: OpCode) -> None:
         super().__init__()
