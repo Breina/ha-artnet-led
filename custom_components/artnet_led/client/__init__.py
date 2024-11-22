@@ -491,7 +491,7 @@ class ArtBase:
                 log.debug(f"decoded as {encoding}: {sanitized_str}")
                 return sanitized_str
             except UnicodeDecodeError as e:
-                log.warning(f"failed ({e.reason} to decode as {encoding}: {bytes(byte_str).hex()}")
+                log.warning(f"failed ({e.reason}) to decode as {encoding}: {bytes(byte_str).hex()}")
 
     @staticmethod
     def peek_opcode(packet: bytearray) -> OpCode | None:
