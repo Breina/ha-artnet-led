@@ -6,6 +6,7 @@ Most arguments, instance attributes and class names are directly mapped to
 values of the fixture format. Therefore, we will excuse the python linter.
 """
 import logging
+from collections.abc import Iterable
 # pylint: disable=too-many-lines, too-many-arguments
 # pylint: disable=too-many-instance-attributes
 
@@ -309,6 +310,9 @@ class Capability:
                     arg = arg.name
                 elif isinstance(arg, list) and len(arg) == 1:
                     arg = arg[0]
+                elif isinstance(arg, Iterable) and not isinstance(arg, str):
+                    arg = sorted(arg) # Sorts small to big, just like we have to do in DmxNumberEntity's constructor
+
                 s = s + f" {arg}"
 
         return s[1:]
@@ -324,7 +328,7 @@ class NoFunction(Capability):
         super().__init__(**kwargs)
 
     def __str__(self):
-        return self.comment or "NoFunction"
+        return self.comment or "No function"
 
 
 class ShutterStrobe(Capability):
@@ -355,13 +359,13 @@ class ShutterStrobe(Capability):
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
 
-        attributes["Effect"] = self.effect
-        attributes["Sound controlled"] = self.sound_controlled
-        attributes["Random timing"] = self.random_timing
+        attributes["Effect"] = str(self.effect)
+        attributes["Sound controlled"] = self.sound_controlled or "False"
+        attributes["Random timing"] = self.random_timing or "False"
         if self.speed and len(self.speed) == 1:
-            attributes["Speed"] = self.speed[0]
+            attributes["Speed"] = str(self.speed[0])
         if self.duration and len(self.duration) == 1:
-            attributes["Duration"] = self.duration[0]
+            attributes["Duration"] = str(self.duration[0])
 
         return attributes
 
@@ -448,7 +452,7 @@ class ColorIntensity(Capability):
 
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
-        attributes["Color"] = self.color
+        attributes["Color"] = str(self.color)
         return attributes
 
     def __str__(self):
@@ -601,9 +605,9 @@ class PanTiltSpeed(Capability):
         attributes = super().extra_attributes()
 
         if self.speed and len(self.speed) == 1:
-            attributes["Speed"] = self.speed[0]
+            attributes["Speed"] = str(self.speed[0])
         if self.duration and len(self.duration) == 1:
-            attributes["Duration"] = self.duration[0]
+            attributes["Duration"] = str(self.duration[0])
 
         return attributes
 
@@ -666,21 +670,21 @@ class WheelShake(Capability):
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
 
-        attributes["Is shaking"] = self.is_shaking
+        attributes["Is shaking"] = self.is_shaking or "False"
         if self.wheel:
             if isinstance(self.wheel, str):
                 attributes["Wheel"] = self.wheel
             elif len(self.wheel) == 1:
-                attributes["Wheel"] = self.wheel[0]
+                attributes["Wheel"] = str(self.wheel[0])
 
         if self.slot_number and len(self.slot_number) == 1:
-            attributes["Slot number"] = self.slot_number[0]
+            attributes["Slot number"] = str(self.slot_number[0])
 
         if self.shake_speed and len(self.shake_speed) == 1:
-            attributes["Shake speed"] = self.shake_speed[0]
+            attributes["Shake speed"] = str(self.shake_speed[0])
 
         if self.shake_angle and len(self.shake_angle) == 1:
-            attributes["Shake angle"] = self.shake_angle[0]
+            attributes["Shake angle"] = str(self.shake_angle[0])
 
         return attributes
 
@@ -722,16 +726,16 @@ class WheelSlotRotation(Capability):
             if isinstance(self.wheel, str):
                 attributes["Wheel"] = self.wheel
             elif len(self.wheel) == 1:
-                attributes["Wheel"] = self.wheel[0]
+                attributes["Wheel"] = str(self.wheel[0])
 
         if self.slot_number:
-            attributes["Slot number"] = self.slot_number
+            attributes["Slot number"] = str(self.slot_number)
 
         if self.speed and len(self.speed) == 1:
-            attributes["Rotation speed"] = self.speed[0]
+            attributes["Rotation speed"] = str(self.speed[0])
 
         if self.angle and len(self.angle) == 1:
-            attributes["Rotation angle"] = self.angle[0]
+            attributes["Rotation angle"] = str(self.angle[0])
 
         return attributes
 
@@ -768,13 +772,13 @@ class WheelRotation(Capability):
             if isinstance(self.wheel, str):
                 attributes["Wheel"] = self.wheel
             elif len(self.wheel) == 1:
-                attributes["Wheel"] = self.wheel[0]
+                attributes["Wheel"] = str(self.wheel[0])
 
         if self.speed and len(self.speed) == 1:
-            attributes["Rotation speed"] = self.speed[0]
+            attributes["Rotation speed"] = str(self.speed[0])
 
         if self.angle and len(self.angle) == 1:
-            attributes["Rotation angle"] = self.angle[0]
+            attributes["Rotation angle"] = str(self.angle[0])
 
         return attributes
 
@@ -831,21 +835,21 @@ class Effect(Capability):
             attributes["Effect"] = self.effect_name
 
         if self.effect_preset:
-            attributes["Effect preset"] = self.effect_preset
+            attributes["Effect preset"] = str(self.effect_preset)
 
         if self.speed and len(self.speed) == 1:
-            attributes["Effect speed"] = self.speed[0]
+            attributes["Effect speed"] = str(self.speed[0])
 
         if self.duration and len(self.duration) == 1:
-            attributes["Effect duration"] = self.duration[0]
+            attributes["Effect duration"] = str(self.duration[0])
 
         if self.parameter and len(self.parameter) == 1:
-            attributes["Effect parameter"] = self.parameter[0]
+            attributes["Effect parameter"] = str(self.parameter[0])
 
-        attributes["Sound controlled"] = self.sound_controlled
+        attributes["Sound controlled"] = self.sound_controlled or "False"
 
         if self.sound_sensitivity and len(self.sound_sensitivity) == 1:
-            attributes["Sound sensitivity"] = self.sound_sensitivity[0]
+            attributes["Sound sensitivity"] = str(self.sound_sensitivity[0])
 
         return attributes
 
@@ -901,10 +905,10 @@ class BeamPosition(Capability):
         attributes = super().extra_attributes()
 
         if self.horizontal_angle and len(self.horizontal_angle) == 1:
-            attributes["Horizontal angle"] = self.horizontal_angle[0]
+            attributes["Horizontal angle"] = str(self.horizontal_angle[0])
 
         if self.vertical_angle and len(self.vertical_angle) == 1:
-            attributes["Vertical angle"] = self.vertical_angle[0]
+            attributes["Vertical angle"] = str(self.vertical_angle[0])
 
         return attributes
 
@@ -1056,7 +1060,7 @@ class IrisEffect(Capability):
 
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
-        attributes["Effect name"] = self.effect_name
+        attributes["Effect name"] = str(self.effect_name)
         return attributes
 
     def __str__(self):
@@ -1099,7 +1103,7 @@ class FrostEffect(Capability):
 
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
-        attributes["Effect name"] = self.effect_name
+        attributes["Effect name"] = str(self.effect_name)
         return attributes
 
     def __str__(self):
@@ -1131,10 +1135,10 @@ class Prism(Capability):
         attributes = super().extra_attributes()
 
         if self.speed and len(self.speed) == 1:
-            attributes["Speed"] = self.speed
+            attributes["Speed"] = str(self.speed)
 
         if self.angle and len(self.angle) == 1:
-            attributes["Angle"] = self.angle
+            attributes["Angle"] = str(self.angle)
 
         return attributes
 
@@ -1167,10 +1171,10 @@ class PrismRotation(Capability):
         attributes = super().extra_attributes()
 
         if self.speed and len(self.speed) == 1:
-            attributes["Speed"] = self.speed
+            attributes["Speed"] = str(self.speed)
 
         if self.angle and len(self.angle) == 1:
-            attributes["Angle"] = self.angle
+            attributes["Angle"] = str(self.angle)
 
         return attributes
 
@@ -1197,7 +1201,7 @@ class BladeInsertion(Capability):
 
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
-        attributes["Blade position"] = self.blade
+        attributes["Blade position"] = str(self.blade)
         return attributes
 
     def __str__(self):
@@ -1223,7 +1227,7 @@ class BladeRotation(Capability):
 
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
-        attributes["Blade position"] = self.blade
+        attributes["Blade position"] = str(self.blade)
         return attributes
 
     def __str__(self):
@@ -1270,7 +1274,7 @@ class Fog(Capability):
 
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
-        attributes["Fog type output"] = self.fog_type
+        attributes["Fog type output"] = str(self.fog_type)
         return attributes
 
     def __str__(self):
@@ -1295,7 +1299,7 @@ class FogOutput(Capability):
 
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
-        attributes["Fog type output"] = self.fog_output
+        attributes["Fog type output"] = str(self.fog_output)
         return attributes
 
     def __str__(self):
@@ -1319,7 +1323,7 @@ class FogType(Capability):
 
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
-        attributes["Fog type output"] = self.fog_type
+        attributes["Fog type output"] = str(self.fog_type)
         return attributes
 
     def __str__(self):
@@ -1351,10 +1355,10 @@ class Rotation(Capability):
         attributes = super().extra_attributes()
 
         if self.speed and len(self.speed) == 1:
-            attributes["Speed"] = self.speed
+            attributes["Speed"] = str(self.speed)
 
         if self.angle and len(self.angle) == 1:
-            attributes["Angle"] = self.angle
+            attributes["Angle"] = str(self.angle)
 
         return attributes
 
@@ -1422,7 +1426,7 @@ class Maintenance(Capability):
 
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
-        attributes["Hold"] = self.hold
+        attributes["Hold"] = str(self.hold)
         return attributes
 
     def __str__(self):

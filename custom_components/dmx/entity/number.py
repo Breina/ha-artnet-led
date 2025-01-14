@@ -37,8 +37,13 @@ class DmxNumberEntity(RestoreNumber):
         self.dynamic_entity = capability.dynamic_entities[0]
         assert isinstance(self.dynamic_entity, DynamicEntity)
 
-        self._attr_native_min_value = self.dynamic_entity.entity_start.value
-        self._attr_native_max_value = self.dynamic_entity.entity_end.value
+        start_val = self.dynamic_entity.entity_start.value
+        end_val = self.dynamic_entity.entity_end.value
+
+        self._attr_native_min_value, self._attr_native_max_value = (
+            sorted((start_val, end_val))
+        )
+
         self._attr_native_unit_of_measurement = \
             self.dynamic_entity.entity_start.unit
 
