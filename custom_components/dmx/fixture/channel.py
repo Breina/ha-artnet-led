@@ -38,6 +38,7 @@ class Channel:
                  constant: bool = False
                  ):
         self.name = name
+        self.matrix_key = None  # Used to identify channels part of a templated matrix
 
         if fine_channel_aliases is None:
             fine_channel_aliases = []

@@ -119,8 +119,7 @@ class Fixture:
         del self.switching_channel_names
 
     def __resolve_matrix(self):
-        for name in list(self.matrix.pixels_by_name.keys()) + list(
-                self.matrix.pixel_groups.keys()):
+        for name in list(self.matrix.pixels_by_name.keys()) + list(self.matrix.pixel_groups.keys()):
             for template_channel in self.template_channels.values():
                 channel_copy = self.__renamed_copy(template_channel, name)
                 self.define_channel(channel_copy)
@@ -132,10 +131,8 @@ class Fixture:
             dest: dict[str, SwitchingChannel]
     ):
 
-        for switching_channel_name, switched_channel_names \
-                in switching_channel_names.items():
-            switched_channels = [channels[channelName] for channelName in
-                                 switched_channel_names]
+        for switching_channel_name, switched_channel_names in switching_channel_names.items():
+            switched_channels = [channels[channelName] for channelName in switched_channel_names]
             dest[switching_channel_name] = SwitchingChannel(
                 switching_channel_name,
                 {
@@ -213,6 +210,7 @@ class Fixture:
     @staticmethod
     def __renamed_copy(channel: Channel, new_name: str) -> Channel:
         copy = deepcopy(channel)
+        copy.matrix_key = new_name
         copy.name = copy.name.replace(PIXEL_KEY, new_name)
         copy.fine_channel_aliases = [
             fine_channel_alias.replace(PIXEL_KEY, new_name)
@@ -220,10 +218,7 @@ class Fixture:
         ]
         for capability in copy.capabilities:
             capability.switch_channels = {
-                switchingChannel.replace(
-                    PIXEL_KEY, new_name): referenced_channel.replace(
-                    PIXEL_KEY, new_name
-                )
+                switchingChannel.replace(PIXEL_KEY, new_name): referenced_channel.replace(PIXEL_KEY, new_name)
                 for switchingChannel, referenced_channel in
                 capability.switch_channels.items()
             }
