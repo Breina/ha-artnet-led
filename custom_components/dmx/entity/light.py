@@ -78,6 +78,9 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
         self._warm_white = 255
         self._color_temp_value = 255  # Direct color temp channel value
 
+        # Initialize default values from channels' capabilities
+        self._initialize_default_values()
+
         # Map channels by type for easy access
         self._channel_map: Dict[LightChannel, AccumulatedLightChannel] = {
             channel.light_channel: channel for channel in channels
@@ -98,6 +101,63 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
         # Register channel listeners
         self._is_updating = False
         self._register_channel_listeners()
+
+    def _initialize_default_values(self):
+        """Initialize default values for channels based on their capabilities."""
+        for channel_data in self._channels:
+            channel = channel_data.channel
+            light_channel = channel_data.light_channel
+
+            # Check if there's a capability with menu_click
+            if channel.capabilities and len(channel.capabilities) > 0:
+                capability = channel.capabilities[0]
+
+                # Set the default value based on menu_click
+                if capability.menu_click:
+                    default_value = capability.menu_click_value
+                else:
+                    default_value = 0
+
+                # Update the corresponding state attribute based on channel type
+                self._set_initial_channel_value(light_channel, default_value)
+
+    def _set_initial_channel_value(self, light_channel: LightChannel, value: int):
+        """Set the initial value for a channel based on its type."""
+        if light_channel == LightChannel.RED:
+            self._rgb_color = (value, self._rgb_color[1], self._rgb_color[2])
+            self._rgbw_color = (value, self._rgbw_color[1], self._rgbw_color[2], self._rgbw_color[3])
+            self._rgbww_color = (value, self._rgbww_color[1], self._rgbww_color[2],
+                                 self._rgbww_color[3], self._rgbww_color[4])
+        elif light_channel == LightChannel.GREEN:
+            self._rgb_color = (self._rgb_color[0], value, self._rgb_color[2])
+            self._rgbw_color = (self._rgbw_color[0], value, self._rgbw_color[2], self._rgbw_color[3])
+            self._rgbww_color = (self._rgbww_color[0], value, self._rgbww_color[2],
+                                 self._rgbww_color[3], self._rgbww_color[4])
+        elif light_channel == LightChannel.BLUE:
+            self._rgb_color = (self._rgb_color[0], self._rgb_color[1], value)
+            self._rgbw_color = (self._rgbw_color[0], self._rgbw_color[1], value, self._rgbw_color[3])
+            self._rgbww_color = (self._rgbww_color[0], self._rgbww_color[1], value,
+                                 self._rgbww_color[3], self._rgbww_color[4])
+        elif light_channel == LightChannel.COLD_WHITE:
+            self._cold_white = value
+            self._rgbw_color = (self._rgbw_color[0], self._rgbw_color[1], self._rgbw_color[2], value)
+            self._rgbww_color = (self._rgbww_color[0], self._rgbww_color[1], self._rgbww_color[2],
+                                 value, self._rgbww_color[4])
+        elif light_channel == LightChannel.WARM_WHITE:
+            self._warm_white = value
+            self._rgbww_color = (self._rgbww_color[0], self._rgbww_color[1], self._rgbww_color[2],
+                                 self._rgbww_color[3], value)
+        elif light_channel == LightChannel.COLOR_TEMPERATURE:
+            self._color_temp_value = value
+            # Convert DMX value to mired color temperature
+            if hasattr(self, "min_mireds") and hasattr(self, "max_mireds"):
+                ratio = value / 255
+                self._color_temp = self.min_mireds + ratio * (self.max_mireds - self.min_mireds)
+        elif light_channel == LightChannel.DIMMER:
+            self._brightness = value
+            # If value > 0, also set state to True
+            if value > 0:
+                self._state = True
 
     def _setup_turn_on_handlers(self):
         """Pre-configure optimized handlers for different turn_on scenarios."""
