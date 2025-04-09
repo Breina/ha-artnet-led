@@ -1,9 +1,13 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 from itertools import groupby
+from typing import List
 
+from homeassistant.components.light import ColorMode
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import Entity
 
+from custom_components.dmx.entity.light import AccumulatedLightChannel, LightChannel, ClaudeLightEntity
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.entity.select import DmxSelectEntity
 from custom_components.dmx.fixture.capability import ColorIntensity, \
@@ -19,16 +23,6 @@ class MappedChannel:
     channel: Channel
 
 
-class LightChannel(Enum):
-    RED = auto()
-    GREEN = auto()
-    BLUE = auto()
-    COLD_WHITE = auto()
-    WARM_WHITE = auto()
-    COLOR_TEMPERATURE = auto()
-    DIMMER = auto()
-
-
 def __get_channel(source: tuple[int, None | ChannelOffset | SwitchingChannel]) -> list[tuple[int, ChannelOffset]]:
     if isinstance(source[1], ChannelOffset):
         return [source]
@@ -38,21 +32,14 @@ def __get_channel(source: tuple[int, None | ChannelOffset | SwitchingChannel]) -
         return [source]
 
 
-def __get_all_channels(index_channels: list[tuple[int, None | ChannelOffset | SwitchingChannel]]) -> list[
-    tuple[int, ChannelOffset]]:
+def __get_all_channels(index_channels: list[tuple[int, None | ChannelOffset | SwitchingChannel]]) -> list[tuple[int, ChannelOffset]]:
     return [c for channel_sub in index_channels for c in __get_channel(channel_sub)]
 
 
-def __accumulate_light_entities(accumulator: dict[str, dict[LightChannel, list[ChannelOffset]]],
-                                channel_offset: ChannelOffset) -> None:
-
-    channel = channel_offset.channel
+def __accumulate_light_entities(accumulator: dict[str, list[AccumulatedLightChannel]],
+                                dmx_channel_indexes: List[int], channel: Channel, universe: Universe) -> None:
     assert len(channel.capabilities) == 1
 
-    if channel.matrix_key not in accumulator:
-        accumulator[channel.matrix_key] = {}
-
-    light_channel = None
     capability = channel.capabilities[0]
     if isinstance(capability, ColorIntensity):
         if capability.color == SingleColor.Red:
@@ -65,19 +52,128 @@ def __accumulate_light_entities(accumulator: dict[str, dict[LightChannel, list[C
             light_channel = LightChannel.COLD_WHITE
         elif capability.color == SingleColor.WarmWhite:
             light_channel = LightChannel.WARM_WHITE
+        else:
+            return
+
     elif isinstance(capability, Intensity):
         light_channel = LightChannel.DIMMER
+
     elif isinstance(capability, ColorTemperature):
         light_channel = LightChannel.COLOR_TEMPERATURE
 
-    if light_channel in accumulator[channel.matrix_key]:
-        accumulator[channel.matrix_key][light_channel].append(channel_offset)
+    # TODO how to handle hue / saturation? Not in the standard. See arri/l10-c.json for example.
+
     else:
-        accumulator[channel.matrix_key][light_channel] = [channel_offset]
+        return
+
+    accumulated_light_channel = AccumulatedLightChannel(dmx_channel_indexes, channel, universe, light_channel)
+    if channel.matrix_key in accumulator:
+        accumulator[channel.matrix_key].append(accumulated_light_channel)
+    else:
+        accumulator[channel.matrix_key] = [accumulated_light_channel]
 
 
-def __build_light_entities(accumulator: dict[str, dict[LightChannel, list[ChannelOffset]]]) -> :
+def __build_light_entities(accumulator: dict[str, list[AccumulatedLightChannel]], device: DeviceInfo) -> list[Entity]:
+    entities = []
 
+    for matrix_key, accumulated_channels in accumulator.items():
+        channel_map = {}
+        for accumulated_channel in accumulated_channels:
+            channel_map[accumulated_channel.light_channel] = accumulated_channel
+
+        has_rgb = (LightChannel.RED in channel_map and
+                   LightChannel.GREEN in channel_map and
+                   LightChannel.BLUE in channel_map)
+
+        has_cold_warm = (LightChannel.COLD_WHITE in channel_map and
+                         LightChannel.WARM_WHITE in channel_map)
+
+        has_color_temp = LightChannel.COLOR_TEMPERATURE in channel_map
+
+        has_temp_control = has_cold_warm or has_color_temp
+
+        has_single_white = (LightChannel.COLD_WHITE in channel_map or
+                            LightChannel.WARM_WHITE in channel_map)
+
+        has_dimmer = LightChannel.DIMMER in channel_map
+
+        channels_data = []
+        has_separate_dimmer = False
+
+        if has_rgb:
+            if has_dimmer:
+                has_separate_dimmer = True
+                channels_data.append(channel_map[LightChannel.DIMMER])
+
+            channels_data.append(channel_map[LightChannel.RED])
+            channels_data.append(channel_map[LightChannel.GREEN])
+            channels_data.append(channel_map[LightChannel.BLUE])
+
+            if has_temp_control:
+                color_mode = ColorMode.RGBWW
+
+                if LightChannel.COLD_WHITE in channel_map:
+                    channels_data.append(channel_map[LightChannel.COLD_WHITE])
+
+                if LightChannel.WARM_WHITE in channel_map:
+                    channels_data.append(channel_map[LightChannel.WARM_WHITE])
+
+                if LightChannel.COLOR_TEMPERATURE in channel_map:
+                    channels_data.append(channel_map[LightChannel.COLOR_TEMPERATURE])
+
+            elif has_single_white:
+                color_mode = ColorMode.RGBW
+
+                if LightChannel.COLD_WHITE in channel_map:
+                    channels_data.append(channel_map[LightChannel.COLD_WHITE])
+                elif LightChannel.WARM_WHITE in channel_map:
+                    channels_data.append(channel_map[LightChannel.WARM_WHITE])
+
+            else:
+                color_mode = ColorMode.RGB
+
+        elif has_temp_control:
+            color_mode = ColorMode.COLOR_TEMP
+
+            if has_dimmer:
+                has_separate_dimmer = True
+                channels_data.append(channel_map[LightChannel.DIMMER])
+
+            if LightChannel.COLD_WHITE in channel_map:
+                channels_data.append(channel_map[LightChannel.COLD_WHITE])
+
+            if LightChannel.WARM_WHITE in channel_map:
+                channels_data.append(channel_map[LightChannel.WARM_WHITE])
+
+            if LightChannel.COLOR_TEMPERATURE in channel_map:
+                channels_data.append(channel_map[LightChannel.COLOR_TEMPERATURE])
+
+        elif has_single_white or has_dimmer:
+            color_mode = ColorMode.BRIGHTNESS
+
+            if has_dimmer:
+                has_separate_dimmer = True
+                channels_data.append(channel_map[LightChannel.DIMMER])
+
+            if has_single_white:
+                if LightChannel.COLD_WHITE in channel_map:
+                    channels_data.append(channel_map[LightChannel.COLD_WHITE])
+                elif LightChannel.WARM_WHITE in channel_map:
+                    channels_data.append(channel_map[LightChannel.WARM_WHITE])
+
+        else:
+            # No suitable channels for a light entity
+            continue
+
+        entities.append(ClaudeLightEntity(
+            matrix_key=matrix_key,
+            color_mode=color_mode,
+            channels=channels_data,
+            device=device,
+            has_separate_dimmer=has_separate_dimmer,
+        ))
+
+    return entities
 
 
 def create_entities(
@@ -87,7 +183,7 @@ def create_entities(
 ) -> list[Entity]:
     universe = Universe()
     entities = []
-    lights_accumulator: dict[str[str, list[ChannelOffset]]] = {}
+    lights_accumulator: dict[str, list[AccumulatedLightChannel]] = {}
 
     for channel, group in groupby(__get_all_channels(enumerate(channels)), lambda c: c[1].channel):
         dmx_indexes = []
@@ -101,7 +197,7 @@ def create_entities(
                     dmx_indexes, device
                 )
             )
-            __accumulate_light_entities(lights_accumulator, channel)
+            __accumulate_light_entities(lights_accumulator, dmx_indexes, channel, universe)
 
         else:
             assert len(dmx_indexes) == 1
@@ -126,7 +222,7 @@ def create_entities(
         if isinstance(entity, DmxSelectEntity):
             entity.link_switching_entities(entities)
 
-    entities.extend(__build_light_entities(lights_accumulator))
+    entities.extend(__build_light_entities(lights_accumulator, device))
 
     return entities
 

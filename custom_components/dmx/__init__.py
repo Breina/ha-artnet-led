@@ -61,7 +61,7 @@ CONF_FOLDER = 'folder'
 
 DEFAULT_FIXTURES_FOLDER = 'fixtures'
 
-PLATFORMS = [Platform.NUMBER, Platform.SELECT]
+PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT]
 
 FIXTURES = {}
 
@@ -226,8 +226,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     # print(f"async_setup_entry: {config_entry}")
     hass.data.setdefault(DOMAIN, {})
 
-    # fixture = parse("fixtures/hydrabeam-300-rgbw.json")
-    # channels = fixture.select_mode("42-channel")
+    fixture = parse("fixtures/hydrabeam-300-rgbw.json")
+    channels = fixture.select_mode("42-channel")
 
     # fixture = parse("fixtures/dj_scan_led.json")
     # channels = fixture.select_mode("Normal")
@@ -235,8 +235,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     # fixture = parse("fixtures/hotbox-rgbw.json")
     # channels = fixture.select_mode("9-channel B")
 
-    fixture = parse("fixtures/jbled-a7.json")
-    channels = fixture.select_mode("Standard 16bit")
+    # fixture = parse("fixtures/jbled-a7.json")
+    # channels = fixture.select_mode("Standard 16bit")
 
     device = DeviceInfo(
         configuration_url=fixture.config_url,
