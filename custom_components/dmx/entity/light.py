@@ -395,14 +395,20 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
         """Turn the light off."""
         self._state = False
 
-        # Turn off all channels
-        self._is_updating = True
-        try:
-            for ch_data in self._channels:
-                for dmx_index in ch_data.dmx_channel_indexes:
-                    await ch_data.universe.update_value(dmx_index, 0)
-        finally:
-            self._is_updating = False
+        # If we have a separate dimmer channel, only set that to 0
+        if self._has_separate_dimmer and LightChannel.DIMMER in self._channel_map:
+            dimmer_channel = self._channel_map[LightChannel.DIMMER]
+            for dmx_index in dimmer_channel.dmx_channel_indexes:
+                await dimmer_channel.universe.update_value(dmx_index, 0)
+        else:
+            # No dimmer channel, so set all channels to 0 (retain existing behavior)
+            self._is_updating = True
+            try:
+                for ch_data in self._channels:
+                    for dmx_index in ch_data.dmx_channel_indexes:
+                        await ch_data.universe.update_value(dmx_index, 0)
+            finally:
+                self._is_updating = False
 
         # Update state
         self.async_write_ha_state()
@@ -413,42 +419,73 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
 
         # Restore previous state or use defaults
         if self._has_separate_dimmer and LightChannel.DIMMER in self._channel_map:
+            # Use the stored brightness value, but ensure it's not 0 (which would keep the light off)
+            brightness = self._brightness if self._brightness > 0 else 255
             tasks.append(self._update_channel_value(
                 self._channel_map[LightChannel.DIMMER],
-                self._brightness if self._brightness > 0 else 255
+                brightness
             ))
 
-        if self.color_mode in (ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW):
-            if all(ch in self._channel_map for ch in [LightChannel.RED, LightChannel.GREEN, LightChannel.BLUE]):
-                tasks.append(self._update_channel_value(self._channel_map[LightChannel.RED], self._rgb_color[0]))
-                tasks.append(self._update_channel_value(self._channel_map[LightChannel.GREEN], self._rgb_color[1]))
-                tasks.append(self._update_channel_value(self._channel_map[LightChannel.BLUE], self._rgb_color[2]))
+            # With a separate dimmer, we may not need to change any other channels
+            # as they should have retained their values when turning off
+        else:
+            # No separate dimmer - need to restore all channel values
 
-        if self.color_mode in (ColorMode.RGBW, ColorMode.RGBWW, ColorMode.COLOR_TEMP):
-            if LightChannel.COLD_WHITE in self._channel_map:
-                tasks.append(self._update_channel_value(self._channel_map[LightChannel.COLD_WHITE], self._cold_white))
+            if self.color_mode in (ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW):
+                if all(ch in self._channel_map for ch in [LightChannel.RED, LightChannel.GREEN, LightChannel.BLUE]):
+                    # Use stored RGB values
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.RED], self._rgb_color[0]))
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.GREEN], self._rgb_color[1]))
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.BLUE], self._rgb_color[2]))
 
-            if LightChannel.WARM_WHITE in self._channel_map:
-                tasks.append(self._update_channel_value(self._channel_map[LightChannel.WARM_WHITE], self._warm_white))
+            if self.color_mode in (ColorMode.RGBW, ColorMode.RGBWW, ColorMode.COLOR_TEMP):
+                if LightChannel.COLD_WHITE in self._channel_map:
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.COLD_WHITE], self._cold_white))
 
-        if LightChannel.COLOR_TEMPERATURE in self._channel_map:
-            tasks.append(self._update_channel_value(
-                self._channel_map[LightChannel.COLOR_TEMPERATURE],
-                self._color_temp_value
-            ))
+                if LightChannel.WARM_WHITE in self._channel_map:
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.WARM_WHITE], self._warm_white))
 
-        if self.color_mode == ColorMode.BRIGHTNESS:
-            if LightChannel.COLD_WHITE in self._channel_map:
-                brightness = self._brightness if self._brightness > 0 else 255
-                tasks.append(self._update_channel_value(self._channel_map[LightChannel.COLD_WHITE], brightness))
+            if LightChannel.COLOR_TEMPERATURE in self._channel_map:
+                tasks.append(self._update_channel_value(
+                    self._channel_map[LightChannel.COLOR_TEMPERATURE],
+                    self._color_temp_value
+                ))
 
-            if LightChannel.WARM_WHITE in self._channel_map and LightChannel.COLD_WHITE not in self._channel_map:
-                brightness = self._brightness if self._brightness > 0 else 255
-                tasks.append(self._update_channel_value(self._channel_map[LightChannel.WARM_WHITE], brightness))
+            if self.color_mode == ColorMode.BRIGHTNESS:
+                if LightChannel.COLD_WHITE in self._channel_map:
+                    brightness = self._brightness if self._brightness > 0 else 255
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.COLD_WHITE], brightness))
+
+                elif LightChannel.WARM_WHITE in self._channel_map:
+                    brightness = self._brightness if self._brightness > 0 else 255
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.WARM_WHITE], brightness))
+
+        # For completeness, also set other channels if using a separate dimmer
+        # This ensures all channels return to their previous state
+        if self._has_separate_dimmer:
+            if self.color_mode in (ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW):
+                if all(ch in self._channel_map for ch in [LightChannel.RED, LightChannel.GREEN, LightChannel.BLUE]):
+                    # We don't need to set these again - they should have retained their values
+                    # But include them in case they need to be restored from a fresh start
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.RED], self._rgb_color[0]))
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.GREEN], self._rgb_color[1]))
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.BLUE], self._rgb_color[2]))
+
+            if self.color_mode in (ColorMode.RGBW, ColorMode.RGBWW, ColorMode.COLOR_TEMP):
+                if LightChannel.COLD_WHITE in self._channel_map:
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.COLD_WHITE], self._cold_white))
+
+                if LightChannel.WARM_WHITE in self._channel_map:
+                    tasks.append(self._update_channel_value(self._channel_map[LightChannel.WARM_WHITE], self._warm_white))
+
+            if LightChannel.COLOR_TEMPERATURE in self._channel_map:
+                tasks.append(self._update_channel_value(
+                    self._channel_map[LightChannel.COLOR_TEMPERATURE],
+                    self._color_temp_value
+                ))
 
         if tasks:
             await asyncio.gather(*tasks)
-
     async def _handle_dimmer_brightness(self, channel_data: AccumulatedLightChannel, brightness: int):
         """Handle brightness using a dedicated dimmer channel."""
         self._brightness = brightness
