@@ -11,7 +11,7 @@ dmx:
           devices:
             - Epic triple lights:
                 start_address: 11
-                fixture: hydrabeam-300-rgbw
+                fixture: CLHB300RGBW
                 mode: 42-channel
 
           compatibility:
@@ -24,7 +24,7 @@ dmx:
           devices:
             - DJ led:
                 start_address: 201
-                fixture: dj-scan-led
+                fixture: DJ Scan LED
 
 #    triggers: # All triggers will always send HA events, regardless if being configured
 #      scenes: # Trigger HA scenes FROM external ArtNet controller

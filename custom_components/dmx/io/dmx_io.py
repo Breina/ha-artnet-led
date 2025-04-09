@@ -1,9 +1,13 @@
 import asyncio
 from typing import List, Callable
 
+from custom_components.dmx import PortAddress
+
 
 class Universe:
-    def __init__(self):
+    def __init__(self, port_address: PortAddress):
+        self.port_address = port_address
+
         # Dictionary to store channel value: {channel_number: current_value}
         self._channel_values = {}
 

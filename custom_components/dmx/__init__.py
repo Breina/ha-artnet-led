@@ -1,5 +1,8 @@
 """ARTNET LED"""
+import dataclasses
+import json
 import logging
+import os
 from os import walk
 from typing import Any
 
@@ -14,13 +17,17 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import IntegrationError
 from homeassistant.helpers import discovery_flow
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.bridge.artnet_controller import ArtNetController, DiscoveredNode
 from custom_components.dmx.client import PortAddress
+from custom_components.dmx.client.artnet_server import ArtNetServer
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER
+from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.fixture.parser import parse
 from custom_components.dmx.fixture_delegator.delegator import create_entities
+from custom_components.dmx.io.dmx_io import Universe
 from custom_components.fixtures.ha_fixture import parse_json
 from custom_components.fixtures.model import HaFixture
 
@@ -171,6 +178,12 @@ def port_address_config(value: Any) -> int:
     return PortAddress(net, sub_net, universe).port_address
 
 
+@dataclasses.dataclass
+class ManualNode:
+    host: str
+    port: int
+
+
 async def reload_configuration_yaml(event: dict, hass: HomeAssistant):
     """Reload configuration.yaml."""
     await hass.services.async_call("homeassistant", "check_config", {})
@@ -219,200 +232,106 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
+def process_fixtures(fixture_folder: str) -> dict[str, Fixture]:
+    fixture_map = {}
+
+    if not os.path.isdir(fixture_folder):
+        log.warning(f"Fixture folder does not exist: {fixture_folder}")
+        return fixture_map
+
+    for filename in os.listdir(fixture_folder):
+        if not filename.endswith('.json'):
+            continue
+
+        file_path = os.path.join(fixture_folder, filename)
+
+        try:
+            fixture = parse(file_path)
+            fixture_map[fixture.short_name] = fixture
+
+        except json.JSONDecodeError as e:
+            log.warning("Invalid JSON in file %s: %s", filename, str(e))
+        except Exception as e:
+            log.warning("Error processing file %s: %s", filename, str(e))
+
+    return fixture_map
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up the component."""
 
-    # print(f"async_setup_entry: {config_entry}")
     hass.data.setdefault(DOMAIN, {})
 
-    fixture = parse("fixtures/hydrabeam-300-rgbw.json")
-    channels = fixture.select_mode("42-channel")
+    dmx_yaml = entry.data[DOMAIN]
 
-    # fixture = parse("fixtures/dj_scan_led.json")
-    # channels = fixture.select_mode("Normal")
+    fixtures_yaml = dmx_yaml[CONF_FIXTURES]
+    fixture_folder = fixtures_yaml[CONF_FOLDER]
 
-    # fixture = parse("fixtures/hotbox-rgbw.json")
-    # channels = fixture.select_mode("9-channel B")
+    log.debug("Processing fixtures folder: %s/...", fixture_folder)
+    fixtures = process_fixtures(fixture_folder)
+    log.debug("Found %d fixtures", len(fixtures))
 
-    # fixture = parse("fixtures/jbled-a7.json")
-    # channels = fixture.select_mode("Standard 16bit")
+    entities: list[Entity] = []
 
-    device = DeviceInfo(
-        configuration_url=fixture.config_url,
-        model=fixture.short_name,
-        identifiers={(DOMAIN, fixture.short_name)},  # TODO use user's name
-        name=fixture.name
-    )
+    # Process ArtNet
+    if (artnet_yaml := dmx_yaml.get(CONF_NODE_TYPE_ARTNET)) is not None:
 
-    entities = create_entities(100, channels, device)
+        max_fps = artnet_yaml[CONF_MAX_FPS]
+        refresh_every = artnet_yaml[CONF_REFRESH_EVERY]
 
-    # log.info(f"The data: {entry.data}")
-    # entry.data[DOMAIN]['entities'] = entities
+        for universe_dict in artnet_yaml[CONF_UNIVERSES]:
+            (universe_str, universe_yaml), = universe_dict.items()
+            port_address = PortAddress.parse(universe_str)
+
+            universe = Universe(port_address)
+
+            manual_nodes: list[ManualNode] = []
+            if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
+                send_partial_universe = compatibility_yaml[CONF_SEND_PARTIAL_UNIVERSE]
+                if (manual_nodes_yaml := compatibility_yaml.get(CONF_MANUAL_NODES)) is not None:
+                    for manual_node_yaml in manual_nodes_yaml:
+                        manual_nodes.append(ManualNode(manual_node_yaml[CONF_HOST], manual_node_yaml[CONF_PORT]))
+
+            else:
+                send_partial_universe = True
+
+            devices_yaml = universe_yaml[CONF_DEVICES]
+            for device_dict in devices_yaml:
+                (device_name, device_yaml), = device_dict.items()
+
+                start_address = device_yaml[CONF_START_ADDRESS]
+                fixture_name = device_yaml[CONF_FIXTURE]
+                mode = device_yaml.get(CONF_MODE)
+
+                if fixture_name not in fixtures:
+                    log.warning("Could not find fixture '%s'. Ignoring device %s", fixture_name, device_name)
+                    continue
+
+                fixture = fixtures[fixture_name]
+                if not mode:
+                    assert len(fixture.modes) > 0
+                    mode = next(iter(fixture.modes.keys()))
+
+                channels = fixture.select_mode(mode)
+
+                device = DeviceInfo(
+                    configuration_url=fixture.config_url,
+                    model=fixture.name,
+                    identifiers={(DOMAIN, device_name)},
+                    name=device_name,
+                )
+
+                entities.extend(create_entities(start_address, channels, device, universe))
+
     hass.data[DOMAIN][entry.entry_id] = {
         'entities': entities
     }
-
-    # fixtures_path = data.get(CONF_FIXTURES, {}).get(CONF_FOLDER, DEFAULT_FIXTURES_FOLDER)
-    # for (dirpath, dirnames, filenames) in walk(fixtures_path):
-    #     for filename in filenames:
-    #         parser.parse(fixtures_path + "/" + filename)
-    #
-    # # This will reload any changes the user made to any YAML configurations.
-    # # Called during 'quick reload' or hass.reload_config_entry
-    # hass.bus.async_listen("hass.config.entry_updated", reload_configuration_yaml)
-    #
-    # undo_listener = config_entry.add_update_listener(async_update_options)
-    # data[config_entry.entry_id] = {UNDO_UPDATE_LISTENER: undo_listener}
 
     for platform in PLATFORMS:
         await hass.config_entries.async_forward_entry_setup(entry, platform)
 
     return True
 
-
-# async def async_unload_entry(hass, config_entry: ConfigEntry) -> bool:
-#     """Unload a config entry."""
-#     unload_ok = await hass.config_entries.async_forward_entry_unload(
-#         config_entry,
-#         PLATFORMS,
-#     )
-#     data = hass.data[DOMAIN]
-#     data[config_entry.entry_id][UNDO_UPDATE_LISTENER]()
-#     if unload_ok:
-#         data.pop(config_entry.entry_id)
-#
-#     data.pop(DOMAIN)
-#
-#     return unload_ok
-
-
-#
-#     print(hass.config_entries.async_entries(DOMAIN))
-#
-#     # for platform in PLATFORMS:
-#     #     hass.async_create_task(
-#     #         )
-#     #     )
-#
-#     hass.async_add_job(hass.config_entries.flow.async_init(
-#         DOMAIN, context={"source": SOURCE_INTEGRATION_DISCOVERY}, data={}
-#     ))
-#
-#
-#
-#     return True
-
-#
-# platform_config = config.get(DOMAIN)
-#
-# load_fixtures(hass, platform_config)
-#
-# entities = []
-#
-# artnet_config = platform_config.get(CONF_NODE_TYPE_ARTNET)
-# if artnet_config:
-#     max_fps = artnet_config.get(CONF_MAX_FPS)
-#     refresh_interval = artnet_config.get(CONF_REFRESH_EVERY)
-#
-#     node = ArtNetController(hass, max_fps=max_fps, refresh_every=refresh_interval)
-#
-#     universes_config = artnet_config.get(CONF_UNIVERSES)
-#     for universe_config in universes_config:
-#         port_address: PortAddress = next(iter(universe_config.keys()))
-#         port_config = next(iter(universe_config.values()))
-#
-#         universe = node.add_universe(port_address.universe)
-#
-#         devices_config = port_config.get(CONF_DEVICES)
-#         for device_config in devices_config:
-#             device_name: str = next(iter(device_config.keys()))
-#             fixture_config = next(iter(device_config.values()))
-#
-#             start_address = fixture_config[CONF_START_ADDRESS]
-#             fixture_name = fixture_config[CONF_FIXTURE]
-#             mode = fixture_config.get(CONF_MODE)
-#
-#             fixture = get_fixture(fixture_name)
-#
-#             new_entities = implement(fixture, device_name, port_address, universe, start_address, mode)
-#             entities.extend(new_entities)
-#
-# hass.data.setdefault(DOMAIN, {})
-# hass.data[DOMAIN][HASS_DATA_ENTITIES] = entities
-#
-# log.info(f"Found {len(entities)} entities")
-#
-# for platform in PLATFORMS:
-#     hass.async_create_task(
-#         hass.helpers.discovery.async_load_platform(platform, DOMAIN, {}, config)
-#     )
-
-# hass.helpers.discovery.load_platform('sensor', DOMAIN, {}, config)
-#
-# return True
-#
-# {
-#     vol.Required(CONF_NODE_HOST): cv.string,
-#     vol.Required(CONF_NODE_UNIVERSES): {
-#         vol.All(int, vol.Range(min=0, max=1024)): {
-#             vol.Optional(CONF_SEND_PARTIAL_UNIVERSE, default=True): cv.boolean,
-#             vol.Optional(CONF_OUTPUT_CORRECTION, default='linear'): vol.Any(
-#                 None, vol.In(AVAILABLE_CORRECTIONS)
-#             ),
-#             CONF_DEVICES: vol.All(
-#                 cv.ensure_list,
-#                 [
-#                     {
-#                         vol.Required(CONF_DEVICE_CHANNEL): vol.All(
-#                             vol.Coerce(int), vol.Range(min=1, max=512)
-#                         ),
-#                         vol.Required(CONF_DEVICE_NAME): cv.string,
-#                         vol.Optional(CONF_DEVICE_FRIENDLY_NAME): cv.string,
-#                         vol.Optional(CONF_DEVICE_TYPE, default='dimmer'): vol.In(
-#                             [k.CONF_TYPE for k in __CLASS_LIST]
-#                         ),
-#                         vol.Optional(CONF_DEVICE_TRANSITION, default=0): vol.All(
-#                             vol.Coerce(float), vol.Range(min=0, max=999)
-#                         ),
-#                         vol.Optional(CONF_OUTPUT_CORRECTION, default='linear'): vol.Any(
-#                             None, vol.In(AVAILABLE_CORRECTIONS)
-#                         ),
-#                         vol.Optional(CONF_CHANNEL_SIZE, default='8bit'): vol.Any(
-#                             None, vol.In(CHANNEL_SIZE)
-#                         ),
-#                         vol.Optional(CONF_BYTE_ORDER, default='big'): vol.Any(
-#                             None, vol.In(['little', 'big'])
-#                         ),
-#                         vol.Optional(CONF_DEVICE_MIN_TEMP, default='2700K'): vol.Match(
-#                             "\\d+(k|K)"
-#                         ),
-#                         vol.Optional(CONF_DEVICE_MAX_TEMP, default='6500K'): vol.Match(
-#                             "\\d+(k|K)"
-#                         ),
-#                         vol.Optional(CONF_CHANNEL_SETUP, default=None): vol.Any(
-#                             None, cv.string, cv.ensure_list
-#                         ),
-#                     }
-#                 ],
-#             )
-#         },
-#     },
-#     vol.Optional(CONF_NODE_PORT, default=6454): cv.port,
-#     vol.Optional(CONF_NODE_MAX_FPS, default=25): vol.All(
-#         vol.Coerce(int), vol.Range(min=1, max=50)
-#     ),
-#     vol.Optional(CONF_NODE_REFRESH, default=120): vol.All(
-#         vol.Coerce(int), vol.Range(min=0, max=9999)
-#     ),
-#     vol.Optional(CONF_NODE_TYPE, default="artnet-direct"): vol.Any(
-#         None, vol.In(["artnet-direct", "artnet-controller", "sacn", "kinet"])
-#     ),
-# },
-# required = True,
-# extra = vol.PREVENT_EXTRA,
-
-
-#
 
 COMPATIBILITY_SCHEMA = \
     vol.Schema(
@@ -450,7 +369,7 @@ CONFIG_SCHEMA = vol.Schema(
                         vol.Optional(CONF_MAX_FPS, default=30): vol.All(vol.Coerce(int), vol.Range(min=0, max=43)),
                         vol.Optional(CONF_REFRESH_EVERY, default=0.8): cv.positive_float,
 
-                        vol.Optional(CONF_UNIVERSES): vol.Schema(
+                        vol.Required(CONF_UNIVERSES): vol.Schema(
                             [{
                                 port_address_config: vol.Schema(
                                     {

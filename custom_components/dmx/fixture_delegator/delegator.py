@@ -179,9 +179,9 @@ def __build_light_entities(accumulator: dict[str, list[AccumulatedLightChannel]]
 def create_entities(
         dmx_start: int,
         channels: list[None | ChannelOffset | SwitchingChannel],
-        device: DeviceInfo
+        device: DeviceInfo,
+        universe: Universe
 ) -> list[Entity]:
-    universe = Universe()
     entities = []
     lights_accumulator: dict[str, list[AccumulatedLightChannel]] = {}
 

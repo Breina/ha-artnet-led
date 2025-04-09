@@ -38,7 +38,7 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
 
     def __init__(
             self,
-            matrix_key: str,
+            matrix_key: str | None,
             color_mode: ColorMode,
             channels: List[AccumulatedLightChannel],
             device: DeviceInfo,
@@ -48,7 +48,10 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
     ):
         """Initialize the light entity."""
         self._matrix_key = matrix_key
-        self._attr_name = f"Light {matrix_key}"
+        if self._matrix_key is None:
+            self._attr_name = "Light"
+        else:
+            self._attr_name = f"Light {matrix_key}"
 
         self._attr_device_info = device
         self._attr_unique_id = f"{DOMAIN}_light_{matrix_key}"
