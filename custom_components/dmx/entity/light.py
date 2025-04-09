@@ -8,6 +8,7 @@ import homeassistant.util.color as color_util
 from homeassistant.components.light import LightEntity, ColorMode
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from custom_components.dmx import DOMAIN
 from custom_components.dmx.fixture.channel import Channel
@@ -32,7 +33,7 @@ class AccumulatedLightChannel:
     light_channel: LightChannel
 
 
-class ClaudeLightEntity(LightEntity):
+class ClaudeLightEntity(LightEntity, RestoreEntity):
     """DMX/ArtNet light entity that supports various channel configurations."""
 
     def __init__(
@@ -95,6 +96,7 @@ class ClaudeLightEntity(LightEntity):
         self._setup_turn_on_handlers()
 
         # Register channel listeners
+        self._is_updating = False
         self._register_channel_listeners()
 
     def _setup_turn_on_handlers(self):
@@ -159,7 +161,7 @@ class ClaudeLightEntity(LightEntity):
             for dmx_index in channel_data.dmx_channel_indexes:
                 channel_data.universe.register_channel_listener(
                     dmx_index,
-                    partial(self._handle_channel_update, channel_type, dmx_index)
+                    partial(self._handle_channel_update, channel_type)
                 )
 
     @callback
@@ -331,9 +333,13 @@ class ClaudeLightEntity(LightEntity):
         self._state = False
 
         # Turn off all channels
-        for ch_data in self._channels:
-            for dmx_index in ch_data.dmx_channel_indexes:
-                await ch_data.universe.update_value(dmx_index, 0)
+        self._is_updating = True
+        try:
+            for ch_data in self._channels:
+                for dmx_index in ch_data.dmx_channel_indexes:
+                    await ch_data.universe.update_value(dmx_index, 0)
+        finally:
+            self._is_updating = False
 
         # Update state
         self.async_write_ha_state()

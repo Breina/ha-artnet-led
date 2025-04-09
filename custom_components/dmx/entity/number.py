@@ -57,17 +57,26 @@ class DmxNumberEntity(RestoreNumber):
         else:
             self._attr_native_value = 0
 
+        self._is_updating = False
         self.universe.register_channel_listener(dmx_indexes, self.update_value)
 
-    def update_value(self, value: int) -> None:
+    def update_value(self, dmx_index: int, value: int) -> None:
         # TODO maybe update self._attr_attribution from source ArtNet node?
+        if getattr(self, '_is_updating', False):
+            return
+
         self._attr_native_value = self.dynamic_entity.from_dmx(value)
         self.async_schedule_update_ha_state()
 
     async def async_set_native_value(self, value: float) -> None:
         self._attr_native_value = value
         dmx_value = self.dynamic_entity.to_dmx(value)
-        await self.universe.update_value(self.dmx_indexes, dmx_value)
+
+        self._is_updating = True
+        try:
+            await self.universe.update_value(self.dmx_indexes, dmx_value)
+        finally:
+            self._is_updating = False
 
     @property
     def available(self) -> bool:
