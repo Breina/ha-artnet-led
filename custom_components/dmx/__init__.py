@@ -117,7 +117,7 @@ def get_fixture(name: str) -> HaFixture:
     return fixture
 
 
-def port_address_config(value: Any) -> PortAddress:
+def port_address_config(value: Any) -> int:
     """Validate that the given Port Address string is valid"""
 
     if isinstance(value, int):
@@ -154,7 +154,7 @@ def port_address_config(value: Any) -> PortAddress:
         )
 
     if universe_only:
-        return PortAddress(0, 0, universe)
+        return PortAddress(0, 0, universe).port_address
 
     net = address_ints[0]
     if not (0x0 <= net <= 0xF):
@@ -168,7 +168,7 @@ def port_address_config(value: Any) -> PortAddress:
             f"Port address '{value}' Sub-Net must be within the range [{0x0}, {0xF}], but was {sub_net}"
         )
 
-    return PortAddress(net, sub_net, universe)
+    return PortAddress(net, sub_net, universe).port_address
 
 
 async def reload_configuration_yaml(event: dict, hass: HomeAssistant):
@@ -221,7 +221,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up the component."""
-
 
     # print(f"async_setup_entry: {config_entry}")
     hass.data.setdefault(DOMAIN, {})
