@@ -231,6 +231,9 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
         if value > 0 and not self._state:
             self._state = True
 
+        elif channel_type == LightChannel.DIMMER and value == 0:
+            self._state = False
+
         # Map different channel types to appropriate state properties
         if channel_type == LightChannel.DIMMER:
             self._brightness = value
