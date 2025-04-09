@@ -62,7 +62,7 @@ class DmxSelectEntity(SelectEntity):
 
         self.__set_availability(True)
 
-    def update_value(self, value: int) -> None:
+    def update_value(self, dmx_index: int, value: int) -> None:
         # TODO maybe update self._attr_attribution from source ArtNet node?
         capability = [
             capability for capability in self.capability_types.values()
