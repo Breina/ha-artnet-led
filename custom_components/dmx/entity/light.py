@@ -46,16 +46,7 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
             min_kelvin: int = 2000,
             max_kelvin: int = 6500,
     ):
-        """Initialize the light entity.
-
-        Args:
-            matrix_key: Unique identifier for this light entity
-            color_mode: The primary color mode this entity supports
-            channels: List of DMX channels this entity controls
-            has_separate_dimmer: Whether the entity has a dedicated dimmer channel
-            min_kelvin: Minimum color temperature in Kelvin
-            max_kelvin: Maximum color temperature in Kelvin
-        """
+        """Initialize the light entity."""
         self._matrix_key = matrix_key
         self._attr_name = f"Light {matrix_key}"
 
@@ -77,6 +68,16 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
         self._cold_white = 255
         self._warm_white = 255
         self._color_temp_value = 255  # Direct color temp channel value
+
+        # Last active state (to remember settings when turned off)
+        self._last_brightness = 255
+        self._last_rgb_color = (255, 255, 255)
+        self._last_rgbw_color = (255, 255, 255, 255)
+        self._last_rgbww_color = (255, 255, 255, 255, 255)
+        self._last_color_temp = 500
+        self._last_cold_white = 255
+        self._last_warm_white = 255
+        self._last_color_temp_value = 255
 
         # Initialize default values from channels' capabilities
         self._initialize_default_values()
@@ -237,50 +238,103 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
         # Map different channel types to appropriate state properties
         if channel_type == LightChannel.DIMMER:
             self._brightness = value
+            if value > 0:
+                self._last_brightness = value
         elif channel_type == LightChannel.RED:
             self._rgb_color = (value, self._rgb_color[1], self._rgb_color[2])
+            if value > 0 or self._rgb_color[1] > 0 or self._rgb_color[2] > 0:
+                self._last_rgb_color = self._rgb_color
+
             if hasattr(self, "_rgbw_color"):
                 self._rgbw_color = (value, self._rgbw_color[1], self._rgbw_color[2], self._rgbw_color[3])
+                if value > 0 or self._rgbw_color[1] > 0 or self._rgbw_color[2] > 0 or self._rgbw_color[3] > 0:
+                    self._last_rgbw_color = self._rgbw_color
+
             if hasattr(self, "_rgbww_color"):
                 self._rgbww_color = (value, self._rgbww_color[1], self._rgbww_color[2],
                                      self._rgbww_color[3], self._rgbww_color[4])
+                if any(c > 0 for c in self._rgbww_color):
+                    self._last_rgbww_color = self._rgbww_color
         elif channel_type == LightChannel.GREEN:
             self._rgb_color = (self._rgb_color[0], value, self._rgb_color[2])
+            if self._rgb_color[0] > 0 or value > 0 or self._rgb_color[2] > 0:
+                self._last_rgb_color = self._rgb_color
+
             if hasattr(self, "_rgbw_color"):
                 self._rgbw_color = (self._rgbw_color[0], value, self._rgbw_color[2], self._rgbw_color[3])
+                if any(c > 0 for c in self._rgbw_color):
+                    self._last_rgbw_color = self._rgbw_color
+
             if hasattr(self, "_rgbww_color"):
                 self._rgbww_color = (self._rgbww_color[0], value, self._rgbww_color[2],
                                      self._rgbww_color[3], self._rgbww_color[4])
+                if any(c > 0 for c in self._rgbww_color):
+                    self._last_rgbww_color = self._rgbww_color
         elif channel_type == LightChannel.BLUE:
             self._rgb_color = (self._rgb_color[0], self._rgb_color[1], value)
+            if self._rgb_color[0] > 0 or self._rgb_color[1] > 0 or value > 0:
+                self._last_rgb_color = self._rgb_color
+
             if hasattr(self, "_rgbw_color"):
                 self._rgbw_color = (self._rgbw_color[0], self._rgbw_color[1], value, self._rgbw_color[3])
+                if any(c > 0 for c in self._rgbw_color):
+                    self._last_rgbw_color = self._rgbw_color
+
             if hasattr(self, "_rgbww_color"):
                 self._rgbww_color = (self._rgbww_color[0], self._rgbww_color[1], value,
                                      self._rgbww_color[3], self._rgbww_color[4])
+                if any(c > 0 for c in self._rgbww_color):
+                    self._last_rgbww_color = self._rgbww_color
         elif channel_type == LightChannel.COLD_WHITE:
             self._cold_white = value
+            if value > 0:
+                self._last_cold_white = value
+
             if self.color_mode == ColorMode.RGBW:
                 self._rgbw_color = (self._rgbw_color[0], self._rgbw_color[1], self._rgbw_color[2], value)
+                if any(c > 0 for c in self._rgbw_color):
+                    self._last_rgbw_color = self._rgbw_color
+
             elif self.color_mode == ColorMode.RGBWW:
                 self._rgbww_color = (self._rgbww_color[0], self._rgbww_color[1], self._rgbww_color[2],
                                      value, self._rgbww_color[4])
+                if any(c > 0 for c in self._rgbww_color):
+                    self._last_rgbww_color = self._rgbww_color
+
             elif self.color_mode == ColorMode.BRIGHTNESS and not self._has_separate_dimmer:
                 self._brightness = value
+                if value > 0:
+                    self._last_brightness = value
         elif channel_type == LightChannel.WARM_WHITE:
             self._warm_white = value
+            if value > 0:
+                self._last_warm_white = value
+
             if self.color_mode == ColorMode.RGBW:
                 self._rgbw_color = (self._rgbw_color[0], self._rgbw_color[1], self._rgbw_color[2], value)
+                if any(c > 0 for c in self._rgbw_color):
+                    self._last_rgbw_color = self._rgbw_color
+
             elif self.color_mode == ColorMode.RGBWW:
                 self._rgbww_color = (self._rgbww_color[0], self._rgbww_color[1], self._rgbww_color[2],
                                      self._rgbww_color[3], value)
+                if any(c > 0 for c in self._rgbww_color):
+                    self._last_rgbww_color = self._rgbww_color
+
             elif self.color_mode == ColorMode.BRIGHTNESS and not self._has_separate_dimmer:
                 self._brightness = value
+                if value > 0:
+                    self._last_brightness = value
         elif channel_type == LightChannel.COLOR_TEMPERATURE:
             self._color_temp_value = value
+            if value > 0:
+                self._last_color_temp_value = value
+
             # Convert DMX value to mired color temperature
             ratio = value / 255
             self._color_temp = self.min_mireds + ratio * (self.max_mireds - self.min_mireds)
+            if value > 0:
+                self._last_color_temp = self._color_temp
 
         # Check if all channels are 0 to determine if light is off
         all_zero = True
@@ -348,11 +402,16 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
         """Turn the light on."""
         self._state = True
 
+        # Process specific attributes if provided
+        has_specific_attributes = False
+
         if "brightness" in kwargs and "brightness" in self._turn_on_handlers:
             await self._turn_on_handlers["brightness"](kwargs["brightness"])
+            has_specific_attributes = True
 
         if "rgb_color" in kwargs and "rgb" in self._turn_on_handlers:
             await self._turn_on_handlers["rgb"](kwargs["rgb_color"])
+            has_specific_attributes = True
 
         if "rgbw_color" in kwargs:
             rgb = kwargs["rgbw_color"][:3]
@@ -363,6 +422,8 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
 
             if "white" in self._turn_on_handlers:
                 await self._turn_on_handlers["white"](white)
+
+            has_specific_attributes = True
 
         if "rgbww_color" in kwargs:
             rgb = kwargs["rgbww_color"][:3]
@@ -378,18 +439,72 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
             if LightChannel.WARM_WHITE in self._channel_map:
                 await self._update_channel_value(self._channel_map[LightChannel.WARM_WHITE], warm_white)
 
+            has_specific_attributes = True
+
         if "color_temp" in kwargs:
             if "color_temp_channel" in self._turn_on_handlers:
                 await self._turn_on_handlers["color_temp_channel"](kwargs["color_temp"])
             elif "color_temp_cw" in self._turn_on_handlers:
                 await self._turn_on_handlers["color_temp_cw"](kwargs["color_temp"])
 
-        # If no specific features were requested, just turn on with last state
-        if not any(key in kwargs for key in ["brightness", "rgb_color", "rgbw_color", "rgbww_color", "color_temp"]):
-            await self._turn_on_handlers["turn_on"]()
+            has_specific_attributes = True
+
+        # If no specific features were requested, restore previous state
+        if not has_specific_attributes:
+            # If we have a dimmer, prioritize just restoring the dimmer value
+            if self._has_separate_dimmer and LightChannel.DIMMER in self._channel_map:
+                # Use the last active brightness value
+                brightness = self._last_brightness
+                await self._update_channel_value(
+                    self._channel_map[LightChannel.DIMMER],
+                    brightness
+                )
+            else:
+                # No dimmer - restore full previous state
+                await self._restore_previous_state()
 
         # Update state
         self.async_write_ha_state()
+
+    async def _restore_previous_state(self):
+        """Restore the light's previous state using last active values."""
+        tasks = []
+
+        # Handle RGB channels
+        if self.color_mode in (ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW):
+            if all(ch in self._channel_map for ch in [LightChannel.RED, LightChannel.GREEN, LightChannel.BLUE]):
+                tasks.append(self._update_channel_value(self._channel_map[LightChannel.RED], self._last_rgb_color[0]))
+                tasks.append(self._update_channel_value(self._channel_map[LightChannel.GREEN], self._last_rgb_color[1]))
+                tasks.append(self._update_channel_value(self._channel_map[LightChannel.BLUE], self._last_rgb_color[2]))
+
+        # Handle white channels
+        if self.color_mode in (ColorMode.RGBW, ColorMode.RGBWW, ColorMode.COLOR_TEMP):
+            if LightChannel.COLD_WHITE in self._channel_map:
+                tasks.append(self._update_channel_value(self._channel_map[LightChannel.COLD_WHITE], self._last_cold_white))
+
+            if LightChannel.WARM_WHITE in self._channel_map:
+                tasks.append(self._update_channel_value(self._channel_map[LightChannel.WARM_WHITE], self._last_warm_white))
+
+        # Handle color temperature channel
+        if LightChannel.COLOR_TEMPERATURE in self._channel_map:
+            tasks.append(self._update_channel_value(
+                self._channel_map[LightChannel.COLOR_TEMPERATURE],
+                self._last_color_temp_value
+            ))
+
+        # Handle brightness mode
+        if self.color_mode == ColorMode.BRIGHTNESS:
+            if LightChannel.COLD_WHITE in self._channel_map:
+                tasks.append(self._update_channel_value(self._channel_map[LightChannel.COLD_WHITE], self._last_brightness))
+            elif LightChannel.WARM_WHITE in self._channel_map:
+                tasks.append(self._update_channel_value(self._channel_map[LightChannel.WARM_WHITE], self._last_brightness))
+
+        # Handle dimmer if present
+        if self._has_separate_dimmer and LightChannel.DIMMER in self._channel_map:
+            tasks.append(self._update_channel_value(self._channel_map[LightChannel.DIMMER], self._last_brightness))
+
+        if tasks:
+            await asyncio.gather(*tasks)
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn the light off."""
@@ -400,8 +515,11 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
             dimmer_channel = self._channel_map[LightChannel.DIMMER]
             for dmx_index in dimmer_channel.dmx_channel_indexes:
                 await dimmer_channel.universe.update_value(dmx_index, 0)
+
+            # Set brightness to 0 in state
+            self._brightness = 0
         else:
-            # No dimmer channel, so set all channels to 0 (retain existing behavior)
+            # No dimmer channel, so set all channels to 0
             self._is_updating = True
             try:
                 for ch_data in self._channels:
@@ -410,9 +528,20 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
             finally:
                 self._is_updating = False
 
+            # Set all state values to 0
+            self._brightness = 0
+            self._rgb_color = (0, 0, 0)
+            self._cold_white = 0
+            self._warm_white = 0
+            if hasattr(self, "_rgbw_color"):
+                self._rgbw_color = (0, 0, 0, 0)
+            if hasattr(self, "_rgbww_color"):
+                self._rgbww_color = (0, 0, 0, 0, 0)
+
         # Update state
         self.async_write_ha_state()
 
+    # Update state
     async def _handle_turn_on(self):
         """Handle basic turn on with previous state."""
         tasks = []
@@ -486,6 +615,7 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
 
         if tasks:
             await asyncio.gather(*tasks)
+
     async def _handle_dimmer_brightness(self, channel_data: AccumulatedLightChannel, brightness: int):
         """Handle brightness using a dedicated dimmer channel."""
         self._brightness = brightness
