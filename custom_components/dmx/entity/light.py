@@ -228,12 +228,11 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
     @callback
     def _handle_channel_update(self, channel_type: LightChannel, dmx_index: int, value: int):
         """Handle updates from the DMX universe for a specific channel."""
-        # Always update state to on if any channel value > 0
-        if value > 0 and not self._state:
+        if self._has_separate_dimmer:
+            if channel_type == LightChannel.DIMMER:
+                self._state = not value == 0
+        elif value > 0 and not self._state:
             self._state = True
-
-        elif channel_type == LightChannel.DIMMER and value == 0:
-            self._state = False
 
         # Map different channel types to appropriate state properties
         if channel_type == LightChannel.DIMMER:
@@ -337,29 +336,30 @@ class ClaudeLightEntity(LightEntity, RestoreEntity):
                 self._last_color_temp = self._color_temp
 
         # Check if all channels are 0 to determine if light is off
-        all_zero = True
-        for ch_type, ch_data in self._channel_map.items():
-            # Skip checking color temp channel for determining on/off state
-            if ch_type == LightChannel.COLOR_TEMPERATURE:
-                continue
+        if not self._has_separate_dimmer:
+            all_zero = True
+            for ch_type, ch_data in self._channel_map.items():
+                # Skip checking color temp channel for determining on/off state
+                if ch_type == LightChannel.COLOR_TEMPERATURE:
+                    continue
 
-            for dmx_idx in ch_data.dmx_channel_indexes:
-                # We need to actually check the current DMX value, which we don't have direct access to
-                # This is an approximation based on our tracked state
-                if (ch_type == LightChannel.RED and self._rgb_color[0] > 0) or \
-                        (ch_type == LightChannel.GREEN and self._rgb_color[1] > 0) or \
-                        (ch_type == LightChannel.BLUE and self._rgb_color[2] > 0) or \
-                        (ch_type == LightChannel.COLD_WHITE and self._cold_white > 0) or \
-                        (ch_type == LightChannel.WARM_WHITE and self._warm_white > 0) or \
-                        (ch_type == LightChannel.DIMMER and self._brightness > 0):
-                    all_zero = False
+                for dmx_idx in ch_data.dmx_channel_indexes:
+                    # We need to actually check the current DMX value, which we don't have direct access to
+                    # This is an approximation based on our tracked state
+                    if (ch_type == LightChannel.RED and self._rgb_color[0] > 0) or \
+                            (ch_type == LightChannel.GREEN and self._rgb_color[1] > 0) or \
+                            (ch_type == LightChannel.BLUE and self._rgb_color[2] > 0) or \
+                            (ch_type == LightChannel.COLD_WHITE and self._cold_white > 0) or \
+                            (ch_type == LightChannel.WARM_WHITE and self._warm_white > 0) or \
+                            (ch_type == LightChannel.DIMMER and self._brightness > 0):
+                        all_zero = False
+                        break
+
+                if not all_zero:
                     break
 
-            if not all_zero:
-                break
-
-        if all_zero and self._state:
-            self._state = False
+            if all_zero and self._state:
+                self._state = False
 
         # Notify Home Assistant of the state change
         self.async_write_ha_state()
