@@ -7,7 +7,7 @@ from homeassistant.components.light import ColorMode
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 
-from custom_components.dmx.entity.light import AccumulatedLightChannel, LightChannel, ClaudeLightEntity
+from custom_components.dmx.entity.light import DMXLightChannel, LightChannel, DMXLightEntity
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.entity.select import DmxSelectEntity
 from custom_components.dmx.fixture.capability import ColorIntensity, \
@@ -36,7 +36,7 @@ def __get_all_channels(index_channels: list[tuple[int, None | ChannelOffset | Sw
     return [c for channel_sub in index_channels for c in __get_channel(channel_sub)]
 
 
-def __accumulate_light_entities(accumulator: dict[str, list[AccumulatedLightChannel]],
+def __accumulate_light_entities(accumulator: dict[str, list[DMXLightChannel]],
                                 dmx_channel_indexes: List[int], channel: Channel, universe: Universe) -> None:
     assert len(channel.capabilities) == 1
 
@@ -66,14 +66,14 @@ def __accumulate_light_entities(accumulator: dict[str, list[AccumulatedLightChan
     else:
         return
 
-    accumulated_light_channel = AccumulatedLightChannel(dmx_channel_indexes, channel, universe, light_channel)
+    accumulated_light_channel = DMXLightChannel(dmx_channel_indexes, channel, universe, light_channel)
     if channel.matrix_key in accumulator:
         accumulator[channel.matrix_key].append(accumulated_light_channel)
     else:
         accumulator[channel.matrix_key] = [accumulated_light_channel]
 
 
-def __build_light_entities(accumulator: dict[str, list[AccumulatedLightChannel]], device: DeviceInfo) -> list[Entity]:
+def __build_light_entities(accumulator: dict[str, list[DMXLightChannel]], device: DeviceInfo) -> list[Entity]:
     entities = []
 
     for matrix_key, accumulated_channels in accumulator.items():
@@ -165,7 +165,7 @@ def __build_light_entities(accumulator: dict[str, list[AccumulatedLightChannel]]
             # No suitable channels for a light entity
             continue
 
-        entities.append(ClaudeLightEntity(
+        entities.append(DMXLightEntity(
             matrix_key=matrix_key,
             color_mode=color_mode,
             channels=channels_data,
@@ -183,7 +183,7 @@ def create_entities(
         universe: Universe
 ) -> list[Entity]:
     entities = []
-    lights_accumulator: dict[str, list[AccumulatedLightChannel]] = {}
+    lights_accumulator: dict[str, list[DMXLightChannel]] = {}
 
     for channel, group in groupby(__get_all_channels(enumerate(channels)), lambda c: c[1].channel):
         dmx_indexes = []
