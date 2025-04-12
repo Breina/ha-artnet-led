@@ -27,7 +27,7 @@ from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTR
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.fixture.parser import parse
 from custom_components.dmx.fixture_delegator.delegator import create_entities
-from custom_components.dmx.io.dmx_io import Universe
+from custom_components.dmx.io.dmx_io import DmxUniverse
 from custom_components.fixtures.ha_fixture import parse_json
 from custom_components.fixtures.model import HaFixture
 
@@ -279,11 +279,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         max_fps = artnet_yaml[CONF_MAX_FPS]
         refresh_every = artnet_yaml[CONF_REFRESH_EVERY]
 
+        def state_callback(port_address: PortAddress, data: bytearray):
+            # TODO delegate into the right DmxUniverse
+            pass
+
+        def new_code_callback():
+            log.info("Hey look I found a new node")
+
+        controller = ArtNetServer(hass, state_callback, new_code_callback, retransmit_time_ms=refresh_every * 1000)
+
         for universe_dict in artnet_yaml[CONF_UNIVERSES]:
             (universe_str, universe_yaml), = universe_dict.items()
             port_address = PortAddress.parse(universe_str)
 
-            universe = Universe(port_address)
+            universe = DmxUniverse(port_address, controller)
 
             manual_nodes: list[ManualNode] = []
             if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
@@ -322,6 +331,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                 )
 
                 entities.extend(create_entities(start_address, channels, device, universe))
+
+        controller.start()
 
     hass.data[DOMAIN][entry.entry_id] = {
         'entities': entities

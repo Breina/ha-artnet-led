@@ -12,7 +12,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 from custom_components.dmx import DOMAIN
 from custom_components.dmx.fixture.channel import Channel
-from custom_components.dmx.io.dmx_io import Universe
+from custom_components.dmx.io.dmx_io import DmxUniverse
 
 
 class LightChannel(Enum):
@@ -31,7 +31,7 @@ class DMXLightChannel:
     """Representation of a DMX light channel."""
     dmx_channel_indexes: List[int]
     channel: Channel
-    universe: Universe
+    universe: DmxUniverse
     light_channel: LightChannel
 
 

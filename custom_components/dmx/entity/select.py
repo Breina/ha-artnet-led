@@ -7,7 +7,7 @@ from custom_components.dmx import DOMAIN
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.fixture.channel import Channel
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
-from custom_components.dmx.io.dmx_io import Universe
+from custom_components.dmx.io.dmx_io import DmxUniverse
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class DmxSelectEntity(SelectEntity):
     def __init__(self,
                  channel: Channel,
                  capability_entities: dict[str, DmxNumberEntity],
-                 universe: Universe,
+                 universe: DmxUniverse,
                  dmx_index: int,
                  device: DeviceInfo
                  ) -> None:

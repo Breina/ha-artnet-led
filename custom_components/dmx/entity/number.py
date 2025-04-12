@@ -6,12 +6,12 @@ from homeassistant.helpers.device_registry import DeviceInfo
 
 from custom_components.dmx import DOMAIN
 from custom_components.dmx.fixture.capability import DynamicEntity, Capability
-from custom_components.dmx.io.dmx_io import Universe
+from custom_components.dmx.io.dmx_io import DmxUniverse
 
 
 class DmxNumberEntity(RestoreNumber):
     def __init__(self, name: str, capability: Capability,
-                 universe: Universe, dmx_indexes: List[int],
+                 universe: DmxUniverse, dmx_indexes: List[int],
                  device: DeviceInfo,
                  available: bool = True,  # TODO something wrong here?
                  ) -> None:

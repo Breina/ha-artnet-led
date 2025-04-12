@@ -14,7 +14,7 @@ from custom_components.dmx.fixture.capability import ColorIntensity, \
     SingleColor, Intensity, ColorTemperature
 from custom_components.dmx.fixture.channel import ChannelOffset, \
     SwitchingChannel, Channel
-from custom_components.dmx.io.dmx_io import Universe
+from custom_components.dmx.io.dmx_io import DmxUniverse
 
 
 @dataclass
@@ -37,7 +37,7 @@ def __get_all_channels(index_channels: list[tuple[int, None | ChannelOffset | Sw
 
 
 def __accumulate_light_entities(accumulator: dict[str, list[DMXLightChannel]],
-                                dmx_channel_indexes: List[int], channel: Channel, universe: Universe) -> None:
+                                dmx_channel_indexes: List[int], channel: Channel, universe: DmxUniverse) -> None:
     assert len(channel.capabilities) == 1
 
     capability = channel.capabilities[0]
@@ -180,7 +180,7 @@ def create_entities(
         dmx_start: int,
         channels: list[None | ChannelOffset | SwitchingChannel],
         device: DeviceInfo,
-        universe: Universe
+        universe: DmxUniverse
 ) -> list[Entity]:
     entities = []
     lights_accumulator: dict[str, list[DMXLightChannel]] = {}

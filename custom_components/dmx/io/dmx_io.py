@@ -1,12 +1,13 @@
 import asyncio
 from typing import List, Callable
 
-from custom_components.dmx import PortAddress
+from custom_components.dmx import PortAddress, ArtNetServer
 
 
-class Universe:
-    def __init__(self, port_address: PortAddress):
+class DmxUniverse:
+    def __init__(self, port_address: PortAddress, controller: ArtNetServer):
         self.port_address = port_address
+        self.controller = controller
 
         # Dictionary to store channel value: {channel_number: current_value}
         self._channel_values = {}
