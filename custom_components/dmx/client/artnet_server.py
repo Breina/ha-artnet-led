@@ -74,7 +74,7 @@ class OwnPort:
 
 
 class ArtNetServer(asyncio.DatagramProtocol):
-    def __init__(self, hass: HomeAssistant, state_update_callback=None, new_node_callback=None,
+    def __init__(self, hass: HomeAssistant, state_update_callback=None,
                  firmware_version: int = 0,
                  oem: int = 0, esta=0,
                  short_name: str = "PyArtNet", long_name: str = "Python ArtNet Server",
@@ -84,7 +84,8 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
         self.__hass = hass
         self.__state_update_callback = state_update_callback
-        self.__new_node_callback = new_node_callback
+        self.new_node_callback = None
+        self.art_poll_reply_callback = None
         self.firmware_version = firmware_version
         self.oem = oem
         self.esta = esta
@@ -499,14 +500,16 @@ class ArtNetServer(asyncio.DatagramProtocol):
                      f"{reply.net_switch}:{reply.sub_switch}:[{','.join([str(p.sw_out) for p in reply.ports if p.output])}]"
                      )
 
-            if self.__new_node_callback:
-                self.__new_node_callback(reply)
+            if self.new_node_callback:
+                self.new_node_callback(reply)
 
         else:
             node.last_seen = current_time
             log.debug(f"Existing node checking in {inet_ntoa(source_ip)}@{bind_index} with "
                       f"{reply.net_switch}:{reply.sub_switch}:[{','.join([str(p.sw_out) for p in reply.ports])}]"
                       )
+            if self.art_poll_reply_callback:
+                self.art_poll_reply_callback(reply)
 
         old_addresses = node.get_addresses()
         node.net_switch = reply.net_switch

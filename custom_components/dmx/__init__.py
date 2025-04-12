@@ -68,7 +68,7 @@ CONF_FOLDER = 'folder'
 
 DEFAULT_FIXTURES_FOLDER = 'fixtures'
 
-PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT]
+PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT, Platform.SENSOR, Platform.BINARY_SENSOR]
 
 FIXTURES = {}
 
@@ -300,10 +300,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                 if value > 0 or callback_universe.get_channel_value(channel) != value:
                     callback_universe.update_value(channel, value)
 
-        def new_code_callback(artpoll_reply: ArtPollReply):
-            log.info("Hey look I found a new node")
+        controller = ArtNetServer(hass, state_callback, retransmit_time_ms=refresh_every * 1000)
 
-        controller = ArtNetServer(hass, state_callback, new_code_callback, retransmit_time_ms=refresh_every * 1000)
+        def _get_node_handler():
+            from custom_components.dmx.entity.node_handler import DynamicNodeHandler
+            return DynamicNodeHandler
+
+        DynamicNodeHandler = _get_node_handler()
+        node_handler = DynamicNodeHandler(hass, entry, controller)
+
+        def new_code_callback(artpoll_reply: ArtPollReply):
+            hass.async_create_task(node_handler.handle_new_node(artpoll_reply))
+
+        controller.new_node_callback = new_code_callback
+
+        def existing_node_callback(artpoll_reply: ArtPollReply):
+            hass.async_create_task(node_handler.update_node(artpoll_reply))
+
+        controller.art_poll_reply_callback = existing_node_callback
 
         for universe_dict in artnet_yaml[CONF_UNIVERSES]:
             (universe_str, universe_yaml), = universe_dict.items()
