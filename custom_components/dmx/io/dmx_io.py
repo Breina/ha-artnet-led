@@ -74,10 +74,6 @@ class DmxUniverse:
                         except Exception as e:
                             print(f"Error calling callback for channel {ch}: {e}")
 
-                # Perform actual DMX output
-                print(f"Updating DMX channel {ch} to value {value}")
-                # Actual DMX output code would go here
-
     async def _call_callback(self, callback, channel, value):
         """Helper method to call callbacks that might be async or regular functions."""
         if asyncio.iscoroutinefunction(callback):
@@ -88,3 +84,19 @@ class DmxUniverse:
     def get_channel_value(self, channel: int) -> int:
         """Get the current value of a channel."""
         return self._channel_values.get(channel, 0)
+
+    def send_universe_data(self) -> None:
+        """
+        Gather all channel values into a 512-sized bytearray and send it via ArtNet.
+        """
+        # Create a bytearray filled with zeros (default DMX value is 0)
+        data = bytearray(512)
+
+        # Fill in the values for channels that have been set
+        for channel, value in self._channel_values.items():
+            # DMX channels are 1-based, but bytearray indices are 0-based
+            if 1 <= channel <= 512:
+                data[channel - 1] = value
+
+        # Send the data via the controller
+        self.controller.send_dmx(self.port_address, data)

@@ -21,7 +21,7 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.bridge.artnet_controller import ArtNetController, DiscoveredNode
-from custom_components.dmx.client import PortAddress
+from custom_components.dmx.client import PortAddress, ArtPollReply
 from custom_components.dmx.client.artnet_server import ArtNetServer
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER
 from custom_components.dmx.fixture.fixture import Fixture
@@ -272,6 +272,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     log.debug("Found %d fixtures", len(fixtures))
 
     entities: list[Entity] = []
+    universes = {}
 
     # Process ArtNet
     if (artnet_yaml := dmx_yaml.get(CONF_NODE_TYPE_ARTNET)) is not None:
@@ -280,10 +281,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         refresh_every = artnet_yaml[CONF_REFRESH_EVERY]
 
         def state_callback(port_address: PortAddress, data: bytearray):
-            # TODO delegate into the right DmxUniverse
-            pass
+            """
+            Callback for incoming ArtNet DMX data.
 
-        def new_code_callback():
+            Args:
+                port_address: The port address (universe) the data is for
+                data: The DMX data (512 bytes)
+            """
+            # Find the corresponding universe
+            callback_universe = universes.get(port_address)
+            if callback_universe is None:
+                log.warning(f"Received DMX data for unknown universe: {port_address}")
+                return
+
+            # Update channel values in the universe
+            # Only update channels that have a non-zero value or have changed
+            for channel, value in enumerate(data, start=1):  # DMX channels are 1-based
+                if value > 0 or callback_universe.get_channel_value(channel) != value:
+                    callback_universe.update_value(channel, value)
+
+        def new_code_callback(artpoll_reply: ArtPollReply):
             log.info("Hey look I found a new node")
 
         controller = ArtNetServer(hass, state_callback, new_code_callback, retransmit_time_ms=refresh_every * 1000)
@@ -293,6 +310,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             port_address = PortAddress.parse(universe_str)
 
             universe = DmxUniverse(port_address, controller)
+            universes[port_address] = universe
 
             manual_nodes: list[ManualNode] = []
             if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
@@ -332,7 +350,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
                 entities.extend(create_entities(start_address, channels, device, universe))
 
-        controller.start()
+        controller.start_server()
 
     hass.data[DOMAIN][entry.entry_id] = {
         'entities': entities
