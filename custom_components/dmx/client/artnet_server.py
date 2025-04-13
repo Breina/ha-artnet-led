@@ -45,14 +45,15 @@ class Node:
         if not self.ports:
             return set()
 
-        input_ports = set(map(lambda port: PortAddress(self.net_switch, self.sub_switch, port.sw_in),
-                              filter(lambda port: port.input, self.ports)
-                              ))
-        output_ports = set(map(lambda port: PortAddress(self.net_switch, self.sub_switch, port.sw_out),
-                               filter(lambda port: port.output, self.ports)
-                               ))
+        addresses = set()
 
-        return input_ports.union(output_ports)
+        for port in self.ports:
+            if hasattr(port, 'input') and port.input:
+                addresses.add(PortAddress(self.net_switch, self.sub_switch, port.sw_in))
+            if hasattr(port, 'output') and port.output:
+                addresses.add(PortAddress(self.net_switch, self.sub_switch, port.sw_out))
+
+        return addresses
 
     def __repr__(self) -> str:
         return str(self)
@@ -274,10 +275,15 @@ class ArtNetServer(asyncio.DatagramProtocol):
         self.send_artnet(diag_data, address)
 
     def send_reply(self, addr):
-        bind_index = None
-        for (net, sub_net, ports_chunk) in self.get_grouped_ports():
-            if bind_index is None:
-                bind_index = 0 if len(ports_chunk) == 1 else 1
+        grouped_ports = self.get_grouped_ports()
+        if len(grouped_ports) > 1:
+            bind_index = 1
+        else:
+            bind_index = 0
+
+        log.debug("Sending ArtPollReply!")
+        for (net, sub_net, ports_chunk) in grouped_ports:
+            log.debug(f"ArtPollReply's bind index = {bind_index}")
 
             for ports in ports_chunk:
                 node_report = self.node_report.report(self.art_poll_reply_counter, self.status_message)

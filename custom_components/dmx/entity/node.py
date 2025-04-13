@@ -421,7 +421,6 @@ class ArtNetPortUniverseSensor(ArtNetEntity, SensorEntity):
             f"port_{port_index}_{direction.lower()}_universe",
             device_info
         )
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def native_value(self) -> str:

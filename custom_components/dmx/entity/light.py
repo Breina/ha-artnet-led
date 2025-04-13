@@ -474,7 +474,7 @@ class DMXLightEntity(LightEntity, RestoreEntity):
         """Initialize the light entity."""
         # Entity attributes
         self._matrix_key = matrix_key
-        self._attr_name = f"Light {matrix_key}" if matrix_key else "Light"
+        self._attr_name = f"{name} Light {matrix_key}" if matrix_key else f"{name} Light"
         self._attr_device_info = device
         self._attr_unique_id = f"{DOMAIN}_light_{name}_{matrix_key}"
 
