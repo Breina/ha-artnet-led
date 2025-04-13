@@ -136,7 +136,7 @@ class PortAddress:
         return PortAddress(port_address >> 13 & 0xF, port_address >> 9 & 0xF, port_address & 0x1FF)
 
     def __str__(self):
-        return f"{self.net}:{self.sub_net}:{self.universe}"
+        return f"{self.net}/{self.sub_net}/{self.universe}"
 
     def __hash__(self):
         return self.port_address

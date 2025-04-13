@@ -22,7 +22,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.bridge.artnet_controller import ArtNetController, DiscoveredNode
 from custom_components.dmx.client import PortAddress, ArtPollReply
-from custom_components.dmx.client.artnet_server import ArtNetServer, Node
+from custom_components.dmx.client.artnet_server import ArtNetServer, Node, ManualNode
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.fixture.parser import parse
@@ -178,12 +178,6 @@ def port_address_config(value: Any) -> int:
     return PortAddress(net, sub_net, universe).port_address
 
 
-@dataclasses.dataclass
-class ManualNode:
-    host: str
-    port: int
-
-
 async def reload_configuration_yaml(event: dict, hass: HomeAssistant):
     """Reload configuration.yaml."""
     await hass.services.async_call("homeassistant", "check_config", {})
@@ -298,7 +292,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             # Only update channels that have a non-zero value or have changed
             for channel, value in enumerate(data, start=1):  # DMX channels are 1-based
                 if value > 0 or callback_universe.get_channel_value(channel) != value:
-                    callback_universe.update_value(channel, value)
+                    hass.async_create_task(callback_universe.update_value(channel, value))
 
         controller = ArtNetServer(hass, state_callback, retransmit_time_ms=refresh_every * 1000)
 
@@ -333,12 +327,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
             controller.add_port(port_address)
 
-            manual_nodes: list[ManualNode] = []
+            # manual_nodes: list[ManualNode] = []
             if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
                 send_partial_universe = compatibility_yaml[CONF_SEND_PARTIAL_UNIVERSE]
                 if (manual_nodes_yaml := compatibility_yaml.get(CONF_MANUAL_NODES)) is not None:
                     for manual_node_yaml in manual_nodes_yaml:
-                        manual_nodes.append(ManualNode(manual_node_yaml[CONF_HOST], manual_node_yaml[CONF_PORT]))
+                        controller.add_manual_node(ManualNode(port_address, manual_node_yaml[CONF_HOST], manual_node_yaml[CONF_PORT]))
+                        # manual_nodes.append(ManualNode(manual_node_yaml[CONF_HOST], manual_node_yaml[CONF_PORT]))
 
             else:
                 send_partial_universe = True

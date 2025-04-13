@@ -23,7 +23,7 @@ dmx:
       - 3: # Net and Sub-net default to 0, universe = 3
           devices:
             - DJ led:
-                start_address: 201
+                start_address: 0
                 fixture: DJ Scan LED
       - 0/0/0:
           devices:

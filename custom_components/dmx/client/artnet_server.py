@@ -59,13 +59,20 @@ class Node:
         return str(self)
 
     def __str__(self):
-        return f"{self.net_switch}:{self.sub_switch}:*@{inet_ntoa(self.addr)}#{self.bind_index}"
+        return f"{self.net_switch}/{self.sub_switch}/*@{inet_ntoa(self.addr)}#{self.bind_index}"
 
     def __eq__(self, other):
         return self.addr == other.addr and self.bind_index == other.bind_index
 
     def __hash__(self) -> int:
         return hash((self.addr, self.bind_index))
+
+
+@dataclass
+class ManualNode:
+    port_address: PortAddress = None
+    addr: bytes = [0x00] * 4,
+    port: int = 6454,
 
 
 @dataclass
@@ -107,6 +114,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
         self.nodes_by_ip = {}
         self.nodes_by_port_address = {}
+        self.manual_nodes_by_port_address = {}
 
         self._own_ip = inet_aton(get_private_ip())
         self._default_gateway = inet_aton(get_default_gateway())
@@ -141,6 +149,9 @@ class ArtNetServer(asyncio.DatagramProtocol):
         if not port_addresses:
             return None
         return min(port_addresses), max(port_addresses)
+
+    def add_manual_node(self, manual_node: ManualNode):
+        self.manual_nodes_by_port_address[manual_node.port_address] = manual_node
 
     def get_node_by_ip(self, addr: bytes, bind_index: int = 1) -> Node | None:
         return self.nodes_by_ip.get((addr, bind_index), None)
@@ -312,15 +323,17 @@ class ArtNetServer(asyncio.DatagramProtocol):
                     bind_index += 1
 
     def send_dmx(self, address: PortAddress, data: bytearray) -> Task[None] | None:
-        if not self.get_node_by_port_address(address):
+        has_manual_node = address in self.manual_nodes_by_port_address
+
+        if not has_manual_node and not self.get_node_by_port_address(address):
             if self.uptime() < 3:
                 log.debug("Can't currently send DMX as nodes haven't had the chance to be discovered.")
                 return None
 
             if len(self.nodes_by_port_address) == 0:
                 log.error("The server hasn't received replies from any node at all. We don't know where we can "
-                          "send the DMX data to. If this message persists, consider using direct mode instead of "
-                          "the ArtNet server.")
+                          "send the DMX data to. If this message persists, consider configuring manual_nodes "
+                          "under the compatibility section.")
             else:
                 log.error(f"No nodes found that listen to port address {address}. Current nodes: "
                           f"{self.nodes_by_port_address.keys()}")
@@ -335,11 +348,11 @@ class ArtNetServer(asyncio.DatagramProtocol):
             own_port.port.good_output_a.data_being_transmitted = True
             self.update_subscribers()
 
-        task = self.__hass.async_create_task(self.start_artdmx_loop(address, data, own_port))
+        task = self.__hass.async_create_task(self.start_artdmx_loop(address, data, own_port, has_manual_node))
         own_port.update_task = task
         return task
 
-    async def start_artdmx_loop(self, address, data, own_port):
+    async def start_artdmx_loop(self, address, data, own_port, has_manual_node: bool = False):
         own_port.data = data
         art_dmx = ArtDmx(sequence_number=self.sequence_number, physical=HA_PHYSICAL_PORT, port_address=address,
                          data=data)
@@ -347,7 +360,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
         while True:
             nodes = self.get_node_by_port_address(address)
-            if not nodes:
+            if not has_manual_node and not nodes:
                 log.warning(f"No nodes found that listen to port address {address}. "
                             f"Stopping sending ArtDmx refreshes...")
                 own_port.port.good_output_a.data_being_transmitted = False
@@ -359,6 +372,14 @@ class ArtNetServer(asyncio.DatagramProtocol):
                         ip_str = inet_ntoa(node.addr)
                         log.debug(f"Sending ArtDmx to {ip_str}")
                         sock.sendto(packet, (ip_str, ARTNET_PORT))
+
+            if has_manual_node:
+                manual_node = self.manual_nodes_by_port_address[address]
+                with socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) as sock:
+                    sock.setblocking(False)
+                    ip_str = inet_ntoa(manual_node.addr)
+                    log.debug(f"Sending manually ArtDmx to {ip_str}")
+                    sock.sendto(packet, (ip_str, manual_node.port))
 
             if self._sequencing:
                 self.sequence_number += 0x01
@@ -506,7 +527,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             node = Node(source_ip, bind_index, mac_address, current_time)
             self.add_node_by_ip(node, source_ip, bind_index)
             log.info(f"Discovered new node at {inet_ntoa(source_ip)}@{bind_index} with "
-                     f"{reply.net_switch}:{reply.sub_switch}:[{','.join([str(p.sw_out) for p in reply.ports if p.output])}]"
+                     f"{reply.net_switch}/{reply.sub_switch}/[{','.join([str(p.sw_out) for p in reply.ports if p.output])}]"
                      )
 
             if self.node_new_callback:
@@ -515,7 +536,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
         else:
             node.last_seen = current_time
             log.debug(f"Existing node checking in {inet_ntoa(source_ip)}@{bind_index} with "
-                      f"{reply.net_switch}:{reply.sub_switch}:[{','.join([str(p.sw_out) for p in reply.ports])}]"
+                      f"{reply.net_switch}/{reply.sub_switch}/[{','.join([str(p.sw_out) for p in reply.ports])}]"
                       )
             if self.node_update_callback:
                 self.node_update_callback(reply)
