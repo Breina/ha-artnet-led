@@ -66,14 +66,14 @@ def __accumulate_light_entities(accumulator: dict[str, list[DMXLightChannel]],
     else:
         return
 
-    accumulated_light_channel = DMXLightChannel(dmx_channel_indexes, channel, universe, light_channel)
+    accumulated_light_channel = DMXLightChannel(dmx_channel_indexes, channel, light_channel)
     if channel.matrix_key in accumulator:
         accumulator[channel.matrix_key].append(accumulated_light_channel)
     else:
         accumulator[channel.matrix_key] = [accumulated_light_channel]
 
 
-def __build_light_entities(accumulator: dict[str, list[DMXLightChannel]], device: DeviceInfo) -> list[Entity]:
+def __build_light_entities(accumulator: dict[str, list[DMXLightChannel]], device: DeviceInfo, universe: DmxUniverse) -> list[Entity]:
     entities = []
 
     for matrix_key, accumulated_channels in accumulator.items():
@@ -170,6 +170,7 @@ def __build_light_entities(accumulator: dict[str, list[DMXLightChannel]], device
             color_mode=color_mode,
             channels=channels_data,
             device=device,
+            universe=universe,
             has_separate_dimmer=has_separate_dimmer,
         ))
 
@@ -222,7 +223,7 @@ def create_entities(
         if isinstance(entity, DmxSelectEntity):
             entity.link_switching_entities(entities)
 
-    entities.extend(__build_light_entities(lights_accumulator, device))
+    entities.extend(__build_light_entities(lights_accumulator, device, universe))
 
     return entities
 

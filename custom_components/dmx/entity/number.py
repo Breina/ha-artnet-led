@@ -74,7 +74,7 @@ class DmxNumberEntity(RestoreNumber):
 
         self._is_updating = True
         try:
-            await self.universe.update_value(self.dmx_indexes, dmx_value)
+            await self.universe.update_value(self.dmx_indexes, dmx_value, send_immediately=True)
         finally:
             self._is_updating = False
 

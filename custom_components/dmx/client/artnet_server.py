@@ -309,7 +309,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
         if not self.get_node_by_port_address(address):
             if self.uptime() < 3:
                 log.debug("Can't currently send DMX as nodes haven't had the chance to be discovered.")
-                return
+                return None
 
             if len(self.nodes_by_port_address) == 0:
                 log.error("The server hasn't received replies from any node at all. We don't know where we can "
@@ -318,7 +318,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             else:
                 log.error(f"No nodes found that listen to port address {address}. Current nodes: "
                           f"{self.nodes_by_port_address.keys()}")
-            return
+            return None
 
         own_port = self.own_port_addresses[address]
         if own_port.update_task:

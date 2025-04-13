@@ -85,7 +85,7 @@ class DmxSelectEntity(SelectEntity):
         else:
             dmx_value = capability.dmx_range_start
 
-        await self.universe.update_value(self.dmx_index, dmx_value)
+        await self.universe.update_value(self.dmx_index, dmx_value, send_immediately=True)
 
     def update_current_option(self, new_option: str) -> None:
         self.__set_availability(False)

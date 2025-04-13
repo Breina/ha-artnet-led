@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import partial
@@ -31,7 +30,6 @@ class DMXLightChannel:
     """Representation of a DMX light channel."""
     dmx_channel_indexes: List[int]
     channel: Channel
-    universe: DmxUniverse
     light_channel: LightChannel
 
 
@@ -156,11 +154,12 @@ class DMXLightState:
 class DMXLightController:
     """Controller for DMX light operations."""
 
-    def __init__(self, channels: List[DMXLightChannel], state: DMXLightState, color_mode: ColorMode):
+    def __init__(self, channels: List[DMXLightChannel], state: DMXLightState, color_mode: ColorMode, universe: DmxUniverse):
         """Initialize the DMX light controller."""
         self.channels = channels
         self.state = state
         self.color_mode = color_mode
+        self.universe = universe  # Store a single universe reference
 
         # Map channels by type for easy access
         self.channel_map: Dict[LightChannel, DMXLightChannel] = {
@@ -170,13 +169,12 @@ class DMXLightController:
         # Flag to prevent feedback loops during updates
         self.is_updating = False
 
-    @staticmethod
-    async def _update_channel_value(channel_data: DMXLightChannel, value: int) -> None:
+    async def _update_channel_value(self, channel_data: DMXLightChannel, value: int) -> None:
         """Send a DMX value update to the universe."""
         dmx_value = min(255, max(0, value))  # Ensure value is in DMX range
 
         for dmx_index in channel_data.dmx_channel_indexes:
-            await channel_data.universe.update_value(dmx_index, dmx_value)
+            await self.universe.update_value(dmx_index, dmx_value)
 
     async def update_rgb_channels(self, rgb: Tuple[int, int, int]) -> None:
         """Update RGB channels with new values."""
@@ -186,11 +184,21 @@ class DMXLightController:
 
         self.state.update_rgb(rgb[0], rgb[1], rgb[2])
 
-        await asyncio.gather(
-            self._update_channel_value(self.channel_map[LightChannel.RED], rgb[0]),
-            self._update_channel_value(self.channel_map[LightChannel.GREEN], rgb[1]),
-            self._update_channel_value(self.channel_map[LightChannel.BLUE], rgb[2])
-        )
+        # Collect all channel updates
+        updates = {}
+        if LightChannel.RED in self.channel_map:
+            for idx in self.channel_map[LightChannel.RED].dmx_channel_indexes:
+                updates[idx] = rgb[0]
+        if LightChannel.GREEN in self.channel_map:
+            for idx in self.channel_map[LightChannel.GREEN].dmx_channel_indexes:
+                updates[idx] = rgb[1]
+        if LightChannel.BLUE in self.channel_map:
+            for idx in self.channel_map[LightChannel.BLUE].dmx_channel_indexes:
+                updates[idx] = rgb[2]
+
+        # Send all updates at once
+        if updates:
+            await self.universe.update_multiple_values(updates)
 
     async def update_white_channel(self, value: int, is_cold: bool = True) -> None:
         """Update white channel (cold or warm) with new value."""
@@ -200,11 +208,20 @@ class DMXLightController:
             return
 
         self.state.update_white(value, is_cold)
-        await self._update_channel_value(self.channel_map[channel_type], value)
+
+        # Collect channel updates
+        updates = {}
+        for idx in self.channel_map[channel_type].dmx_channel_indexes:
+            updates[idx] = value
+
+        # Send updates
+        if updates:
+            await self.universe.update_multiple_values(updates)
 
     async def update_color_temp(self, temp_mired: int) -> None:
         """Update color temperature using appropriate channels."""
         self.state.update_color_temp(temp_mired, is_dmx_value=False)
+        updates = {}
 
         if LightChannel.COLOR_TEMPERATURE in self.channel_map:
             # Convert mired to DMX value
@@ -212,7 +229,9 @@ class DMXLightController:
             dmx_value = int(ratio * 255)
             self.state.color_temp_value = dmx_value
 
-            await self._update_channel_value(self.channel_map[LightChannel.COLOR_TEMPERATURE], dmx_value)
+            for idx in self.channel_map[LightChannel.COLOR_TEMPERATURE].dmx_channel_indexes:
+                updates[idx] = dmx_value
+
         elif all(ch in self.channel_map for ch in [LightChannel.COLD_WHITE, LightChannel.WARM_WHITE]):
             # Calculate cold/warm mix based on temperature
             ratio = (temp_mired - self.state.min_mireds) / (self.state.max_mireds - self.state.min_mireds)
@@ -222,151 +241,219 @@ class DMXLightController:
             self.state.update_white(cold_value, is_cold=True)
             self.state.update_white(warm_value, is_cold=False)
 
-            await asyncio.gather(
-                self._update_channel_value(self.channel_map[LightChannel.COLD_WHITE], cold_value),
-                self._update_channel_value(self.channel_map[LightChannel.WARM_WHITE], warm_value)
-            )
+            for idx in self.channel_map[LightChannel.COLD_WHITE].dmx_channel_indexes:
+                updates[idx] = cold_value
+            for idx in self.channel_map[LightChannel.WARM_WHITE].dmx_channel_indexes:
+                updates[idx] = warm_value
+
+        # Send updates
+        if updates:
+            await self.universe.update_multiple_values(updates)
 
     async def update_brightness(self, brightness: int) -> None:
         """Update brightness using the appropriate channel."""
         self.state.update_brightness(brightness)
+        updates = {}
 
         if LightChannel.DIMMER in self.channel_map:
-            await self._update_channel_value(self.channel_map[LightChannel.DIMMER], brightness)
+            for idx in self.channel_map[LightChannel.DIMMER].dmx_channel_indexes:
+                updates[idx] = brightness
         elif LightChannel.COLD_WHITE in self.channel_map and self.color_mode == ColorMode.BRIGHTNESS:
-            await self._update_channel_value(self.channel_map[LightChannel.COLD_WHITE], brightness)
+            for idx in self.channel_map[LightChannel.COLD_WHITE].dmx_channel_indexes:
+                updates[idx] = brightness
         elif LightChannel.WARM_WHITE in self.channel_map and self.color_mode == ColorMode.BRIGHTNESS:
-            await self._update_channel_value(self.channel_map[LightChannel.WARM_WHITE], brightness)
+            for idx in self.channel_map[LightChannel.WARM_WHITE].dmx_channel_indexes:
+                updates[idx] = brightness
+
+        # Send updates
+        if updates:
+            await self.universe.update_multiple_values(updates)
 
     async def turn_on(self, **kwargs) -> None:
         """Turn on the light with specified parameters."""
         self.state.is_on = True
+        updates = {}  # Will collect all updates to send in one batch
 
         # Process different attributes based on what's provided in kwargs
-        tasks = []
         has_specific_attrs = False
 
         if "brightness" in kwargs and LightChannel.DIMMER in self.channel_map:
-            tasks.append(self.update_brightness(kwargs["brightness"]))
+            brightness = kwargs["brightness"]
+            self.state.update_brightness(brightness)
+            for idx in self.channel_map[LightChannel.DIMMER].dmx_channel_indexes:
+                updates[idx] = brightness
             has_specific_attrs = True
 
         if "rgb_color" in kwargs:
-            tasks.append(self.update_rgb_channels(kwargs["rgb_color"]))
+            rgb = kwargs["rgb_color"]
+            self.state.update_rgb(rgb[0], rgb[1], rgb[2])
+
+            if LightChannel.RED in self.channel_map:
+                for idx in self.channel_map[LightChannel.RED].dmx_channel_indexes:
+                    updates[idx] = rgb[0]
+            if LightChannel.GREEN in self.channel_map:
+                for idx in self.channel_map[LightChannel.GREEN].dmx_channel_indexes:
+                    updates[idx] = rgb[1]
+            if LightChannel.BLUE in self.channel_map:
+                for idx in self.channel_map[LightChannel.BLUE].dmx_channel_indexes:
+                    updates[idx] = rgb[2]
+
             has_specific_attrs = True
 
         if "rgbw_color" in kwargs:
-            rgb = kwargs["rgbw_color"][:3]
-            white = kwargs["rgbw_color"][3]
-            tasks.append(self.update_rgb_channels(rgb))
-            tasks.append(self.update_white_channel(white))
+            rgbw = kwargs["rgbw_color"]
+            self.state.update_rgb(rgbw[0], rgbw[1], rgbw[2])
+            self.state.update_white(rgbw[3], is_cold=True)
+
+            if LightChannel.RED in self.channel_map:
+                for idx in self.channel_map[LightChannel.RED].dmx_channel_indexes:
+                    updates[idx] = rgbw[0]
+            if LightChannel.GREEN in self.channel_map:
+                for idx in self.channel_map[LightChannel.GREEN].dmx_channel_indexes:
+                    updates[idx] = rgbw[1]
+            if LightChannel.BLUE in self.channel_map:
+                for idx in self.channel_map[LightChannel.BLUE].dmx_channel_indexes:
+                    updates[idx] = rgbw[2]
+            if LightChannel.COLD_WHITE in self.channel_map:
+                for idx in self.channel_map[LightChannel.COLD_WHITE].dmx_channel_indexes:
+                    updates[idx] = rgbw[3]
+
             has_specific_attrs = True
 
         if "rgbww_color" in kwargs:
-            rgb = kwargs["rgbww_color"][:3]
-            cold_white = kwargs["rgbww_color"][3]
-            warm_white = kwargs["rgbww_color"][4]
-            tasks.append(self.update_rgb_channels(rgb))
-            tasks.append(self.update_white_channel(cold_white, is_cold=True))
-            tasks.append(self.update_white_channel(warm_white, is_cold=False))
+            rgbww = kwargs["rgbww_color"]
+            self.state.update_rgb(rgbww[0], rgbww[1], rgbww[2])
+            self.state.update_white(rgbww[3], is_cold=True)
+            self.state.update_white(rgbww[4], is_cold=False)
+
+            if LightChannel.RED in self.channel_map:
+                for idx in self.channel_map[LightChannel.RED].dmx_channel_indexes:
+                    updates[idx] = rgbww[0]
+            if LightChannel.GREEN in self.channel_map:
+                for idx in self.channel_map[LightChannel.GREEN].dmx_channel_indexes:
+                    updates[idx] = rgbww[1]
+            if LightChannel.BLUE in self.channel_map:
+                for idx in self.channel_map[LightChannel.BLUE].dmx_channel_indexes:
+                    updates[idx] = rgbww[2]
+            if LightChannel.COLD_WHITE in self.channel_map:
+                for idx in self.channel_map[LightChannel.COLD_WHITE].dmx_channel_indexes:
+                    updates[idx] = rgbww[3]
+            if LightChannel.WARM_WHITE in self.channel_map:
+                for idx in self.channel_map[LightChannel.WARM_WHITE].dmx_channel_indexes:
+                    updates[idx] = rgbww[4]
+
             has_specific_attrs = True
 
         if "color_temp" in kwargs:
-            tasks.append(self.update_color_temp(kwargs["color_temp"]))
+            temp_mired = kwargs["color_temp"]
+            self.state.update_color_temp(temp_mired, is_dmx_value=False)
+
+            if LightChannel.COLOR_TEMPERATURE in self.channel_map:
+                # Convert mired to DMX value
+                ratio = (temp_mired - self.state.min_mireds) / (self.state.max_mireds - self.state.min_mireds)
+                dmx_value = int(ratio * 255)
+                self.state.color_temp_value = dmx_value
+
+                for idx in self.channel_map[LightChannel.COLOR_TEMPERATURE].dmx_channel_indexes:
+                    updates[idx] = dmx_value
+            elif all(ch in self.channel_map for ch in [LightChannel.COLD_WHITE, LightChannel.WARM_WHITE]):
+                # Calculate cold/warm mix based on temperature
+                ratio = (temp_mired - self.state.min_mireds) / (self.state.max_mireds - self.state.min_mireds)
+                warm_value = int(ratio * 255)
+                cold_value = int((1 - ratio) * 255)
+
+                self.state.update_white(cold_value, is_cold=True)
+                self.state.update_white(warm_value, is_cold=False)
+
+                for idx in self.channel_map[LightChannel.COLD_WHITE].dmx_channel_indexes:
+                    updates[idx] = cold_value
+                for idx in self.channel_map[LightChannel.WARM_WHITE].dmx_channel_indexes:
+                    updates[idx] = warm_value
+
             has_specific_attrs = True
 
         # If no specific attributes, restore previous state
         if not has_specific_attrs:
-            tasks.append(self.restore_previous_state())
-
-        if tasks:
-            await asyncio.gather(*tasks)
+            await self._restore_previous_state_batch(updates)
+        elif updates:
+            # Send all updates in one batch
+            await self.universe.update_multiple_values(updates)
 
     async def turn_off(self) -> None:
         """Turn off the light."""
         self.state.is_on = False
+        updates = {}  # Will collect all updates to send in one batch
 
         # If there's a separate dimmer, just turn that off
         if LightChannel.DIMMER in self.channel_map:
             dimmer_channel = self.channel_map[LightChannel.DIMMER]
             for dmx_index in dimmer_channel.dmx_channel_indexes:
-                await dimmer_channel.universe.update_value(dmx_index, 0)
-
+                updates[dmx_index] = 0
             self.state.brightness = 0
         else:
             # Otherwise turn off all channels
             self.is_updating = True
             try:
-                tasks = []
                 for ch_data in self.channels:
                     for dmx_index in ch_data.dmx_channel_indexes:
-                        tasks.append(ch_data.universe.update_value(dmx_index, 0))
-
-                if tasks:
-                    await asyncio.gather(*tasks)
-
+                        updates[dmx_index] = 0
                 self.state.reset_all_channels()
             finally:
                 self.is_updating = False
 
-    async def restore_previous_state(self) -> None:
-        """Restore the light's previous state."""
-        tasks = []
+        # Send all updates in one batch
+        if updates:
+            await self.universe.update_multiple_values(updates)
 
+    async def _restore_previous_state_batch(self, updates: Dict[int, int]) -> None:
+        """Restore the light's previous state with batched updates."""
         has_dimmer = LightChannel.DIMMER in self.channel_map
 
         # If we have a dimmer, use that for brightness control
         if has_dimmer:
             brightness = self.state.last_brightness or 255
-            tasks.append(self._update_channel_value(
-                self.channel_map[LightChannel.DIMMER],
-                brightness
-            ))
+            for idx in self.channel_map[LightChannel.DIMMER].dmx_channel_indexes:
+                updates[idx] = brightness
 
         # Handle RGB channels
         if self.color_mode in (ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW):
             if all(ch in self.channel_map for ch in [LightChannel.RED, LightChannel.GREEN, LightChannel.BLUE]):
                 rgb = self.state.last_rgb_color
-                tasks.append(self._update_channel_value(self.channel_map[LightChannel.RED], rgb[0]))
-                tasks.append(self._update_channel_value(self.channel_map[LightChannel.GREEN], rgb[1]))
-                tasks.append(self._update_channel_value(self.channel_map[LightChannel.BLUE], rgb[2]))
+                for idx in self.channel_map[LightChannel.RED].dmx_channel_indexes:
+                    updates[idx] = rgb[0]
+                for idx in self.channel_map[LightChannel.GREEN].dmx_channel_indexes:
+                    updates[idx] = rgb[1]
+                for idx in self.channel_map[LightChannel.BLUE].dmx_channel_indexes:
+                    updates[idx] = rgb[2]
 
         # Handle white channels
         if self.color_mode in (ColorMode.RGBW, ColorMode.RGBWW, ColorMode.COLOR_TEMP):
             if LightChannel.COLD_WHITE in self.channel_map:
-                tasks.append(self._update_channel_value(
-                    self.channel_map[LightChannel.COLD_WHITE],
-                    self.state.last_cold_white
-                ))
+                for idx in self.channel_map[LightChannel.COLD_WHITE].dmx_channel_indexes:
+                    updates[idx] = self.state.last_cold_white
 
             if LightChannel.WARM_WHITE in self.channel_map:
-                tasks.append(self._update_channel_value(
-                    self.channel_map[LightChannel.WARM_WHITE],
-                    self.state.last_warm_white
-                ))
+                for idx in self.channel_map[LightChannel.WARM_WHITE].dmx_channel_indexes:
+                    updates[idx] = self.state.last_warm_white
 
         # Handle color temperature channel
         if LightChannel.COLOR_TEMPERATURE in self.channel_map:
-            tasks.append(self._update_channel_value(
-                self.channel_map[LightChannel.COLOR_TEMPERATURE],
-                self.state.last_color_temp_value
-            ))
+            for idx in self.channel_map[LightChannel.COLOR_TEMPERATURE].dmx_channel_indexes:
+                updates[idx] = self.state.last_color_temp_value
 
         # Handle brightness for non-dimmer configurations
         if not has_dimmer and self.color_mode == ColorMode.BRIGHTNESS:
             brightness = self.state.last_brightness or 255
             if LightChannel.COLD_WHITE in self.channel_map:
-                tasks.append(self._update_channel_value(
-                    self.channel_map[LightChannel.COLD_WHITE],
-                    brightness
-                ))
+                for idx in self.channel_map[LightChannel.COLD_WHITE].dmx_channel_indexes:
+                    updates[idx] = brightness
             elif LightChannel.WARM_WHITE in self.channel_map:
-                tasks.append(self._update_channel_value(
-                    self.channel_map[LightChannel.WARM_WHITE],
-                    brightness
-                ))
+                for idx in self.channel_map[LightChannel.WARM_WHITE].dmx_channel_indexes:
+                    updates[idx] = brightness
 
-        if tasks:
-            await asyncio.gather(*tasks)
+        # Send all updates in a single batch if this function is called directly
+        if updates:
+            await self.universe.update_multiple_values(updates)
 
 
 class DMXLightEntity(LightEntity, RestoreEntity):
@@ -378,6 +465,7 @@ class DMXLightEntity(LightEntity, RestoreEntity):
             color_mode: ColorMode,
             channels: List[DMXLightChannel],
             device: DeviceInfo,
+            universe: DmxUniverse,
             has_separate_dimmer: bool = False,
             min_kelvin: int = 2000,
             max_kelvin: int = 6500,
@@ -398,23 +486,18 @@ class DMXLightEntity(LightEntity, RestoreEntity):
             self._attr_min_mireds = color_util.color_temperature_kelvin_to_mired(max_kelvin)
             self._attr_max_mireds = color_util.color_temperature_kelvin_to_mired(min_kelvin)
 
-        # State management
         self._state = DMXLightState(color_mode, min_kelvin, max_kelvin)
-
-        # Controller for DMX operations
-        self._controller = DMXLightController(channels, self._state, color_mode)
-
-        # Feature flag
+        self._universe = universe
+        self._controller = DMXLightController(channels, self._state, color_mode, universe)
         self._has_separate_dimmer = has_separate_dimmer
 
-        # Register channel listeners
         self._register_channel_listeners()
 
     def _register_channel_listeners(self) -> None:
         """Set up listeners for all DMX channels."""
         for channel_type, channel_data in self._controller.channel_map.items():
             for dmx_index in channel_data.dmx_channel_indexes:
-                channel_data.universe.register_channel_listener(
+                self._universe.register_channel_listener(
                     dmx_index,
                     partial(self._handle_channel_update, channel_type)
                 )

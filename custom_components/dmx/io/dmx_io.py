@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Callable
+from typing import List, Callable, Dict
 
 from custom_components.dmx import PortAddress, ArtNetServer
 
@@ -44,13 +44,14 @@ class DmxUniverse:
             if channel in self._channel_callbacks and callback in self._channel_callbacks[channel]:
                 self._channel_callbacks[channel].remove(callback)
 
-    async def update_value(self, channel: int | List[int], value: int) -> None:
+    async def update_value(self, channel: int | List[int], value: int, send_immediately: bool = False) -> None:
         """
         Update the value of one or more channels and notify all listeners.
 
         Args:
             channel: Single channel number or list of channel numbers
             value: New value for the channel(s)
+            send_immediately: Whether to send the universe data immediately after update
         """
         # Convert to list if single channel
         if isinstance(channel, int):
@@ -73,6 +74,24 @@ class DmxUniverse:
                             await self._call_callback(callback, ch, value)
                         except Exception as e:
                             print(f"Error calling callback for channel {ch}: {e}")
+
+        # Only send updates immediately if explicitly requested
+        if send_immediately:
+            self.send_universe_data()
+
+    async def update_multiple_values(self, updates: Dict[int, int]) -> None:
+        """
+        Update multiple channel values in a batch and send once at the end.
+
+        Args:
+            updates: Dictionary mapping channel numbers to values
+        """
+        # Update each channel value without sending immediately
+        for channel, value in updates.items():
+            await self.update_value(channel, value, send_immediately=False)
+
+        # Send all updates at once
+        self.send_universe_data()
 
     async def _call_callback(self, callback, channel, value):
         """Helper method to call callbacks that might be async or regular functions."""
