@@ -5,11 +5,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import async_get_platforms
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 
-from custom_components.dmx import ArtPollReply, DOMAIN, PortAddress, DmxUniverse
+from custom_components.dmx import ArtPollReply, DOMAIN, Node
 from custom_components.dmx.entity.node import ArtNetOnlineBinarySensor, ArtNetIndicatorStateSensor, ArtNetBootProcessSensor, ArtNetRDMBinarySensor, ArtNetDHCPBinarySensor, \
     ArtNetFailsafeStateSensor, ArtNetACNPrioritySensor, ArtNetNodeReportSensor, ArtNetPortAddressProgrammingAuthoritySensor, ArtNetPortInputBinarySensor, \
     ArtNetPortUniverseSensor, ArtNetPortOutputBinarySensor, ArtNetPortMergeModeSelect, ArtNetPortSACNBinarySensor, ArtNetPortRDMBinarySensor, ArtNetPortOutputModeSensor
+
+NODE_ENTITIES = "node_entities"
 
 log = logging.getLogger(__name__)
 
@@ -29,6 +33,8 @@ class DynamicNodeHandler:
         unique_id = f"{artpoll_reply.mac_address}{artpoll_reply.bind_index}"
 
         if unique_id in self.discovered_nodes:
+            # Previously disabled, but found again
+            await self.reenable_node(artpoll_reply)
             return
 
         log.info(f"Discovered new ArtNet node: {artpoll_reply.short_name}")
@@ -87,8 +93,8 @@ class DynamicNodeHandler:
         self.discovered_nodes[unique_id] = artpoll_reply
 
         # Find all entities for this node and update their art_poll_reply reference
-        if "entities" in self.hass.data[DOMAIN][self.entry.entry_id]:
-            entities = self.hass.data[DOMAIN][self.entry.entry_id]["entities"]
+        if NODE_ENTITIES in self.hass.data[DOMAIN][self.entry.entry_id]:
+            entities = self.hass.data[DOMAIN][self.entry.entry_id][NODE_ENTITIES]
 
             # Find entities belonging to this node and update them
             mac_string = ":".join(f"{b:02x}" for b in artpoll_reply.mac_address)
@@ -105,14 +111,70 @@ class DynamicNodeHandler:
                     if hasattr(entity, "async_schedule_update_ha_state"):
                         entity.async_schedule_update_ha_state()
 
-        log.debug(f"Updated ArtNet node: {artpoll_reply.long_name})")
+        log.debug(f"Updated ArtNet node: {artpoll_reply.long_name}")
+
+    async def disable_node(self, node: Node) -> None:
+        unique_id = f"{node.mac_address}{node.bind_index}"
+
+        if unique_id not in self.discovered_nodes:
+            return
+
+        entity_reg = er.async_get(self.hass)
+
+        if NODE_ENTITIES in self.hass.data[DOMAIN][self.entry.entry_id]:
+            entities = self.hass.data[DOMAIN][self.entry.entry_id][NODE_ENTITIES]
+
+            # Find entities belonging to this node and update them
+            mac_string = ":".join(f"{b:02x}" for b in node.mac_address)
+            for entity in entities:
+                # Check if this entity belongs to the node being updated
+                if hasattr(entity, "_mac_address") and entity._mac_address == mac_string and \
+                        hasattr(entity, "art_poll_reply") and \
+                        entity.art_poll_reply.bind_index == node.bind_index:
+
+                    if isinstance(entity, ArtNetOnlineBinarySensor):
+                        entity.connected = False
+
+                        if hasattr(entity, "async_schedule_update_ha_state"):
+                            entity.async_schedule_update_ha_state()
+                        continue
+
+                    entity_reg.async_update_entity(entity.registry_entry, disabled_by=RegistryEntryDisabler.INTEGRATION)
+
+    async def reenable_node(self, artpoll_reply: ArtPollReply) -> None:
+        unique_id = f"{artpoll_reply.mac_address}{artpoll_reply.bind_index}"
+
+        if unique_id not in self.discovered_nodes:
+            return
+
+        entity_reg = er.async_get(self.hass)
+
+        if NODE_ENTITIES in self.hass.data[DOMAIN][self.entry.entry_id]:
+            entities = self.hass.data[DOMAIN][self.entry.entry_id][NODE_ENTITIES]
+
+            # Find entities belonging to this node and update them
+            mac_string = ":".join(f"{b:02x}" for b in artpoll_reply.mac_address)
+            for entity in entities:
+                # Check if this entity belongs to the node being updated
+                if hasattr(entity, "_mac_address") and entity._mac_address == mac_string and \
+                        hasattr(entity, "art_poll_reply") and \
+                        entity.art_poll_reply.bind_index == artpoll_reply.bind_index:
+
+                    if isinstance(entity, ArtNetOnlineBinarySensor):
+                        entity.connected = True
+
+                        if hasattr(entity, "async_schedule_update_ha_state"):
+                            entity.async_schedule_update_ha_state()
+                        continue
+
+                    entity_reg.async_update_entity(entity.registry_entry, enabled_by=RegistryEntryDisabler.INTEGRATION)
 
     async def _add_entities(self, entities) -> None:
         """Add entities to Home Assistant."""
-        if "entities" not in self.hass.data[DOMAIN][self.entry.entry_id]:
-            self.hass.data[DOMAIN][self.entry.entry_id]["entities"] = []
+        if NODE_ENTITIES not in self.hass.data[DOMAIN][self.entry.entry_id]:
+            self.hass.data[DOMAIN][self.entry.entry_id][NODE_ENTITIES] = []
 
-        self.hass.data[DOMAIN][self.entry.entry_id]["entities"].extend(entities)
+        self.hass.data[DOMAIN][self.entry.entry_id][NODE_ENTITIES].extend(entities)
 
         for platform in async_get_platforms(self.hass, DOMAIN):
             platform_entities = [e for e in entities if e.platform_type == platform.domain]

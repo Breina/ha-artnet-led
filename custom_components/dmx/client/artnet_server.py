@@ -34,6 +34,7 @@ log = logging.getLogger(__name__)
 class Node:
     addr: bytes = [0x00] * 4,
     bind_index: int = 0,
+    mac_address: bytes = [0x00] * 6,
 
     last_seen: datetime.datetime = datetime.datetime.now(),
     net_switch: int = 0,
@@ -84,8 +85,11 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
         self.__hass = hass
         self.__state_update_callback = state_update_callback
-        self.new_node_callback = None
-        self.art_poll_reply_callback = None
+
+        self.node_new_callback = None
+        self.node_update_callback = None
+        self.node_lost_callback = None
+
         self.firmware_version = firmware_version
         self.oem = oem
         self.esta = esta
@@ -161,9 +165,6 @@ class ArtNetServer(asyncio.DatagramProtocol):
         else:
             self.nodes_by_port_address[port_address] = {node}
 
-    def remove_node_by_ip(self, addr: bytes, bind_index: int = 1):
-        del self.nodes_by_ip[addr, bind_index]
-
     def remove_node_by_port_address(self, port_address: PortAddress, node: Node):
         nodes = self.nodes_by_port_address[port_address]
         if not nodes:
@@ -177,6 +178,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             ip_str = inet_ntoa(node.addr)
             if ip_str in self.node_change_subscribers:
                 self.node_change_subscribers.remove(ip_str)
+                self.node_lost_callback(node)
 
     def update_subscribers(self):
         for subscriber in self.node_change_subscribers:
@@ -491,25 +493,26 @@ class ArtNetServer(asyncio.DatagramProtocol):
         # Maintain data structures
         bind_index = reply.bind_index
         node = self.get_node_by_ip(source_ip, bind_index)
+        mac_address = reply.mac_address
 
         current_time = datetime.datetime.now()
         if not node:
-            node = Node(source_ip, bind_index, current_time)
+            node = Node(source_ip, bind_index, mac_address, current_time)
             self.add_node_by_ip(node, source_ip, bind_index)
             log.info(f"Discovered new node at {inet_ntoa(source_ip)}@{bind_index} with "
                      f"{reply.net_switch}:{reply.sub_switch}:[{','.join([str(p.sw_out) for p in reply.ports if p.output])}]"
                      )
 
-            if self.new_node_callback:
-                self.new_node_callback(reply)
+            if self.node_new_callback:
+                self.node_new_callback(reply)
 
         else:
             node.last_seen = current_time
             log.debug(f"Existing node checking in {inet_ntoa(source_ip)}@{bind_index} with "
                       f"{reply.net_switch}:{reply.sub_switch}:[{','.join([str(p.sw_out) for p in reply.ports])}]"
                       )
-            if self.art_poll_reply_callback:
-                self.art_poll_reply_callback(reply)
+            if self.node_update_callback:
+                self.node_update_callback(reply)
 
         old_addresses = node.get_addresses()
         node.net_switch = reply.net_switch

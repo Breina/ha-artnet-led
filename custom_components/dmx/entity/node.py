@@ -8,12 +8,16 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import EntityPlatform
 
 from custom_components.dmx import ArtPollReply
 from custom_components.dmx.client import StyleCode, IndicatorState, BootProcess, FailsafeState, PortAddressProgrammingAuthority
 
 _LOGGER = logging.getLogger(__name__)
+
+def bind_index_str(artpoll_reply: ArtPollReply):
+    if artpoll_reply.bind_index == 0:
+        return ""
+    return f" {artpoll_reply.bind_index}"
 
 
 class ArtNetEntity:
@@ -47,14 +51,14 @@ class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
 
     def __init__(self, art_poll_reply, device_info: DeviceInfo):
         """Initialize the binary sensor."""
-        super().__init__(art_poll_reply, f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Online", "online", device_info)
+        super().__init__(art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Online", "online", device_info)
         self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+        self.connected = True
 
     @property
     def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
-        # TODO
-        return True
+        return self.connected
 
     @property
     def extra_state_attributes(self) -> Dict[str, Any]:
@@ -77,7 +81,7 @@ class ArtNetIndicatorStateSensor(ArtNetEntity, SensorEntity):
 
     def __init__(self, art_poll_reply, device_info: DeviceInfo):
         """Initialize the sensor."""
-        super().__init__(art_poll_reply, f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Indicator", "indicator", device_info)
+        super().__init__(art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Indicator", "indicator", device_info)
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_icon = "mdi:lightbulb"
         self._attr_options = [member.name for member in IndicatorState]
@@ -98,7 +102,7 @@ class ArtNetBootProcessSensor(ArtNetEntity, SensorEntity):
 
     def __init__(self, art_poll_reply, device_info: DeviceInfo):
         """Initialize the sensor."""
-        super().__init__(art_poll_reply, f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Boot Process", "boot_process", device_info)
+        super().__init__(art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Boot Process", "boot_process", device_info)
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = [member.name for member in BootProcess]
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -118,7 +122,7 @@ class ArtNetRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
 
     def __init__(self, art_poll_reply, device_info: DeviceInfo):
         """Initialize the binary sensor."""
-        super().__init__(art_poll_reply, f"{art_poll_reply.short_name} {art_poll_reply.bind_index} RDM Support", "rdm_support", device_info)
+        super().__init__(art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} RDM Support", "rdm_support", device_info)
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
@@ -143,7 +147,7 @@ class ArtNetDHCPBinarySensor(ArtNetEntity, BinarySensorEntity):
 
     def __init__(self, art_poll_reply, device_info: DeviceInfo):
         """Initialize the binary sensor."""
-        super().__init__(art_poll_reply, f"{art_poll_reply.short_name} {art_poll_reply.bind_index} DHCP", "dhcp", device_info)
+        super().__init__(art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} DHCP", "dhcp", device_info)
         self._attr_icon = "mdi:network"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
@@ -173,7 +177,7 @@ class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
         self.port = art_poll_reply.ports[port_index]
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Port {port_index + 1} Input Active",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} Input Active",
             f"port_{port_index}_input_active",
             device_info
         )
@@ -220,7 +224,7 @@ class ArtNetPortOutputBinarySensor(ArtNetEntity, BinarySensorEntity):
         self.port = art_poll_reply.ports[port_index]
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Port {port_index + 1} Output Active",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} Output Active",
             f"port_{port_index}_output_active",
             device_info
         )
@@ -267,7 +271,7 @@ class ArtNetPortMergeModeSelect(ArtNetEntity, BinarySensorEntity):
         self.port = art_poll_reply.ports[port_index]
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Port {port_index + 1} Merge Mode",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} Merge Mode",
             f"port_{port_index}_merge_mode",
             device_info
         )
@@ -308,7 +312,7 @@ class ArtNetPortSACNBinarySensor(ArtNetEntity, BinarySensorEntity):
         self.port = art_poll_reply.ports[port_index]
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Port {port_index + 1} sACN Mode",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} sACN Mode",
             f"port_{port_index}_sacn_mode",
             device_info
         )
@@ -343,7 +347,7 @@ class ArtNetPortRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
         self.port = art_poll_reply.ports[port_index]
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Port {port_index + 1} RDM",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} RDM",
             f"port_{port_index}_rdm",
             device_info
         )
@@ -378,7 +382,7 @@ class ArtNetPortOutputModeSensor(ArtNetEntity, SensorEntity):
         self.port = art_poll_reply.ports[port_index]
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Port {port_index + 1} Output Mode",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} Output Mode",
             f"port_{port_index}_output_mode",
             device_info
         )
@@ -413,7 +417,7 @@ class ArtNetPortUniverseSensor(ArtNetEntity, SensorEntity):
         direction = "Input" if is_input else "Output"
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Port {port_index + 1} {direction} Universe",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} {direction} Universe",
             f"port_{port_index}_{direction.lower()}_universe",
             device_info
         )
@@ -443,7 +447,7 @@ class ArtNetFailsafeStateSensor(ArtNetEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Failsafe State",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Failsafe State",
             "failsafe_state",
             device_info
         )
@@ -468,7 +472,7 @@ class ArtNetACNPrioritySensor(ArtNetEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} ACN Priority",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} ACN Priority",
             "acn_priority",
             device_info
         )
@@ -491,7 +495,7 @@ class ArtNetNodeReportSensor(ArtNetEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Node Report",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Node Report",
             "node_report",
             device_info
         )
@@ -514,7 +518,7 @@ class ArtNetPortAddressProgrammingAuthoritySensor(ArtNetEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(
             art_poll_reply,
-            f"{art_poll_reply.short_name} {art_poll_reply.bind_index} Port Programming Authority",
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port Programming Authority",
             "port_programming_authority",
             device_info
         )

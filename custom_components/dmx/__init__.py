@@ -22,7 +22,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.bridge.artnet_controller import ArtNetController, DiscoveredNode
 from custom_components.dmx.client import PortAddress, ArtPollReply
-from custom_components.dmx.client.artnet_server import ArtNetServer
+from custom_components.dmx.client.artnet_server import ArtNetServer, Node
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.fixture.parser import parse
@@ -309,15 +309,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         DynamicNodeHandler = _get_node_handler()
         node_handler = DynamicNodeHandler(hass, entry, controller)
 
-        def new_code_callback(artpoll_reply: ArtPollReply):
+        def node_new_callback(artpoll_reply: ArtPollReply):
             hass.async_create_task(node_handler.handle_new_node(artpoll_reply))
 
-        controller.new_node_callback = new_code_callback
+        controller.node_new_callback = node_new_callback
 
-        def existing_node_callback(artpoll_reply: ArtPollReply):
+        def node_update_callback(artpoll_reply: ArtPollReply):
             hass.async_create_task(node_handler.update_node(artpoll_reply))
 
-        controller.art_poll_reply_callback = existing_node_callback
+        controller.node_update_callback = node_update_callback
+
+        def node_lost_callback(node: Node):
+            hass.async_create_task(node_handler.disable_node(node))
+
+        controller.node_lost_callback = node_lost_callback
 
         for universe_dict in artnet_yaml[CONF_UNIVERSES]:
             (universe_str, universe_yaml), = universe_dict.items()
