@@ -100,7 +100,7 @@ class Fixture:
         Adds a mode to the fixture.
         :param mode: The mode to be added
         """
-        self.modes[mode.name] = mode
+        self.modes[mode.short_name] = mode
 
     def resolve_channels(self) -> None:
         """
@@ -150,7 +150,9 @@ class Fixture:
         :return: The list of channels of that mode.
         """
 
-        assert mode_name in self.modes
+        if mode_name not in self.modes:
+            raise FixtureConfigurationError(f"Could not find mode {mode_name}, should be one of {list(self.modes.keys())}")
+
         mode = self.modes[mode_name]
         return [channel_offset
                 for mode_channel in mode.channels

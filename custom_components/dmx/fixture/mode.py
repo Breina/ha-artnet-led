@@ -80,6 +80,10 @@ class Mode:
     channels: list[None | str | MatrixChannelInsertBlock]
     short_name: str | None = None
 
+    def __post_init__(self):
+        if self.short_name is None:
+            self.short_name = self.name
+
     def __repr__(self):
         return self.name
 

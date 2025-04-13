@@ -331,6 +331,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             universe = DmxUniverse(port_address, controller)
             universes[port_address] = universe
 
+            controller.add_port(port_address)
+
             manual_nodes: list[ManualNode] = []
             if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
                 send_partial_universe = compatibility_yaml[CONF_SEND_PARTIAL_UNIVERSE]
@@ -367,7 +369,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     name=device_name,
                 )
 
-                entities.extend(create_entities(start_address, channels, device, universe))
+                entities.extend(create_entities(device_name, start_address, channels, device, universe))
 
         controller.start_server()
 

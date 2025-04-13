@@ -520,7 +520,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
         node.ports = reply.ports
 
         new_addresses = node.get_addresses()
-        log.debug(f"Addresses of the node at {inet_ntoa(source_ip)}@{bind_index}: {new_addresses}")
+        log.debug(f"Addresses of the node at {inet_ntoa(source_ip)}@{bind_index}: {new_addresses}, old addresses were: {old_addresses}")
         addresses_to_remove = old_addresses - new_addresses
 
         for address_to_remove in addresses_to_remove:
@@ -600,17 +600,3 @@ class ArtNetServer(asyncio.DatagramProtocol):
         if own_port.port.last_input_seen < cutoff_time:
             own_port.port.good_input.data_received = False
             self.update_subscribers()
-
-# server = ArtNetServer(firmware_version=1, short_name="Test python", long_name="Hello I am testing ArtNet server",
-#                       polling=True)
-# server.add_port(PortAddress(0, 0, 0))
-# server.add_port(PortAddress(0, 0, 1))
-#
-# loopy = server.start_server()
-#
-# server.send_artnet(ArtCommand(command="SwoutText=Playback& SwinText=Record&"), "192.168.1.35")
-# server.send_artnet(ArtTrigger(key=1, sub_key=ord('F')), "192.168.1.35")
-#
-# # loop.create_task(server.send_dmx(PortAddress(0, 0, 0), [0xFF] * 12))
-#
-# loopy.run_forever()

@@ -12,7 +12,7 @@ dmx:
             - Epic triple lights:
                 start_address: 11
                 fixture: CLHB300RGBW
-                mode: 42-channel
+                mode: 42ch
 
           compatibility:
             send_partial_universe: False
@@ -25,6 +25,14 @@ dmx:
             - DJ led:
                 start_address: 201
                 fixture: DJ Scan LED
+      - 0/0/0:
+          devices:
+            - Bureau NO:
+                fixture: CW/WW Fader
+                start_address: 0
+                mode: 16bit-cw
+
+
 
 #    triggers: # All triggers will always send HA events, regardless if being configured
 #      scenes: # Trigger HA scenes FROM external ArtNet controller
