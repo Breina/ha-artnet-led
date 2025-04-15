@@ -322,11 +322,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             (universe_str, universe_yaml), = universe_dict.items()
             port_address = PortAddress.parse(universe_str)
 
-            universe = DmxUniverse(port_address, controller)
-            universes[port_address] = universe
-
-            controller.add_port(port_address)
-
             # manual_nodes: list[ManualNode] = []
             if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
                 send_partial_universe = compatibility_yaml[CONF_SEND_PARTIAL_UNIVERSE]
@@ -337,6 +332,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
             else:
                 send_partial_universe = True
+
+            universe = DmxUniverse(port_address, controller, send_partial_universe)
+            universes[port_address] = universe
+
+            controller.add_port(port_address)
 
             devices_yaml = universe_yaml[CONF_DEVICES]
             for device_dict in devices_yaml:

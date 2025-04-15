@@ -86,7 +86,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
     def __init__(self, hass: HomeAssistant, state_update_callback=None,
                  firmware_version: int = 0,
                  oem: int = 0, esta=0,
-                 short_name: str = "PyArtNet", long_name: str = "Python ArtNet Server",
+                 short_name: str = "PyArtNet", long_name: str = "HomeAssistant ArtNet controller",
                  is_server_dhcp_configured: bool = True, polling: bool = True, sequencing: bool = True,
                  retransmit_time_ms: int = 900):
         super().__init__()

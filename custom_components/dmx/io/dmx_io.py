@@ -5,15 +5,22 @@ from custom_components.dmx import PortAddress, ArtNetServer
 
 
 class DmxUniverse:
-    def __init__(self, port_address: PortAddress, controller: ArtNetServer):
+    def __init__(self, port_address: PortAddress, controller: ArtNetServer, use_partial_universe: bool = True):
         self.port_address = port_address
         self.controller = controller
+        self.use_partial_universe = use_partial_universe
 
         # Dictionary to store channel value: {channel_number: current_value}
         self._channel_values = {}
 
         # Dictionary to store callbacks: {channel_number: [callback1, callback2, ...]}
         self._channel_callbacks = {}
+
+        # Set to track channels changed since last send
+        self._changed_channels = set()
+
+        # Flag to track if this is the first send (to send full universe initially)
+        self._first_send = True
 
     def register_channel_listener(self, channels: int | List[int],
                                   callback: Callable[[int, int], None]) -> None:
@@ -66,6 +73,9 @@ class DmxUniverse:
                 # Update stored value
                 self._channel_values[ch] = value
 
+                # Track that this channel has changed
+                self._changed_channels.add(ch)
+
                 # Notify all listeners for this channel
                 if ch in self._channel_callbacks:
                     for callback in self._channel_callbacks[ch]:
@@ -106,16 +116,43 @@ class DmxUniverse:
 
     def send_universe_data(self) -> None:
         """
-        Gather all channel values into a 512-sized bytearray and send it via ArtNet.
+        Gather all channel values into a bytearray and send it via ArtNet.
+        If use_partial_universe is enabled, only send up to the highest
+        changed channel since last transmission (rounded up to a multiple of 2).
         """
-        # Create a bytearray filled with zeros (default DMX value is 0)
-        data = bytearray(512)
+        if not self._channel_values:
+            # If no channels have been set, send a minimum-sized packet
+            data = bytearray(2)  # Minimum size is 2 bytes
+            self.controller.send_dmx(self.port_address, data)
+            self._changed_channels.clear()
+            self._first_send = False
+            return
+
+        if self.use_partial_universe and not self._first_send and self._changed_channels:
+            # Find the highest channel number that has changed since last send
+            max_changed_channel = max(self._changed_channels)
+
+            # Round up to the next multiple of 2
+            data_length = (max_changed_channel + (2 - (max_changed_channel % 2))) if max_changed_channel % 2 else max_changed_channel
+
+            # Ensure data_length is at least 2 bytes
+            data_length = max(2, data_length)
+
+            # Create a byte array of the appropriate size
+            data = bytearray(data_length)
+        else:
+            # Use the full DMX universe (512 channels) for first send or when partial universe is disabled
+            data = bytearray(512)
 
         # Fill in the values for channels that have been set
         for channel, value in self._channel_values.items():
             # DMX channels are 1-based, but bytearray indices are 0-based
-            if 1 <= channel <= 512:
+            if 1 <= channel <= len(data):
                 data[channel - 1] = value
 
         # Send the data via the controller
         self.controller.send_dmx(self.port_address, data)
+
+        # Clear the changed channels set after sending
+        self._changed_channels.clear()
+        self._first_send = False

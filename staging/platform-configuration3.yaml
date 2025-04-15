@@ -31,6 +31,10 @@ dmx:
                 fixture: CW/WW Fader
                 start_address: 0
                 mode: 16bit-cw
+            - Bureau LED strip:
+                fixture: CW/WW Fader
+                start_address: 247
+                mode: 8bit-wc
 
 
 
