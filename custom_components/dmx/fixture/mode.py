@@ -4,7 +4,7 @@ This module contains mode related functions and classes, as per matrix-format.
 
 import functools
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum, auto, member
 from itertools import product
 
 
@@ -40,23 +40,22 @@ class RepeatFor(Enum):
     Names match fixture format exactly.
     """
     # pylint: disable=invalid-name
-    eachPixelABC = functools.partial(
+    eachPixelABC = member(functools.partial(
         lambda matrix: [matrix[name] for name in
                         sorted(matrix.pixels_by_name.keys())
-                        ])
-    eachPixelXYZ = functools.partial(matrix_pixel_order(0, 1, 2))
-    eachPixelXZY = functools.partial(matrix_pixel_order(0, 2, 1))
-    eachPixelYXZ = functools.partial(matrix_pixel_order(1, 0, 2))
-    eachPixelYZX = functools.partial(matrix_pixel_order(1, 2, 0))
-    eachPixelZXY = functools.partial(matrix_pixel_order(2, 0, 1))
-    eachPixelZYX = functools.partial(matrix_pixel_order(2, 1, 0))
-    eachPixelGroup = functools.partial(
+                        ]))
+    eachPixelXYZ = member(functools.partial(matrix_pixel_order(0, 1, 2)))
+    eachPixelXZY = member(functools.partial(matrix_pixel_order(0, 2, 1)))
+    eachPixelYXZ = member(functools.partial(matrix_pixel_order(1, 0, 2)))
+    eachPixelYZX = member(functools.partial(matrix_pixel_order(1, 2, 0)))
+    eachPixelZXY = member(functools.partial(matrix_pixel_order(2, 0, 1)))
+    eachPixelZYX = member(functools.partial(matrix_pixel_order(2, 1, 0)))
+    eachPixelGroup = member(functools.partial(
         lambda matrix: [pixel
                         for name in sorted(matrix.pixel_groups.keys())
                         for pixel in matrix.pixel_groups[name].pixels
                         ]
-    )
-
+    ))
 
 @dataclass
 class MatrixChannelInsertBlock:

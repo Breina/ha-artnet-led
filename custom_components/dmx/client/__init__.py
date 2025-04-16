@@ -122,7 +122,7 @@ class PortAddress:
         self.universe = universe
 
     @property
-    def port_address(self):
+    def port_address(self) -> int:
         return (self.net << 13) | (self.sub_net << 9) | self.universe
 
     @port_address.setter
@@ -140,7 +140,6 @@ class PortAddress:
 
     def __hash__(self):
         return self.port_address
-
 
 
 class IndicatorState(Enum):
@@ -580,8 +579,8 @@ class ArtPollReply(ArtBase):
                  boot_process: BootProcess = BootProcess.ROM,
                  supports_rdm: bool = False,
                  esta: int = HOME_ASSISTANT_ESTA,
-                 short_name: str = "PyArtNet",
-                 long_name: str = "Default long name",
+                 short_name: str = "HA ArtNet",
+                 long_name: str = "HomeAssistant ArtNet controller",
                  node_report: str = "",
                  ports: list[Port] = [],
                  acn_priority: int = 100,

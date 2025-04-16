@@ -1,14 +1,12 @@
 """ARTNET LED"""
-import dataclasses
 import json
 import logging
 import os
 from os import walk
+from pathlib import Path
 from typing import Any
 
-import Levenshtein
 import homeassistant.helpers.config_validation as cv
-import unicodedata
 import voluptuous as vol
 from homeassistant.components.light import ATTR_TRANSITION
 from homeassistant.config_entries import ConfigEntry, SOURCE_IMPORT
@@ -20,16 +18,15 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 
-from custom_components.dmx.bridge.artnet_controller import ArtNetController, DiscoveredNode
 from custom_components.dmx.client import PortAddress, ArtPollReply
 from custom_components.dmx.client.artnet_server import ArtNetServer, Node, ManualNode
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.fixture.parser import parse
 from custom_components.dmx.fixture_delegator.delegator import create_entities
+from custom_components.dmx.fixtures.ha_fixture import parse_json
+from custom_components.dmx.fixtures.model import HaFixture
 from custom_components.dmx.io.dmx_io import DmxUniverse
-from custom_components.fixtures.ha_fixture import parse_json
-from custom_components.fixtures.model import HaFixture
 
 log = logging.getLogger(__name__)
 
@@ -81,28 +78,14 @@ class UnknownFixtureError(IntegrationError):
         self._fixture = desired_fixture
         self._discovered_fixtures = discovered_fixtures
 
-        max_ratio = 0
-        to_match = unicodedata.normalize('NFKC', desired_fixture.lower())
-        self._best_match = None
-        for discovered_fixture in discovered_fixtures:
-            to_test = unicodedata.normalize('NFKC', discovered_fixture.lower())
-            ratio = Levenshtein.ratio(to_match, to_test, score_cutoff=0.8)
-            if ratio > max_ratio:
-                max_ratio = ratio
-                self._best_match = discovered_fixture
-
     def __str__(self) -> str:
         if not self._discovered_fixtures:
             return "Didn't discover any fixtures. Put them in the fixtures folder as defined by " \
                    "config `dmx.fixtures.folder`"
-        elif not self._best_match:
-            return f"Could not find any fixture named '{self._fixture}'. " \
-                   f"Note that first the fixture's `fixtureKey` is matched, if that's not " \
-                   f"available `shortnName`, or finally `name`."
         else:
-            return f"Could not find a fixture named '{self._fixture}', did you mean '{self._best_match}'? " \
-                   f"Note that first the fixture's `fixtureKey` is matched first, if that's not " \
-                   f"available `shortnName`, or finally `name`."
+            return f"Could not find any fixture named '{self._fixture}, should be one of {self._discovered_fixtures}'. " \
+                   f"Note that first the fixture's `fixtureKey` is matched, if that's not " \
+                   f"available `shortName`, or finally `name`."
 
 
 def load_fixtures(hass: HomeAssistant, platform_config: ConfigType):
@@ -226,14 +209,16 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-def process_fixtures(fixture_folder: str) -> dict[str, Fixture]:
+async def process_fixtures(hass: HomeAssistant, fixture_folder: str) -> dict[str, Fixture]:
     fixture_map = {}
 
     if not os.path.isdir(fixture_folder):
         log.warning(f"Fixture folder does not exist: {fixture_folder}")
         return fixture_map
 
-    for filename in os.listdir(fixture_folder):
+    file_list = await hass.async_add_executor_job(os.listdir, fixture_folder)
+
+    for filename in file_list:
         if not filename.endswith('.json'):
             continue
 
@@ -261,9 +246,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     fixtures_yaml = dmx_yaml[CONF_FIXTURES]
     fixture_folder = fixtures_yaml[CONF_FOLDER]
 
-    log.debug("Processing fixtures folder: %s/...", fixture_folder)
-    fixtures = process_fixtures(fixture_folder)
-    log.debug("Found %d fixtures", len(fixtures))
+    log.debug("Processing fixtures folder: %s/...", str(Path(fixture_folder).absolute()))
+    processed_fixtures = await process_fixtures(hass, fixture_folder)
+    log.debug("Found %d fixtures", len(processed_fixtures))
 
     entities: list[Entity] = []
     universes = {}
@@ -319,16 +304,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         controller.node_lost_callback = node_lost_callback
 
         for universe_dict in artnet_yaml[CONF_UNIVERSES]:
-            (universe_str, universe_yaml), = universe_dict.items()
-            port_address = PortAddress.parse(universe_str)
+            (universe_value, universe_yaml), = universe_dict.items()
+            port_address = PortAddress.parse(int(universe_value))
 
-            # manual_nodes: list[ManualNode] = []
             if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
                 send_partial_universe = compatibility_yaml[CONF_SEND_PARTIAL_UNIVERSE]
                 if (manual_nodes_yaml := compatibility_yaml.get(CONF_MANUAL_NODES)) is not None:
                     for manual_node_yaml in manual_nodes_yaml:
                         controller.add_manual_node(ManualNode(port_address, manual_node_yaml[CONF_HOST], manual_node_yaml[CONF_PORT]))
-                        # manual_nodes.append(ManualNode(manual_node_yaml[CONF_HOST], manual_node_yaml[CONF_PORT]))
 
             else:
                 send_partial_universe = True
@@ -346,11 +329,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                 fixture_name = device_yaml[CONF_FIXTURE]
                 mode = device_yaml.get(CONF_MODE)
 
-                if fixture_name not in fixtures:
+                if fixture_name not in processed_fixtures:
                     log.warning("Could not find fixture '%s'. Ignoring device %s", fixture_name, device_name)
                     continue
 
-                fixture = fixtures[fixture_name]
+                fixture = processed_fixtures[fixture_name]
                 if not mode:
                     assert len(fixture.modes) > 0
                     mode = next(iter(fixture.modes.keys()))
@@ -372,9 +355,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         'entities': entities
     }
 
-    for platform in PLATFORMS:
-        await hass.config_entries.async_forward_entry_setup(entry, platform)
-
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 

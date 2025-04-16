@@ -7,11 +7,9 @@ from typing import Union
 from homeassistant.components.switch_as_x.entity import BaseEntity
 from homeassistant.exceptions import IntegrationError
 from homeassistant.helpers.entity import DeviceInfo
-from pyartnet import BaseUniverse
 
 from custom_components.dmx import PortAddress
-from custom_components.dmx.base_entities import IntensityNumber
-from custom_components.fixtures.model import HaFixture
+from custom_components.dmx.fixtures.model import HaFixture
 
 log = logging.getLogger(__name__)
 
@@ -76,40 +74,40 @@ def parse_json(filename: str) -> HaFixture:
         return HaFixture(referenced_name, device_info, fixture_json)
 
 
-def implement(fixture: HaFixture, device_name: str, port_address: PortAddress, universe: BaseUniverse, start_channel: int,
-              target_mode: Union[str, None]):
-    fixture_json = fixture.fixture_json
-
-    channels = get_channels_for_mode(fixture_json, target_mode)
-    available_channels = fixture_json.get('availableChannels')
-
-    if not available_channels:
-        raise NotImplementedYet('templateChannels')
-
-    channel_number = start_channel
-    entities: array[BaseEntity] = []
-
-    for channel_name in channels:
-        channel = available_channels[channel_name]
-
-        capability = channel.get('capability')  # TODO capabilities
-        if capability:
-            capability_type = capability['type']
-            if capability_type == 'Intensity':
-                dmx_channel = universe.add_channel(
-                    start=channel_number,
-                    width=1,
-                    channel_name=channel_name,
-                    byte_size=1,
-                    byte_order='big',
-                )
-                entities.append(
-                    IntensityNumber(fixture, device_name, channel_name, port_address, dmx_channel)
-                )
-
-        channel_number += 1
-
-    return entities
+# def implement(fixture: HaFixture, device_name: str, port_address: PortAddress, universe: BaseUniverse, start_channel: int,
+#               target_mode: Union[str, None]):
+#     fixture_json = fixture.fixture_json
+#
+#     channels = get_channels_for_mode(fixture_json, target_mode)
+#     available_channels = fixture_json.get('availableChannels')
+#
+#     if not available_channels:
+#         raise NotImplementedYet('templateChannels')
+#
+#     channel_number = start_channel
+#     entities: array[BaseEntity] = []
+#
+#     for channel_name in channels:
+#         channel = available_channels[channel_name]
+#
+#         capability = channel.get('capability')  # TODO capabilities
+#         if capability:
+#             capability_type = capability['type']
+#             if capability_type == 'Intensity':
+#                 dmx_channel = universe.add_channel(
+#                     start=channel_number,
+#                     width=1,
+#                     channel_name=channel_name,
+#                     byte_size=1,
+#                     byte_order='big',
+#                 )
+#                 entities.append(
+#                     IntensityNumber(fixture, device_name, channel_name, port_address, dmx_channel)
+#                 )
+#
+#         channel_number += 1
+#
+#     return entities
 
 
 def get_channels_for_mode(fixture: dict, target_mode: str):

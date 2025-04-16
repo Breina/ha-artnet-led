@@ -29,8 +29,7 @@ light:
 logger:
   default: info
   logs:
-    custom_components.artnet_led: info
-    pyartnet: debug
+    custom_components.dmx: debug
 
 scene:
   - name: Romantic

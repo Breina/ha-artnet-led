@@ -99,10 +99,25 @@ class DynamicNodeHandler:
             # Find entities belonging to this node and update them
             mac_string = ":".join(f"{b:02x}" for b in artpoll_reply.mac_address)
             for entity in entities:
+                # # Skip if entity isn't properly initialized
+                # if not hasattr(entity, "hass") or entity.hass is None:
+                #     log.warning(
+                #         f"Found entity with hass=None.\n"
+                #         f"Type: {type(entity)}\n"
+                #         f"Attributes: {[attr for attr in dir(entity) if not attr.startswith('__')]}\n"
+                #         f"MAC: {getattr(entity, '_mac_address', 'N/A')}\n"
+                #         f"Bind index: {getattr(getattr(entity, 'art_poll_reply', None), 'bind_index', 'N/A')}\n"
+                #         f"Entity ID: {getattr(entity, 'entity_id', 'N/A')}\n"
+                #         f"Name: {getattr(entity, 'name', 'N/A')}\n"
+                #         f"Unique ID: {getattr(entity, 'unique_id', 'N/A')}"
+                #     )
+                #     continue
+
                 # Check if this entity belongs to the node being updated
-                if hasattr(entity, "_mac_address") and entity._mac_address == mac_string and \
-                        hasattr(entity, "art_poll_reply") and \
-                        entity.art_poll_reply.bind_index == artpoll_reply.bind_index:
+                if (hasattr(entity, "_mac_address") and
+                        entity._mac_address == mac_string and
+                        hasattr(entity, "art_poll_reply") and
+                        entity.art_poll_reply.bind_index == artpoll_reply.bind_index):
 
                     # Update the entity with the new ArtPollReply data
                     entity.art_poll_reply = artpoll_reply
@@ -167,7 +182,7 @@ class DynamicNodeHandler:
                             entity.async_schedule_update_ha_state()
                         continue
 
-                    entity_reg.async_update_entity(entity.registry_entry, enabled_by=RegistryEntryDisabler.INTEGRATION)
+                    entity_reg.async_update_entity(entity.registry_entry, disabled_by=None)
 
     async def _add_entities(self, entities) -> None:
         """Add entities to Home Assistant."""
