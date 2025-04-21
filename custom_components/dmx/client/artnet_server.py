@@ -228,7 +228,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             self.__hass.async_create_background_task(self.start_poll_loop(), "Art-Net polling loop")
         log.info("ArtNet server started")
 
-        return self.__hass.async_add_job(server_event)
+        return self.__hass.async_create_task(server_event)
 
     async def start_poll_loop(self):
         while True:
