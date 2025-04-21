@@ -470,7 +470,6 @@ class ArtBase:
 
             # decode
             decoded_str = sanitized_str.decode('ascii')
-            log.info(f"decoded string: {decoded_str}")
 
         except UnicodeDecodeError:
             # data not ascii, try to use the decoding shotgun
