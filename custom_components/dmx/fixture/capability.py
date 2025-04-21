@@ -227,7 +227,7 @@ class Capability:
 
         self.switch_channels = switch_channels or {}
 
-        self.static_entities = []
+        self.static_entities: list[Entity] = []
         self.dynamic_entities: List[DynamicMapping] = []
 
     def is_dynamic_entity(self) -> bool:

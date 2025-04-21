@@ -77,7 +77,7 @@ def __build_light_entities(name: str, accumulator: dict[str, list[DMXLightChanne
     entities = []
 
     for matrix_key, accumulated_channels in accumulator.items():
-        channel_map = {}
+        channel_map: dict[LightChannel, DMXLightChannel] = {}
         for accumulated_channel in accumulated_channels:
             channel_map[accumulated_channel.light_channel] = accumulated_channel
 
@@ -119,7 +119,11 @@ def __build_light_entities(name: str, accumulator: dict[str, list[DMXLightChanne
                     channels_data.append(channel_map[LightChannel.WARM_WHITE])
 
                 if LightChannel.COLOR_TEMPERATURE in channel_map:
-                    channels_data.append(channel_map[LightChannel.COLOR_TEMPERATURE])
+                    channel_temp = channel_map[LightChannel.COLOR_TEMPERATURE]
+                    channels_data.append(channel_temp)
+                    # TODO pass color temperature onto light
+                    # if isinstance(channel_temp.channel.capabilities[0], ColorTemperature):
+                    #     channel_temp.channel.capabilities[0].static_entities[0]
 
             elif has_single_white:
                 color_mode = ColorMode.RGBW
@@ -164,6 +168,18 @@ def __build_light_entities(name: str, accumulator: dict[str, list[DMXLightChanne
         else:
             # No suitable channels for a light entity
             continue
+
+        kwargs = {
+            'name' : name,
+            'matrix_key' : matrix_key,
+            'color_mode' : color_mode,
+            'channels' : channels_data,
+            'device' : device,
+            'universe' : universe,
+            'has_separate_dimmer' : has_separate_dimmer,
+        }
+
+
 
         entities.append(DMXLightEntity(
             name=name,
