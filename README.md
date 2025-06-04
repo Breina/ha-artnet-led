@@ -35,7 +35,7 @@ A Home Assistant integration that transforms your instance into a professional A
 dmx:
   artnet:
     universes:
-      - 0:  # Universe 0
+      - 0:
           devices:
             - Living Room Strip:
                 start_address: 1
@@ -48,7 +48,6 @@ dmx:
 📖 **[Complete Documentation](https://breina.github.io/ha-artnet-led/)**
 
 - [Configuration Guide](https://breina.github.io/ha-artnet-led/config/) - Detailed setup instructions
-- [Examples](https://breina.github.io/ha-artnet-led/examples/) - Real-world configuration examples
 
 ## Works Great With
 
@@ -60,17 +59,17 @@ dmx:
 ```mermaid
 graph LR
     HA[Home Assistant] <--> ARTNET[Art-Net Integration]
-    ARTNET --> NETWORK[Art-Net Network]
+    ARTNET <--> NETWORK[Art-Net Network]
     NETWORK --> NODE[Art-Net Node]
     NODE --> FIXTURES[DMX Fixtures]
-    CONTROLLER[Art-Net Controller] --> NETWORK
+    CONTROLLER[Art-Net Controller] <--> NETWORK
 ```
 
 ## Support
 
 - 🐛 **Issues**: [GitHub Issues](https://github.com/Breina/ha-artnet-led/issues)
 - 📖 **Documentation**: [GitHub Pages](https://breina.github.io/ha-artnet-led/)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/Breina/ha-artnet-led/discussions)
+- 💬 **Discussions**: [Home Assistant community](https://community.home-assistant.io/t/dmx-lighting/2248)
 
 ## Contributing
 

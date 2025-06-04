@@ -2,7 +2,9 @@ site_name: Art-net LED Lighting for DMX
 theme:
   name: material
   palette:
-    scheme: slate
+    - scheme: slate
+      primary: deep purple
+      accent: lime
 
 nav:
   - Home: index.md
