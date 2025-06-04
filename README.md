@@ -7,6 +7,8 @@
 
 A Home Assistant integration that transforms your instance into a professional Art-Net lighting controller. Control DMX fixtures, LED strips, and stage lighting directly from Home Assistant with full bidirectional Art-Net communication.
 
+![Integration Entities](docs/Entities.png)
+
 ## Features
 
 - **Software Art-Net Controller** - Turn Home Assistant into a fully functional Art-Net node

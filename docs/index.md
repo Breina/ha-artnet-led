@@ -6,6 +6,13 @@ A comprehensive Home Assistant integration that transforms your smart home into 
 
 This integration creates a software-based Art-Net controller within Home Assistant, allowing you to control professional lighting fixtures, LED strips, and stage equipment directly from your smart home platform. Whether you're setting up architectural lighting, home theater ambiance, or stage lighting effects, this integration bridges the gap between consumer smart home technology and professional lighting control.
 
+## What You Get
+
+Once configured, the integration creates Home Assistant entities for each fixture and channel:
+
+![Integration Entities](Entities.png)
+*Example: Configured fixtures appear as standard Home Assistant entities with full control capabilities*
+
 ## Key Features
 
 ### Art-Net Controller

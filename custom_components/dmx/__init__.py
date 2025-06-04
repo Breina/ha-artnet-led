@@ -20,7 +20,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.client import PortAddress, ArtPollReply
 from custom_components.dmx.client.artnet_server import ArtNetServer, Node, ManualNode
-from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER
+from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER, CONF_FIXTURE_ENTITIES
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.fixture.parser import parse
 from custom_components.dmx.fixture_delegator.delegator import create_entities
@@ -352,7 +352,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         controller.start_server()
 
     hass.data[DOMAIN][entry.entry_id] = {
-        'CONF_FIXTURE_ENTITIES': entities
+        CONF_FIXTURE_ENTITIES: entities
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

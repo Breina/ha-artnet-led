@@ -7,7 +7,7 @@ theme:
       accent: lime
 
 nav:
-  - Home: index.md
+  - Overview: index.md
   - Configuration: config.md
 
 plugins:
