@@ -1,0 +1,29 @@
+site_name: Art-net LED Lighting for DMX
+theme:
+  name: material
+  palette:
+    scheme: slate
+
+nav:
+  - Home: index.md
+  - Configuration: config.md
+
+plugins:
+  - search
+  - mermaid2
+  - awesome-pages
+  - mkdocstrings:
+      handlers:
+        python: {}
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
