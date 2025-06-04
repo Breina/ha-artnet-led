@@ -1,18 +1,12 @@
 {
   "domain": "artnet_led",
   "name": "DMX integration",
-  "codeowners": [
-    "@corb3000",
-    "@mvandenabeele",
-    "@spacemanspiff2007",
-    "@jnimmo",
-    "@Breina"
-  ],
+  "codeowners": ["@corb3000", "@mvandenabeele", "@spacemanspiff2007", "@jnimmo", "@Breina" ],
+  "config_flow": true,
   "documentation": "https://github.com/Breina/ha-artnet-led",
-  "iot_class": "local_push",
   "integration_type": "hub",
+  "iot_class": "local_push",
   "issue_tracker": "https://github.com/Breina/ha-artnet-led/issues",
   "requirements": [],
-  "config_flow": true,
   "version": "0.1.1"
 }
