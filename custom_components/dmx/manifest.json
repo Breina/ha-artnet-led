@@ -1,5 +1,5 @@
 {
-  "domain": "dmx",
+  "domain": "artnet_led",
   "name": "DMX integration",
   "codeowners": [
     "@corb3000",

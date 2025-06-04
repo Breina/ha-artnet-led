@@ -1,14 +1,10 @@
 # https://raw.githubusercontent.com/OpenLightingProject/open-fixture-library/master/schemas/fixture.json
 import json
 import logging
-from array import array
-from typing import Union
 
-from homeassistant.components.switch_as_x.entity import BaseEntity
 from homeassistant.exceptions import IntegrationError
 from homeassistant.helpers.entity import DeviceInfo
 
-from custom_components.dmx import PortAddress
 from custom_components.dmx.fixtures.model import HaFixture
 
 log = logging.getLogger(__name__)
