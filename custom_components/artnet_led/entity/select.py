@@ -3,11 +3,11 @@ import logging
 from homeassistant.components.select import SelectEntity
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from custom_components.dmx import DOMAIN
-from custom_components.dmx.entity.number import DmxNumberEntity
-from custom_components.dmx.fixture.channel import Channel
-from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
-from custom_components.dmx.io.dmx_io import DmxUniverse
+from custom_components.artnet_led import DOMAIN
+from custom_components.artnet_led.entity.number import DmxNumberEntity
+from custom_components.artnet_led.fixture.channel import Channel
+from custom_components.artnet_led.fixture.exceptions import FixtureConfigurationError
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 
 log = logging.getLogger(__name__)
 

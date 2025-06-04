@@ -6,8 +6,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.dmx import DOMAIN
-from custom_components.dmx.const import CONF_FIXTURE_ENTITIES
+from custom_components.artnet_led import DOMAIN
+from custom_components.artnet_led.const import CONF_FIXTURE_ENTITIES
 
 log = logging.getLogger(__name__)
 

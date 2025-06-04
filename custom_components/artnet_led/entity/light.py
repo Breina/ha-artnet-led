@@ -11,9 +11,9 @@ from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from custom_components.dmx import DOMAIN
-from custom_components.dmx.fixture.channel import Channel
-from custom_components.dmx.io.dmx_io import DmxUniverse
+from custom_components.artnet_led import DOMAIN
+from custom_components.artnet_led.fixture.channel import Channel
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 
 
 class LightChannel(Enum):

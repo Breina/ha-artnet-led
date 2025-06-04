@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass
 from functools import reduce
 
-from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
+from custom_components.artnet_led.fixture.exceptions import FixtureConfigurationError
 
 
 class Pixel:

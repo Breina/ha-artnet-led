@@ -4,9 +4,9 @@ from homeassistant.components.number import NumberMode, \
     RestoreNumber
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from custom_components.dmx import DOMAIN
-from custom_components.dmx.fixture.capability import DynamicEntity, Capability
-from custom_components.dmx.io.dmx_io import DmxUniverse
+from custom_components.artnet_led import DOMAIN
+from custom_components.artnet_led.fixture.capability import DynamicEntity, Capability
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 
 
 class DmxNumberEntity(RestoreNumber):

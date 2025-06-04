@@ -8,8 +8,8 @@ values of the fixture format. Therefore, we will excuse the python linter.
 # pylint: disable=too-few-public-methods
 
 
-from custom_components.dmx.fixture import entity
-from custom_components.dmx.fixture.entity import IrisPercent, Percent
+from custom_components.artnet_led.fixture import entity
+from custom_components.artnet_led.fixture.entity import IrisPercent, Percent
 
 
 class WheelSlot:

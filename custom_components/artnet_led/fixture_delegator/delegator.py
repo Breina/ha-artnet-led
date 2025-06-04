@@ -7,14 +7,14 @@ from homeassistant.components.light import ColorMode
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 
-from custom_components.dmx.entity.light import DMXLightChannel, LightChannel, DMXLightEntity
-from custom_components.dmx.entity.number import DmxNumberEntity
-from custom_components.dmx.entity.select import DmxSelectEntity
-from custom_components.dmx.fixture.capability import ColorIntensity, \
+from custom_components.artnet_led.entity.light import DMXLightChannel, LightChannel, DMXLightEntity
+from custom_components.artnet_led.entity.number import DmxNumberEntity
+from custom_components.artnet_led.entity.select import DmxSelectEntity
+from custom_components.artnet_led.fixture.capability import ColorIntensity, \
     SingleColor, Intensity, ColorTemperature
-from custom_components.dmx.fixture.channel import ChannelOffset, \
+from custom_components.artnet_led.fixture.channel import ChannelOffset, \
     SwitchingChannel, Channel
-from custom_components.dmx.io.dmx_io import DmxUniverse
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 
 
 @dataclass

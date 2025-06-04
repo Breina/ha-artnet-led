@@ -18,17 +18,17 @@ from enum import EnumType
 from types import MappingProxyType, UnionType
 from typing import Union
 
-from custom_components.dmx.fixture import OFL_URL, wheel, capability
-from custom_components.dmx.fixture.capability import Capability, MenuClick
-from custom_components.dmx.fixture.channel import Channel, DmxValueResolution
-from custom_components.dmx.fixture.entity import Entity
-from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
-from custom_components.dmx.fixture.fixture import Fixture
-from custom_components.dmx.fixture.matrix import matrix_from_pixel_count, \
+from custom_components.artnet_led.fixture import OFL_URL, wheel, capability
+from custom_components.artnet_led.fixture.capability import Capability, MenuClick
+from custom_components.artnet_led.fixture.channel import Channel, DmxValueResolution
+from custom_components.artnet_led.fixture.entity import Entity
+from custom_components.artnet_led.fixture.exceptions import FixtureConfigurationError
+from custom_components.artnet_led.fixture.fixture import Fixture
+from custom_components.artnet_led.fixture.matrix import matrix_from_pixel_count, \
     matrix_from_pixel_names
-from custom_components.dmx.fixture.mode import MatrixChannelInsertBlock, \
+from custom_components.artnet_led.fixture.mode import MatrixChannelInsertBlock, \
     RepeatFor, ChannelOrder, Mode
-from custom_components.dmx.fixture.wheel import WheelSlot, Wheel
+from custom_components.artnet_led.fixture.wheel import WheelSlot, Wheel
 
 underscore_pattern = re.compile(r"(?<!^)(?=[A-Z])")
 entity_value = re.compile(r"([-\d.]*)(.*)")

@@ -14,8 +14,8 @@ from collections.abc import Iterable
 from enum import Enum, auto
 from typing import Callable, List, Any
 
-from custom_components.dmx.fixture import entity
-from custom_components.dmx.fixture.entity import RotationAngle, RotationSpeed, \
+from custom_components.artnet_led.fixture import entity
+from custom_components.artnet_led.fixture.entity import RotationAngle, RotationSpeed, \
     Brightness, SlotNumber, SwingAngle, Parameter, Percent, VerticalAngle, \
     HorizontalAngle, Distance, \
     IrisPercent, Insertion, Entity, ColorHex

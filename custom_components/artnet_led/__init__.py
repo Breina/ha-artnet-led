@@ -18,15 +18,15 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 
-from custom_components.dmx.client import PortAddress, ArtPollReply
-from custom_components.dmx.client.artnet_server import ArtNetServer, Node, ManualNode
-from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER, CONF_FIXTURE_ENTITIES
-from custom_components.dmx.fixture.fixture import Fixture
-from custom_components.dmx.fixture.parser import parse
-from custom_components.dmx.fixture_delegator.delegator import create_entities
-from custom_components.dmx.fixtures.ha_fixture import parse_json
-from custom_components.dmx.fixtures.model import HaFixture
-from custom_components.dmx.io.dmx_io import DmxUniverse
+from custom_components.artnet_led.client import PortAddress, ArtPollReply
+from custom_components.artnet_led.client.artnet_server import ArtNetServer, Node, ManualNode
+from custom_components.artnet_led.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER, CONF_FIXTURE_ENTITIES
+from custom_components.artnet_led.fixture.fixture import Fixture
+from custom_components.artnet_led.fixture.parser import parse
+from custom_components.artnet_led.fixture_delegator.delegator import create_entities
+from custom_components.artnet_led.fixtures.ha_fixture import parse_json
+from custom_components.artnet_led.fixtures.model import HaFixture
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 
 log = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class UnknownFixtureError(IntegrationError):
     def __str__(self) -> str:
         if not self._discovered_fixtures:
             return "Didn't discover any fixtures. Put them in the fixtures folder as defined by " \
-                   "config `dmx.fixtures.folder`"
+                   "config `artnet_led.fixtures.folder`"
         else:
             return f"Could not find any fixture named '{self._fixture}, should be one of {self._discovered_fixtures}'. " \
                    f"Note that first the fixture's `fixtureKey` is matched, if that's not " \
@@ -282,7 +282,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         controller = ArtNetServer(hass, state_callback, retransmit_time_ms=refresh_every * 1000)
 
         def _get_node_handler():
-            from custom_components.dmx.entity.node_handler import DynamicNodeHandler
+            from custom_components.artnet_led.entity.node_handler import DynamicNodeHandler
             return DynamicNodeHandler
 
         DynamicNodeHandler = _get_node_handler()

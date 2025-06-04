@@ -1,12 +1,12 @@
 import logging
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.dmx import DOMAIN
-from custom_components.dmx.const import CONF_FIXTURE_ENTITIES
+from custom_components.artnet_led import DOMAIN
+from custom_components.artnet_led.const import CONF_FIXTURE_ENTITIES
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ async def async_setup_entry(
     entities = [e
                 for e
                 in hass.data[DOMAIN][config_entry.entry_id][CONF_FIXTURE_ENTITIES]
-                if isinstance(e, SensorEntity)
+                if isinstance(e, SelectEntity)
                 ]
 
     log.info(f"Adding {len(entities)} entities...")

@@ -5,13 +5,13 @@ fixture data from the fixture format and can be used to get specific bits out.
 
 from copy import deepcopy
 
-from custom_components.dmx.fixture.channel import Channel, ChannelOffset, \
+from custom_components.artnet_led.fixture.channel import Channel, ChannelOffset, \
     SwitchingChannel
-from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
-from custom_components.dmx.fixture.matrix import Matrix
-from custom_components.dmx.fixture.mode import Mode, MatrixChannelInsertBlock, \
+from custom_components.artnet_led.fixture.exceptions import FixtureConfigurationError
+from custom_components.artnet_led.fixture.matrix import Matrix
+from custom_components.artnet_led.fixture.mode import Mode, MatrixChannelInsertBlock, \
     ChannelOrder
-from custom_components.dmx.fixture.wheel import Wheel
+from custom_components.artnet_led.fixture.wheel import Wheel
 
 PIXEL_KEY = "$pixelKey"
 

@@ -1,4 +1,4 @@
-from custom_components.dmx.util.channel_switch import to_values, from_values
+from custom_components.artnet_led.util.channel_switch import to_values, from_values
 
 max_mireds: int = 500
 min_mireds: int = 153

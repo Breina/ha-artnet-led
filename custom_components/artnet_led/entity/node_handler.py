@@ -8,9 +8,9 @@ from homeassistant.helpers.entity_platform import async_get_platforms
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 
-from custom_components.dmx import ArtPollReply, DOMAIN, Node
-from custom_components.dmx.const import CONF_NODE_ENTITIES
-from custom_components.dmx.entity.node import ArtNetOnlineBinarySensor, ArtNetIndicatorStateSensor, ArtNetBootProcessSensor, ArtNetRDMBinarySensor, ArtNetDHCPBinarySensor, \
+from custom_components.artnet_led import ArtPollReply, DOMAIN, Node
+from custom_components.artnet_led.const import CONF_NODE_ENTITIES
+from custom_components.artnet_led.entity.node import ArtNetOnlineBinarySensor, ArtNetIndicatorStateSensor, ArtNetBootProcessSensor, ArtNetRDMBinarySensor, ArtNetDHCPBinarySensor, \
     ArtNetFailsafeStateSensor, ArtNetACNPrioritySensor, ArtNetNodeReportSensor, ArtNetPortAddressProgrammingAuthoritySensor, ArtNetPortInputBinarySensor, \
     ArtNetPortUniverseSensor, ArtNetPortOutputBinarySensor, ArtNetPortMergeModeSelect, ArtNetPortSACNBinarySensor, ArtNetPortRDMBinarySensor, ArtNetPortOutputModeSensor
 

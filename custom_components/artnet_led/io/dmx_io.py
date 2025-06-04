@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Callable, Dict
 
-from custom_components.dmx import PortAddress, ArtNetServer
+from custom_components.artnet_led import PortAddress, ArtNetServer
 
 
 class DmxUniverse:

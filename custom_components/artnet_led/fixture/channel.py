@@ -5,7 +5,7 @@ One Channel maps to one DMX value.
 import math
 from dataclasses import dataclass
 
-from custom_components.dmx.fixture.capability import Capability, \
+from custom_components.artnet_led.fixture.capability import Capability, \
     DmxValueResolution
 
 Capabilities = Capability | list[Capability]

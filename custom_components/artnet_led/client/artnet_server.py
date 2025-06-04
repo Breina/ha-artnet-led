@@ -12,10 +12,10 @@ from _socket import SO_BROADCAST, AF_INET, SOCK_DGRAM, SOL_SOCKET, IPPROTO_UDP, 
 from homeassistant.core import HomeAssistant
 from netifaces import AF_INET
 
-from custom_components.dmx.client import OpCode, ArtBase, ArtPoll, ArtPollReply, PortAddress, IndicatorState, \
+from custom_components.artnet_led.client import OpCode, ArtBase, ArtPoll, ArtPollReply, PortAddress, IndicatorState, \
     PortAddressProgrammingAuthority, BootProcess, NodeReport, Port, PortType, StyleCode, FailsafeState, \
     DiagnosticsMode, DiagnosticsPriority, ArtIpProgReply, ArtDiagData, ArtTimeCode, ArtCommand, ArtTrigger, ArtDmx
-from custom_components.dmx.client.net_utils import get_private_ip, get_default_gateway
+from custom_components.artnet_led.client.net_utils import get_private_ip, get_default_gateway
 
 STALE_NODE_CUTOFF_TIME = 10
 

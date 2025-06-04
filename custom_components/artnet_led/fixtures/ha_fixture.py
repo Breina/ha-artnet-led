@@ -5,7 +5,7 @@ import logging
 from homeassistant.exceptions import IntegrationError
 from homeassistant.helpers.entity import DeviceInfo
 
-from custom_components.dmx.fixtures.model import HaFixture
+from custom_components.artnet_led.fixtures.model import HaFixture
 
 log = logging.getLogger(__name__)
 
