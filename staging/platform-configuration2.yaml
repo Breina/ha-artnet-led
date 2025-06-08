@@ -75,6 +75,12 @@ dmx:
                 byte_order: big
 
                 value: 255
+            
+            - 500:
+                name: XY16BitLight
+                type: dxy
+                channel_size: 16bit
+                byte_order: big
       - 3: # Net and Sub-net default to 0, universe = 3
           channels:
             - 5:
