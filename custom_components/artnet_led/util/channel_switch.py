@@ -15,7 +15,8 @@ allowed_chars_per_type = {
     "color_temp": "dcChHtT",
     "rgb": "drRgGbBuUwW",
     "rgbw": "drRgGbBuUwW",
-    "rgbww": "dcChHtTrRgGbBuU"
+    "rgbww": "dcChHtTrRgGbBuU",
+    "xy": "dxy"
 }
 
 
@@ -32,7 +33,8 @@ def _default_calculation_function(channel_value):
 
 def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightness: int = 255, red: int = -1,
               green: int = -1, blue: int = -1, cold_white: int = -1, warm_white: int = -1,
-              color_temp_kelvin: int | None = None, min_kelvin: int | None = None, max_kelvin: int | None = None
+              color_temp_kelvin: int | None = None, min_kelvin: int | None = None, max_kelvin: int | None = None,
+              x: float | None = None, y: float | None = None
               ) -> list[int]:
 
     if min_kelvin is not None and max_kelvin is not None:
@@ -81,6 +83,8 @@ def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightn
         "T": lambda: 255 - (color_temp_kelvin - min_kelvin) * 255 / kelvin_diff,
         "u": lambda: color_RGB_to_hsv(red, green, blue)[0] * 255 / 360,
         "U": lambda: color_RGB_to_hsv(red, green, blue)[1] * 255 / 100,
+        "x": lambda: is_on * x * 255 if x is not None else 128,
+        "y": lambda: is_on * y * 255 if y is not None else 128,
     }
 
     values: list[int] = list()
@@ -109,6 +113,8 @@ def from_values(channel_setup: str, channel_size: int, values: list[int],
     cold_white: int | None = None
     warm_white: int | None = None
     color_temp_kelvin: int | None = None
+    x: int | None = None
+    y: int | None = None
 
     # Find brightness
     for index, channel in enumerate(channel_setup):
@@ -161,6 +167,10 @@ def from_values(channel_setup: str, channel_size: int, values: list[int],
             hue = int(value * 360 / 255)
         elif channel == "U":
             saturation = int(value * 100 / 255)
+        elif channel == "x":
+            x = value
+        elif channel == "y":
+            y = value
 
     if cold_white is None and warm_white is not None:
         cold_white = 255 - warm_white
@@ -178,7 +188,7 @@ def from_values(channel_setup: str, channel_size: int, values: list[int],
     if hue is not None and saturation is not None and red is None and green is None and blue is None:
         red, green, blue = color_hsv_to_RGB(hue, saturation, 1)
 
-    return is_on, brightness, red, green, blue, cold_white, warm_white, color_temp_kelvin
+    return is_on, brightness, red, green, blue, cold_white, warm_white, color_temp_kelvin, x, y
 
 
 def _scale_brightness(value: int | None, brightness: int) -> int | None:
