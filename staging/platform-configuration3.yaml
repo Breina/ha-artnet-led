@@ -1,4 +1,4 @@
-dmx:
+artnet_led:
   fixtures:
     folder: fixtures
 

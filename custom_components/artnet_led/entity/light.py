@@ -472,8 +472,8 @@ class DMXLightEntity(LightEntity, RestoreEntity):
             has_separate_dimmer: bool = False,
             min_kelvin: int = 2000,
             max_kelvin: int = 6500,
-            update_interval: float = 0.1,  # Default 100ms update rate (10 updates/sec)
-            force_update_after: float = 0.5,  # Force update after 500ms of no changes
+            update_interval: float = 0.5,
+            force_update_after: float = 2,
     ):
         """Initialize the light entity."""
         # Entity attributes

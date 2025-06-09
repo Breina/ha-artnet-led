@@ -16,6 +16,7 @@ from custom_components.artnet_led.client import OpCode, ArtBase, ArtPoll, ArtPol
     PortAddressProgrammingAuthority, BootProcess, NodeReport, Port, PortType, StyleCode, FailsafeState, \
     DiagnosticsMode, DiagnosticsPriority, ArtIpProgReply, ArtDiagData, ArtTimeCode, ArtCommand, ArtTrigger, ArtDmx
 from custom_components.artnet_led.client.net_utils import get_private_ip, get_default_gateway
+from custom_components.artnet_led.const import HA_OEM
 
 STALE_NODE_CUTOFF_TIME = 10
 
@@ -85,7 +86,7 @@ class OwnPort:
 class ArtNetServer(asyncio.DatagramProtocol):
     def __init__(self, hass: HomeAssistant, state_update_callback=None,
                  firmware_version: int = 0,
-                 oem: int = 0, esta=0,
+                 oem: int = HA_OEM, esta=0,
                  short_name: str = "HA ArtNet", long_name: str = "HomeAssistant ArtNet controller",
                  is_server_dhcp_configured: bool = True, polling: bool = True, sequencing: bool = True,
                  retransmit_time_ms: int = 900):
@@ -597,12 +598,35 @@ class ArtNetServer(asyncio.DatagramProtocol):
         # TODO check if it would be cool to add HA specific commands?
 
     def handle_trigger(self, trigger: ArtTrigger):
-        # TODO possible integrations here
-        #  0: ASCII inputs into HA?
-        #  1: Define and activate Macro's
-        #  2: Key press inputs into HA?
-        #  3: Scenes!
-        pass
+        null_index = trigger.payload.find(b'\x00')
+        if null_index != -1:
+            payload_bytes = trigger.payload[:null_index]
+        else:
+            payload_bytes = trigger.payload
+
+        payload_str = ""
+
+        try:
+            # Primary: Try UTF-8 decoding
+            payload_str = payload_bytes.decode('utf-8')
+        except UnicodeDecodeError:
+            try:
+                # Fallback 1: Try UTF-8 with error replacement
+                payload_str = payload_bytes.decode('utf-8', errors='replace')
+            except Exception:
+                try:
+                    # Fallback 2: Try latin-1 (can decode any byte sequence)
+                    payload_str = payload_bytes.decode('latin-1')
+                except Exception:
+                    # Fallback 3: Convert to hex representation as last resort
+                    payload_str = payload_bytes.hex()
+
+        self.__hass.bus.fire("artnet_trigger", {
+            "oem": trigger.oem,
+            "key": trigger.key,
+            "sub_key": trigger.sub_key,
+            "payload": payload_str
+        })
 
     def handle_dmx(self, dmx: ArtDmx):
         own_port = self.own_port_addresses.get(dmx.port_address)

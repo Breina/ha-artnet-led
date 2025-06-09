@@ -6,6 +6,8 @@ CONF_DATA = "config_data"
 CONF_NODE_ENTITIES = "node_entities"
 CONF_FIXTURE_ENTITIES = "fixture_entities"
 
+HA_OEM = 0x2BE9
+
 # GATEWAY_DOMAIN = 'PowerTagGateway'
 # TAG_DOMAIN = 'PowerTag'
 #

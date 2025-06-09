@@ -1283,13 +1283,11 @@ class ArtTrigger(ArtBase):
             if self.oem == 0xFFFF and self.key > 3:
                 log.warning(f"Warning: Trigger key range undefined for OEM '{self.oem}', key '{self.key}'")
 
-            self.payload, index = self._take(packet, index, 512)
-
+            self.payload, index = self._take(packet, 512, index)
         except SerializationException as e:
             log.exception(e)
 
         return index
-
 
 class ArtDmx(ArtBase):
 
