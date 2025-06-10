@@ -488,8 +488,8 @@ class DMXLightEntity(LightEntity, RestoreEntity):
 
         # Color temperature configuration
         if ColorMode.COLOR_TEMP in self.supported_color_modes:
-            self._attr_min_mireds = color_util.color_temperature_kelvin_to_mired(max_kelvin)
-            self._attr_max_mireds = color_util.color_temperature_kelvin_to_mired(min_kelvin)
+            self._attr_min_color_temp_kelvin = min_kelvin
+            self._attr_max_color_temp_kelvin = max_kelvin
 
         self._state = DMXLightState(color_mode, min_kelvin, max_kelvin)
         self._universe = universe
