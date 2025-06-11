@@ -1,9 +1,8 @@
+import time
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import partial
 from typing import Dict, List, Optional, Tuple, Any
-import asyncio
-import time
 
 import homeassistant.util.color as color_util
 from homeassistant.components.light import LightEntity, ColorMode
@@ -497,13 +496,6 @@ class DMXLightEntity(LightEntity, RestoreEntity):
         self._has_separate_dimmer = has_separate_dimmer
 
         # Rate limiting configuration
-        self._update_interval = update_interval  # Minimum time between updates
-        self._force_update_after = force_update_after  # Force update after this time of no changes
-        self._last_update_time = 0.0  # Track last time we updated HA
-        self._update_scheduled = False  # Track if an update is already pending
-        self._pending_update = False  # Track if there's a pending update
-        self._update_lock = asyncio.Lock()  # Lock to prevent race conditions
-
         self._register_channel_listeners()
 
     def _register_channel_listeners(self) -> None:
@@ -517,15 +509,15 @@ class DMXLightEntity(LightEntity, RestoreEntity):
 
     @callback
     def _handle_channel_update(self, channel_type: LightChannel, dmx_index: int, value: int) -> None:
-        """Handle updates from the DMX universe with rate limiting."""
+        """Handle updates from the DMX universe directly."""
         if self._controller.is_updating:
             return
 
-        # Process the update to internal state first
+        # Process the update to internal state
         self._process_state_update(channel_type, dmx_index, value)
 
-        # Schedule state update to HA with rate limiting
-        self._schedule_state_update()
+        # Update state immediately without rate limiting
+        self._do_state_update()
 
     def _process_state_update(self, channel_type: LightChannel, dmx_index: int, value: int) -> None:
         """Process the channel update and update internal state."""
@@ -569,38 +561,7 @@ class DMXLightEntity(LightEntity, RestoreEntity):
     def _schedule_state_update(self) -> None:
         """Schedule state update with rate limiting."""
         self._pending_update = True
-        current_time = time.monotonic()
-
-        # If we're within the update interval, schedule a delayed update if not already scheduled
-        time_since_last_update = current_time - self._last_update_time
-        if time_since_last_update < self._update_interval:
-            if not self._update_scheduled:
-                self._update_scheduled = True
-                # Schedule update after the remaining interval time
-                remaining_time = max(0.001, self._update_interval - time_since_last_update)
-                asyncio.create_task(self._delayed_update(remaining_time))
-        else:
-            # We're outside the update interval, update immediately
-            self._do_state_update()
-
-    async def _delayed_update(self, delay: float) -> None:
-        """Handle delayed update to reduce update frequency."""
-        try:
-            await asyncio.sleep(delay)
-            async with self._update_lock:
-                # Only update if there are pending changes
-                if self._pending_update:
-                    self._do_state_update()
-        finally:
-            # Reset the scheduled flag
-            self._update_scheduled = False
-
-            # If changes happened during our sleep, schedule another update check
-            # to ensure we don't miss the final state
-            if self._pending_update:
-                # Small delay to see if more updates are coming
-                await asyncio.sleep(0.05)
-                self._schedule_state_update()
+        self._do_state_update()
 
     def _do_state_update(self) -> None:
         """Perform the actual state update to Home Assistant."""

@@ -22,6 +22,7 @@ dmx:
   artnet:
     max_fps: 43
     refresh_every: 1.2
+    rate_limit: 0.5
 
     universes:
       - 1/2/0:
@@ -52,9 +53,11 @@ dmx:
 
 #### `dmx.artnet`
 - **`max_fps`** *(optional, default: `30`)*  
-  Maximum frames per second for Art-Net output [0, 43]
+  Maximum frames per second for animations [0, 43]
 - **`refresh_every`** *(optional, default: `0.8`)*  
-  The interval in seconds in which universe data is retransmitted. Set to `0` to disable this behavior
+  The interval in seconds in which universe data is retransmitted. This is useful when there are external controllers sending to the same universes. Set to `0` to disable this behavior.
+- **`refresh_every`** *(optional, default: `0.5`)*  
+  The rate limit in seconds between each entity update when received from an external controller. Increase this value if HomeAssistant slows down too much when receiving updates.
 
 #### `dmx.artnet.universes`
 Universe definitions. Each universe can be specified as:

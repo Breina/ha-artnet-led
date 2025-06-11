@@ -27,12 +27,17 @@ from custom_components.artnet_led.fixture_delegator.delegator import create_enti
 from custom_components.artnet_led.fixtures.ha_fixture import parse_json
 from custom_components.artnet_led.fixtures.model import HaFixture
 from custom_components.artnet_led.io.dmx_io import DmxUniverse
+from custom_components.artnet_led.util.rate_limiter import RateLimiter
 
 log = logging.getLogger(__name__)
 
 CONF_NODE_TYPE_ARTNET = "artnet"
 CONF_MAX_FPS = "max_fps"
+CONF_MAX_FPS_DEFAULT = 30
+CONF_RATE_LIMIT = "rate_limit"
+CONF_RATE_LIMIT_DEFAULT = 0.5
 CONF_REFRESH_EVERY = "refresh_every"
+CONF_REFRESH_EVERY_DEFAULT = 0.8
 CONF_UNIVERSES = "universes"
 CONF_COMPATIBILITY = "compatibility"
 CONF_SEND_PARTIAL_UNIVERSE = "send_partial_universe"
@@ -184,27 +189,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         data=config
     )
 
-    # hass.data.setdefault(DOMAIN, {})
-    #
-    # artnet_controller = None
-    #
-    # def _discovered_node(discovered_node: DiscoveredNode):
-    #     print(f"Found some! {discovered_node.long_name}")
-    #     discovery_flow.async_create_flow(
-    #         hass,
-    #         DOMAIN,
-    #         context={"source": SOURCE_INTEGRATION_DISCOVERY},
-    #         data={
-    #             ARTNET_CONTROLLER: artnet_controller,
-    #             CONF_DATA: config[DOMAIN]
-    #         },
-    #     )
-    #
-    # artnet_controller = ArtNetController(hass, new_node_callback=_discovered_node, max_fps=43)
-    # artnet_controller.start()
-    #
-    # # TODO parse config manual node discover also
-
     print(f"end of async_setup")
     return True
 
@@ -256,28 +240,59 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     # Process ArtNet
     if (artnet_yaml := dmx_yaml.get(CONF_NODE_TYPE_ARTNET)) is not None:
 
-        max_fps = artnet_yaml[CONF_MAX_FPS]
-        refresh_every = artnet_yaml[CONF_REFRESH_EVERY]
+        max_fps = artnet_yaml.get(CONF_MAX_FPS, CONF_MAX_FPS_DEFAULT)  # TODO no animations yet
+        refresh_every = artnet_yaml.get(CONF_REFRESH_EVERY, CONF_REFRESH_EVERY_DEFAULT)
+        rate_limit = artnet_yaml.get(CONF_RATE_LIMIT, CONF_RATE_LIMIT_DEFAULT)
 
+        # Create a dictionary to store rate limiters for each universe
+        universe_rate_limiters = {}
+
+        # Function to process universe updates with rate limiting
         def state_callback(port_address: PortAddress, data: bytearray):
             """
-            Callback for incoming ArtNet DMX data.
+            Callback for incoming ArtNet DMX data with rate limiting.
 
             Args:
                 port_address: The port address (universe) the data is for
                 data: The DMX data (512 bytes)
             """
-            # Find the corresponding universe
             callback_universe = universes.get(port_address)
             if callback_universe is None:
                 log.warning(f"Received DMX data for unknown universe: {port_address}")
                 return
 
-            # Update channel values in the universe
-            # Only update channels that have a non-zero value or have changed
+            if port_address not in universe_rate_limiters:
+                updates_dict = {}
+
+                async def process_updates():
+                    nonlocal updates_dict
+                    updates_to_process = updates_dict.copy()
+                    updates_dict.clear()
+
+                    if updates_to_process:
+                        await callback_universe.update_multiple_values(updates_to_process)
+
+                limiter = RateLimiter(
+                    hass,
+                    update_method=lambda: hass.async_create_task(process_updates()),
+                    update_interval=rate_limit,
+                    force_update_after=rate_limit * 4
+                )
+
+                universe_rate_limiters[port_address] = (limiter, updates_dict)
+
+            limiter, updates_dict = universe_rate_limiters[port_address]
+
+            changes_detected = False
+
             for channel, value in enumerate(data, start=1):  # DMX channels are 1-based
                 if value > 0 or callback_universe.get_channel_value(channel) != value:
-                    hass.async_create_task(callback_universe.update_value(channel, value))
+                    # Store the update in our dictionary to be processed later
+                    updates_dict[channel] = value
+                    changes_detected = True
+
+            if changes_detected:
+                limiter.schedule_update()
 
         controller = ArtNetServer(hass, state_callback, retransmit_time_ms=refresh_every * 1000)
 
@@ -392,8 +407,9 @@ CONFIG_SCHEMA = vol.Schema(
                 ),
                 vol.Optional(CONF_NODE_TYPE_ARTNET): vol.Schema(
                     {
-                        vol.Optional(CONF_MAX_FPS, default=30): vol.All(vol.Coerce(int), vol.Range(min=0, max=43)),
-                        vol.Optional(CONF_REFRESH_EVERY, default=0.8): cv.positive_float,
+                        vol.Optional(CONF_MAX_FPS, default=CONF_MAX_FPS_DEFAULT): vol.All(vol.Coerce(int), vol.Range(min=0, max=43)),
+                        vol.Optional(CONF_REFRESH_EVERY, default=CONF_REFRESH_EVERY_DEFAULT): cv.positive_float,
+                        vol.Optional(CONF_RATE_LIMIT, default=CONF_RATE_LIMIT_DEFAULT): cv.positive_float,
 
                         vol.Required(CONF_UNIVERSES): vol.Schema(
                             [{
