@@ -67,8 +67,8 @@ CONF_START_ADDRESS = 'start_address'
 CONF_FIXTURE = 'fixture'
 CONF_FIXTURES = 'fixtures'
 CONF_FOLDER = 'folder'
+CONF_FOLDER_DEFAULT = 'fixtures'
 
-DEFAULT_FIXTURES_FOLDER = 'fixtures'
 
 PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT, Platform.SENSOR, Platform.BINARY_SENSOR]
 
@@ -228,7 +228,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     dmx_yaml = entry.data[DOMAIN]
 
     fixtures_yaml = dmx_yaml[CONF_FIXTURES]
-    fixture_folder = fixtures_yaml[CONF_FOLDER]
+    fixture_folder = fixtures_yaml.get(CONF_FOLDER, CONF_FOLDER_DEFAULT)
 
     log.debug("Processing fixtures folder: %s/...", str(Path(fixture_folder).absolute()))
     processed_fixtures = await process_fixtures(hass, fixture_folder)
@@ -402,7 +402,7 @@ CONFIG_SCHEMA = vol.Schema(
             {
                 vol.Optional(CONF_FIXTURES): vol.Schema(
                     {
-                        vol.Optional(CONF_FOLDER, default=DEFAULT_FIXTURES_FOLDER): cv.string
+                        vol.Optional(CONF_FOLDER, default=CONF_FOLDER_DEFAULT): cv.string
                     }
                 ),
                 vol.Optional(CONF_NODE_TYPE_ARTNET): vol.Schema(

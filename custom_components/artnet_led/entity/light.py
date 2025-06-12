@@ -637,3 +637,27 @@ class DMXLightEntity(LightEntity, RestoreEntity):
             self._state.is_on = last_state.state == "on"
             if last_state.attributes.get("brightness"):
                 self._state.brightness = last_state.attributes["brightness"]
+                self._state.last_brightness = last_state.attributes["brightness"]
+
+            # Initialize RGB values if available
+            if "rgb_color" in last_state.attributes:
+                rgb = last_state.attributes["rgb_color"]
+                self._state.rgb_color = rgb
+                self._state.last_rgb_color = rgb
+
+            # Initialize white values if available
+            if "color_temp" in last_state.attributes:
+                color_temp = last_state.attributes["color_temp"]
+                self._state.color_temp = color_temp
+                self._state.last_color_temp = color_temp
+
+            # Make sure to initialize RGBW and RGBWW values if they exist
+            if hasattr(self._state, "rgbw_color") and "rgbw_color" in last_state.attributes:
+                rgbw = last_state.attributes["rgbw_color"]
+                self._state.rgbw_color = rgbw
+                self._state.last_rgbw_color = rgbw
+
+            if hasattr(self._state, "rgbww_color") and "rgbww_color" in last_state.attributes:
+                rgbww = last_state.attributes["rgbww_color"]
+                self._state.rgbww_color = rgbww
+                self._state.last_rgbww_color = rgbww

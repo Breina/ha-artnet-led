@@ -72,7 +72,7 @@ class Node:
 @dataclass
 class ManualNode:
     port_address: PortAddress = None
-    addr: bytes = [0x00] * 4,
+    addr: str = "",
     port: int = 6454,
 
 
@@ -366,7 +366,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
                             f"Stopping sending ArtDmx refreshes...")
                 own_port.port.good_output_a.data_being_transmitted = False
                 self.update_subscribers()
-            else:
+            elif nodes:
                 with socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) as sock:
                     sock.setblocking(False)
                     for node in nodes:
@@ -378,9 +378,8 @@ class ArtNetServer(asyncio.DatagramProtocol):
                 manual_node = self.manual_nodes_by_port_address[address]
                 with socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) as sock:
                     sock.setblocking(False)
-                    ip_str = inet_ntoa(manual_node.addr)
-                    log.debug(f"Sending manually ArtDmx to {ip_str}")
-                    sock.sendto(packet, (ip_str, manual_node.port))
+                    log.debug(f"Sending manually ArtDmx to {manual_node.addr}")
+                    sock.sendto(packet, (manual_node.addr, manual_node.port))
 
             if self._sequencing:
                 self.sequence_number += 0x01

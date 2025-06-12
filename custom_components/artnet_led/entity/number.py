@@ -7,6 +7,15 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from custom_components.artnet_led import DOMAIN
 from custom_components.artnet_led.fixture.capability import DynamicEntity, Capability
 from custom_components.artnet_led.io.dmx_io import DmxUniverse
+from typing import List
+
+from homeassistant.components.number import NumberMode, \
+    RestoreNumber
+from homeassistant.helpers.device_registry import DeviceInfo
+
+from custom_components.artnet_led import DOMAIN
+from custom_components.artnet_led.fixture.capability import DynamicEntity, Capability
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 
 
 class DmxNumberEntity(RestoreNumber):
@@ -59,6 +68,32 @@ class DmxNumberEntity(RestoreNumber):
 
         self._is_updating = False
         self.universe.register_channel_listener(dmx_indexes, self.update_value)
+
+    async def async_added_to_hass(self) -> None:
+        """Run when entity about to be added to hass."""
+        await super().async_added_to_hass()
+
+        # Restore last state if available
+        last_state = await self.async_get_last_state()
+        last_number = await self.async_get_last_number_data()
+
+        if last_number is not None and last_number.native_value is not None:
+            self._attr_native_value = last_number.native_value
+            # Update the DMX values to match the restored state
+            dmx_value = self.dynamic_entity.to_dmx(self._attr_native_value)
+            await self.universe.update_value(self.dmx_indexes, dmx_value, send_immediately=True)
+        elif last_state is not None and last_state.state not in ('unknown', 'unavailable'):
+            try:
+                # Try to convert the state to a float
+                restored_value = float(last_state.state)
+                if self._attr_native_min_value <= restored_value <= self._attr_native_max_value:
+                    self._attr_native_value = restored_value
+                    # Update the DMX values to match the restored state
+                    dmx_value = self.dynamic_entity.to_dmx(self._attr_native_value)
+                    await self.universe.update_value(self.dmx_indexes, dmx_value, send_immediately=True)
+            except (ValueError, TypeError):
+                # Unable to convert state to float, use default value
+                pass
 
     def update_value(self, dmx_index: int, value: int) -> None:
         # TODO maybe update self._attr_attribution from source ArtNet node?
