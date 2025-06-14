@@ -9,6 +9,9 @@ class ColorConverter:
         """
         Convert color temperature in mireds and brightness to cold white and warm white values.
 
+        For neutral white (middle temperature), both channels will be at full brightness.
+        For pure warm/cold, only one channel will be active.
+
         Args:
             temp_mired: Color temperature in mireds
             brightness: Overall brightness (0-255)
@@ -16,26 +19,22 @@ class ColorConverter:
         Returns:
             Tuple of (cold_white, warm_white) values (0-255 each)
         """
+        if brightness == 0:
+            return 0, 0
 
         temp_mired = max(self.min_mired, min(self.max_mired, temp_mired))
 
         temp_ratio = (temp_mired - self.min_mired) / (self.max_mired - self.min_mired)
 
-        cold_ratio = 1.0 - temp_ratio
-        warm_ratio = temp_ratio
+        if temp_ratio <= 0.5:
+            cold_ratio = 1.0
+            warm_ratio = temp_ratio * 2.0  # Scale 0-0.5 to 0-1
+        else:
+            warm_ratio = 1.0
+            cold_ratio = (1.0 - temp_ratio) * 2.0  # Scale 0.5-1 to 1-0
 
-        # Use rounding instead of truncation to minimize precision loss
         cold_white = round(cold_ratio * brightness)
         warm_white = round(warm_ratio * brightness)
-
-        # Ensure the sum equals the original brightness to avoid rounding errors
-        total = cold_white + warm_white
-        if total != brightness and brightness > 0:
-            # Adjust the larger value to compensate for rounding errors
-            if cold_white >= warm_white:
-                cold_white += brightness - total
-            else:
-                warm_white += brightness - total
 
         # Ensure values stay within valid range
         cold_white = max(0, min(255, cold_white))
@@ -57,11 +56,8 @@ class ColorConverter:
         if cold_white == 0 and warm_white == 0:
             return 0, self.min_mired
 
-        # Calculate brightness as the sum of the two channels
-        # This is the inverse of how temp_to_cw_ww distributes brightness
-        brightness = cold_white + warm_white
+        brightness = max(cold_white, warm_white)
 
-        # Calculate color temperature from the ratio
         temp_mired = self.cw_ww_to_temp(cold_white, warm_white)
 
         return brightness, temp_mired
@@ -85,13 +81,24 @@ class ColorConverter:
         if cold_white == 0 and warm_white == 0:
             return self.min_mired
 
-        total = cold_white + warm_white
-        if total == 0:
+        max_channel = max(cold_white, warm_white)
+        if max_channel == 0:
             return self.min_mired
 
-        warm_ratio = warm_white / total
+        cold_norm = cold_white / max_channel
+        warm_norm = warm_white / max_channel
 
-        temp_mired = self.min_mired + (self.max_mired - self.min_mired) * warm_ratio
+        if cold_norm == 1.0 and warm_norm < 1.0:
+            temp_ratio = warm_norm * 0.5
+        elif warm_norm == 1.0 and cold_norm < 1.0:
+            temp_ratio = 0.5 + (1.0 - cold_norm) * 0.5
+        elif cold_norm == 1.0 and warm_norm == 1.0:
+            temp_ratio = 0.5
+        else:
+            total = cold_white + warm_white
+            temp_ratio = warm_white / total if total > 0 else 0.0
+
+        temp_mired = self.min_mired + (self.max_mired - self.min_mired) * temp_ratio
         return int(temp_mired)
 
     def mired_to_dmx(self, mireds: int) -> int:

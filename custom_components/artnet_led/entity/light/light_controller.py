@@ -171,6 +171,8 @@ class LightController:
 
         if channel_type == ChannelType.DIMMER:
             self.state.update_brightness(value)
+            if value == 0:
+                self.state.is_on = False
         elif channel_type == ChannelType.RED:
             self.state.update_rgb(value, self.state.rgb[1], self.state.rgb[2])
         elif channel_type == ChannelType.GREEN:
@@ -181,19 +183,25 @@ class LightController:
             self.state.update_white(value, is_cold=True)
             if self.state.color_mode == ColorMode.BRIGHTNESS and not has_dimmer:
                 self.state.update_brightness(value)
+                if value == 0:
+                    self.state.is_on = False
             elif self.state.color_mode == ColorMode.COLOR_TEMP and not has_dimmer:
-                # Calculate brightness from CW/WW values
+                old_brightness = self.state.brightness
                 self._update_brightness_from_cw_ww()
-                # Update color temperature based on new CW/WW ratio
+                if self.state.brightness == 0 and old_brightness > 0:
+                    self.state.is_on = False
                 self._update_color_temp_from_cw_ww()
         elif channel_type == ChannelType.WARM_WHITE:
             self.state.update_white(value, is_cold=False)
             if self.state.color_mode == ColorMode.BRIGHTNESS and not has_dimmer:
                 self.state.update_brightness(value)
+                if value == 0:
+                    self.state.is_on = False
             elif self.state.color_mode == ColorMode.COLOR_TEMP and not has_dimmer:
-                # Calculate brightness from CW/WW values
+                old_brightness = self.state.brightness
                 self._update_brightness_from_cw_ww()
-                # Update color temperature based on new CW/WW ratio
+                if self.state.brightness == 0 and old_brightness > 0:
+                    self.state.is_on = False
                 self._update_color_temp_from_cw_ww()
         elif channel_type == ChannelType.COLOR_TEMPERATURE:
             self.state.update_color_temp_dmx(value)
@@ -207,13 +215,13 @@ class LightController:
     def _update_brightness_from_cw_ww(self):
         """Calculate and update brightness based on current CW/WW values for color temp mode."""
         if self.state.color_mode == ColorMode.COLOR_TEMP and self.updater.has_cw_ww():
-            # Use the converter to properly calculate brightness from CW/WW values
             brightness, _ = self.state.converter.cw_ww_to_brightness_temp(
                 self.state.cold_white,
                 self.state.warm_white
             )
+            self.state.brightness = brightness
             if brightness > 0:
-                self.state.update_brightness(brightness)
+                self.state.last_brightness = brightness
 
     def _update_color_temp_from_cw_ww(self):
         """Calculate and update color temperature based on current CW/WW values."""
