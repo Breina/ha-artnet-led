@@ -5,11 +5,12 @@ from homeassistant.components.light import LightEntity, ColorMode
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
-from matplotlib.colors import ColorConverter
 
-from custom_components.artnet_led import DmxUniverse, DOMAIN
+from custom_components.artnet_led import DOMAIN
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 from custom_components.artnet_led.entity.light import ChannelMapping, ChannelType
 from custom_components.artnet_led.entity.light.channel_updater import ChannelUpdater
+from custom_components.artnet_led.entity.light.color_converter import ColorConverter
 from custom_components.artnet_led.entity.light.light_controller import LightController
 from custom_components.artnet_led.entity.light.light_state import LightState
 
@@ -119,3 +120,16 @@ class DMXLightEntity(LightEntity, RestoreEntity):
             color_temp = attrs["color_temp"]
             self._state.color_temp = color_temp
             self._state.last_color_temp = color_temp
+
+        # For color temp mode without dimmer, restore CW/WW values if available
+        if (self._state.color_mode == ColorMode.COLOR_TEMP and
+                not self._has_separate_dimmer and
+                "brightness" in attrs and "color_temp" in attrs):
+            # Reconstruct CW/WW values from brightness and color temp
+            brightness = attrs["brightness"]
+            color_temp = attrs["color_temp"]
+            cold, warm = self._state.converter.temp_to_cw_ww(color_temp, brightness)
+            self._state.cold_white = cold
+            self._state.warm_white = warm
+            self._state.last_cold_white = cold
+            self._state.last_warm_white = warm

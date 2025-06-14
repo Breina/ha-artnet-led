@@ -1,6 +1,6 @@
 from typing import Dict
 
-from custom_components.artnet_led import DmxUniverse
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 from custom_components.artnet_led.entity.light import ChannelType, ChannelMapping
 
 

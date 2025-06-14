@@ -1,7 +1,8 @@
 from typing import Tuple
 
 from homeassistant.components.light import ColorMode
-from matplotlib.colors import ColorConverter
+
+from custom_components.artnet_led.entity.light.color_converter import ColorConverter
 
 
 class LightState:

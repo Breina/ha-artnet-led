@@ -59,8 +59,24 @@ class LightController:
             has_updates = True
 
         if "color_temp" in kwargs:
-            self._handle_color_temp(kwargs["color_temp"], kwargs.get("brightness", self.state.brightness), updates)
+            # For color temp changes, preserve current brightness unless explicitly specified
+            brightness = kwargs.get("brightness", self.state.brightness)
+            self._handle_color_temp(kwargs["color_temp"], brightness, updates)
             has_updates = True
+
+        # Handle brightness for color temp mode when no dimmer channel exists
+        if "brightness" in kwargs and not self.updater.has_channel(ChannelType.DIMMER):
+            if self.state.color_mode == ColorMode.COLOR_TEMP and self.updater.has_cw_ww():
+                brightness = kwargs["brightness"]
+                self.state.update_brightness(brightness)
+                # If we're only setting brightness (no color temp), scale current CW/WW values
+                if "color_temp" not in kwargs:
+                    cold, warm = self.state.converter.temp_to_cw_ww(self.state.color_temp, brightness)
+                    self.state.update_white(cold, is_cold=True)
+                    self.state.update_white(warm, is_cold=False)
+                    updates[ChannelType.COLD_WHITE] = cold
+                    updates[ChannelType.WARM_WHITE] = warm
+                has_updates = True
 
         return has_updates
 
@@ -101,6 +117,10 @@ class LightController:
 
     def _handle_color_temp(self, temp_mired: int, brightness: int, updates: Dict[ChannelType, int]):
         self.state.update_color_temp_mired(temp_mired)
+
+        # Update brightness when setting color temp
+        if not self.updater.has_channel(ChannelType.DIMMER):
+            self.state.update_brightness(brightness)
 
         if self.updater.has_channel(ChannelType.COLOR_TEMPERATURE):
             updates[ChannelType.COLOR_TEMPERATURE] = self.state.color_temp_dmx
@@ -161,10 +181,20 @@ class LightController:
             self.state.update_white(value, is_cold=True)
             if self.state.color_mode == ColorMode.BRIGHTNESS and not has_dimmer:
                 self.state.update_brightness(value)
+            elif self.state.color_mode == ColorMode.COLOR_TEMP and not has_dimmer:
+                # Calculate brightness from CW/WW values
+                self._update_brightness_from_cw_ww()
+                # Update color temperature based on new CW/WW ratio
+                self._update_color_temp_from_cw_ww()
         elif channel_type == ChannelType.WARM_WHITE:
             self.state.update_white(value, is_cold=False)
             if self.state.color_mode == ColorMode.BRIGHTNESS and not has_dimmer:
                 self.state.update_brightness(value)
+            elif self.state.color_mode == ColorMode.COLOR_TEMP and not has_dimmer:
+                # Calculate brightness from CW/WW values
+                self._update_brightness_from_cw_ww()
+                # Update color temperature based on new CW/WW ratio
+                self._update_color_temp_from_cw_ww()
         elif channel_type == ChannelType.COLOR_TEMPERATURE:
             self.state.update_color_temp_dmx(value)
 
@@ -173,3 +203,20 @@ class LightController:
                 self.state.is_on = False
 
         return True
+
+    def _update_brightness_from_cw_ww(self):
+        """Calculate and update brightness based on current CW/WW values for color temp mode."""
+        if self.state.color_mode == ColorMode.COLOR_TEMP and self.updater.has_cw_ww():
+            # Use the converter to properly calculate brightness from CW/WW values
+            brightness, _ = self.state.converter.cw_ww_to_brightness_temp(
+                self.state.cold_white,
+                self.state.warm_white
+            )
+            if brightness > 0:
+                self.state.update_brightness(brightness)
+
+    def _update_color_temp_from_cw_ww(self):
+        """Calculate and update color temperature based on current CW/WW values."""
+        if self.state.color_mode == ColorMode.COLOR_TEMP and self.updater.has_cw_ww():
+            color_temp = self.state.converter.cw_ww_to_temp(self.state.cold_white, self.state.warm_white)
+            self.state.update_color_temp_mired(color_temp)
