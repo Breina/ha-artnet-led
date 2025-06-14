@@ -1,0 +1,175 @@
+from typing import Dict, Any, Tuple
+
+from homeassistant.components.light import ColorMode
+
+from custom_components.artnet_led.entity.light import ChannelType
+from custom_components.artnet_led.entity.light.channel_updater import ChannelUpdater
+from custom_components.artnet_led.entity.light.light_state import LightState
+
+
+class LightController:
+    def __init__(self, state: LightState, updater: ChannelUpdater):
+        self.state = state
+        self.updater = updater
+        self.is_updating = False
+
+    async def turn_on(self, **kwargs):
+        self.state.is_on = True
+        updates = {}
+
+        if not self._process_kwargs(kwargs, updates):
+            self._restore_previous_state(updates)
+
+        await self.updater.send_updates(updates)
+
+    async def turn_off(self):
+        self.state.is_on = False
+        updates = {}
+
+        if self.updater.has_channel(ChannelType.DIMMER):
+            updates[ChannelType.DIMMER] = 0
+            self.state.brightness = 0
+        else:
+            self.state.reset()
+            for channel_type in self.updater.channels:
+                if channel_type != ChannelType.COLOR_TEMPERATURE:
+                    updates[channel_type] = 0
+
+        await self.updater.send_updates(updates)
+
+    def _process_kwargs(self, kwargs: Dict[str, Any], updates: Dict[ChannelType, int]) -> bool:
+        has_updates = False
+
+        if "brightness" in kwargs and self.updater.has_channel(ChannelType.DIMMER):
+            brightness = kwargs["brightness"]
+            self.state.update_brightness(brightness)
+            updates[ChannelType.DIMMER] = brightness
+            has_updates = True
+
+        if "rgb_color" in kwargs:
+            self._handle_rgb_color(kwargs["rgb_color"], updates)
+            has_updates = True
+
+        if "rgbw_color" in kwargs:
+            self._handle_rgbw_color(kwargs["rgbw_color"], updates)
+            has_updates = True
+
+        if "rgbww_color" in kwargs:
+            self._handle_rgbww_color(kwargs["rgbww_color"], updates)
+            has_updates = True
+
+        if "color_temp" in kwargs:
+            self._handle_color_temp(kwargs["color_temp"], kwargs.get("brightness", self.state.brightness), updates)
+            has_updates = True
+
+        return has_updates
+
+    def _handle_rgb_color(self, rgb: Tuple[int, int, int], updates: Dict[ChannelType, int]):
+        self.state.update_rgb(*rgb)
+        if self.updater.has_rgb():
+            updates[ChannelType.RED] = rgb[0]
+            updates[ChannelType.GREEN] = rgb[1]
+            updates[ChannelType.BLUE] = rgb[2]
+
+    def _handle_rgbw_color(self, rgbw: Tuple[int, int, int, int], updates: Dict[ChannelType, int]):
+        self.state.update_rgb(rgbw[0], rgbw[1], rgbw[2])
+        self.state.update_white(rgbw[3], is_cold=True)
+
+        if self.updater.has_rgb():
+            updates[ChannelType.RED] = rgbw[0]
+            updates[ChannelType.GREEN] = rgbw[1]
+            updates[ChannelType.BLUE] = rgbw[2]
+
+        if self.updater.has_channel(ChannelType.COLD_WHITE):
+            updates[ChannelType.COLD_WHITE] = rgbw[3]
+
+    def _handle_rgbww_color(self, rgbww: Tuple[int, int, int, int, int], updates: Dict[ChannelType, int]):
+        self.state.update_rgb(rgbww[0], rgbww[1], rgbww[2])
+        self.state.update_white(rgbww[3], is_cold=True)
+        self.state.update_white(rgbww[4], is_cold=False)
+
+        if self.updater.has_rgb():
+            updates[ChannelType.RED] = rgbww[0]
+            updates[ChannelType.GREEN] = rgbww[1]
+            updates[ChannelType.BLUE] = rgbww[2]
+
+        if self.updater.has_channel(ChannelType.COLD_WHITE):
+            updates[ChannelType.COLD_WHITE] = rgbww[3]
+
+        if self.updater.has_channel(ChannelType.WARM_WHITE):
+            updates[ChannelType.WARM_WHITE] = rgbww[4]
+
+    def _handle_color_temp(self, temp_mired: int, brightness: int, updates: Dict[ChannelType, int]):
+        self.state.update_color_temp_mired(temp_mired)
+
+        if self.updater.has_channel(ChannelType.COLOR_TEMPERATURE):
+            updates[ChannelType.COLOR_TEMPERATURE] = self.state.color_temp_dmx
+        elif self.updater.has_cw_ww():
+            cold, warm = self.state.converter.temp_to_cw_ww(temp_mired, brightness)
+            self.state.update_white(cold, is_cold=True)
+            self.state.update_white(warm, is_cold=False)
+            updates[ChannelType.COLD_WHITE] = cold
+            updates[ChannelType.WARM_WHITE] = warm
+
+    def _restore_previous_state(self, updates: Dict[ChannelType, int]):
+        has_dimmer = self.updater.has_channel(ChannelType.DIMMER)
+
+        if has_dimmer:
+            updates[ChannelType.DIMMER] = self.state.last_brightness
+
+        if self.state.color_mode in (ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW) and self.updater.has_rgb():
+            updates[ChannelType.RED] = self.state.last_rgb[0]
+            updates[ChannelType.GREEN] = self.state.last_rgb[1]
+            updates[ChannelType.BLUE] = self.state.last_rgb[2]
+
+        if self.state.color_mode in (ColorMode.RGBW, ColorMode.RGBWW, ColorMode.COLOR_TEMP):
+            if self.updater.has_channel(ChannelType.COLD_WHITE):
+                updates[ChannelType.COLD_WHITE] = self.state.last_cold_white
+            if self.updater.has_channel(ChannelType.WARM_WHITE):
+                updates[ChannelType.WARM_WHITE] = self.state.last_warm_white
+
+        if self.updater.has_channel(ChannelType.COLOR_TEMPERATURE):
+            updates[ChannelType.COLOR_TEMPERATURE] = self.state.last_color_temp_dmx
+
+        if not has_dimmer and self.state.color_mode == ColorMode.BRIGHTNESS:
+            brightness = self.state.last_brightness
+            if self.updater.has_channel(ChannelType.COLD_WHITE):
+                updates[ChannelType.COLD_WHITE] = brightness
+            elif self.updater.has_channel(ChannelType.WARM_WHITE):
+                updates[ChannelType.WARM_WHITE] = brightness
+
+    def handle_channel_update(self, channel_type: ChannelType, value: int):
+        if self.is_updating:
+            return False
+
+        has_dimmer = self.updater.has_channel(ChannelType.DIMMER)
+
+        if has_dimmer and channel_type == ChannelType.DIMMER:
+            self.state.is_on = value > 0
+        elif not has_dimmer and value > 0 and not self.state.is_on:
+            self.state.is_on = True
+
+        if channel_type == ChannelType.DIMMER:
+            self.state.update_brightness(value)
+        elif channel_type == ChannelType.RED:
+            self.state.update_rgb(value, self.state.rgb[1], self.state.rgb[2])
+        elif channel_type == ChannelType.GREEN:
+            self.state.update_rgb(self.state.rgb[0], value, self.state.rgb[2])
+        elif channel_type == ChannelType.BLUE:
+            self.state.update_rgb(self.state.rgb[0], self.state.rgb[1], value)
+        elif channel_type == ChannelType.COLD_WHITE:
+            self.state.update_white(value, is_cold=True)
+            if self.state.color_mode == ColorMode.BRIGHTNESS and not has_dimmer:
+                self.state.update_brightness(value)
+        elif channel_type == ChannelType.WARM_WHITE:
+            self.state.update_white(value, is_cold=False)
+            if self.state.color_mode == ColorMode.BRIGHTNESS and not has_dimmer:
+                self.state.update_brightness(value)
+        elif channel_type == ChannelType.COLOR_TEMPERATURE:
+            self.state.update_color_temp_dmx(value)
+
+        if not has_dimmer:
+            if self.state.is_all_zero(has_dimmer) and self.state.is_on:
+                self.state.is_on = False
+
+        return True
