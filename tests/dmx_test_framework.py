@@ -72,6 +72,7 @@ class MockDmxUniverse(DmxUniverse):
         for channel, value in values.items():
             if 1 <= channel <= 512:
                 assert 0 <= value <= 255, f"DMX value {value} for channel {channel} must be between 0 and 255"
+                assert isinstance(value, int), f"DMX value {value} for channel {channel} must be an integer"
                 self.values[channel - 1] = value
                 if channel in self.channel_callbacks:
                     for callback in self.channel_callbacks[channel]:

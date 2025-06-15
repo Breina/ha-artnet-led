@@ -70,5 +70,80 @@ class TestColorTemperatureFader(unittest.TestCase):
         self.assertEqual(light.brightness, 255)
         self.assertEqual(light.min_mireds, light.color_temp)
 
+    def test_8bit_dimmer_color_temp_light_updates(self):
+        channels = self.fixture.select_mode('8bit')
+        entities = delegator.create_entities('Color Temp fader', 1, channels, None, self.universe)
+
+        dimmer: DmxNumberEntity = assert_entity_by_name(entities, 'Color Temp fader Intensity')
+        color_temp: DmxNumberEntity = assert_entity_by_name(entities, 'Color Temp fader Color Temperature')
+        light: DmxLightEntity = assert_entity_by_name(entities, 'Color Temp fader Light')
+
+        asyncio.run(light.async_turn_on(brightness=69, color_temp=light.max_mireds))
+        assert_dmx_range(self.universe, 1, [69, 255])
+        self.assertEqual(int(69.0 / 2.55), dimmer.native_value)
+        self.assertEqual(color_temp.max_value, color_temp.native_value)
+
+        mid_mired = (light.min_mireds + light.max_mireds) / 2
+        asyncio.run(light.async_turn_on(brightness=255, color_temp=mid_mired))
+        assert_dmx_range(self.universe, 1, [255, 127])
+        self.assertEqual(100, dimmer.native_value)
+        self.assertAlmostEqual((color_temp.max_value + color_temp.min_value) / 2, color_temp.native_value, None, "", 5)
+
+        asyncio.run(light.async_turn_on(brightness=255, color_temp=light.min_mireds))
+        assert_dmx_range(self.universe, 1, [255, 0])
+        self.assertEqual(100, dimmer.native_value)
+        self.assertEqual(color_temp.min_value, color_temp.native_value)
+
+    def test_16bit_dimmer_color_temp_number_updates(self):
+        channels = self.fixture.select_mode('16bit')
+        entities = delegator.create_entities('Color Temp fader', 1, channels, None, self.universe)
+
+        dimmer: DmxNumberEntity = assert_entity_by_name(entities, 'Color Temp fader Intensity')
+        color_temp: DmxNumberEntity = assert_entity_by_name(entities, 'Color Temp fader Color Temperature')
+        light: DmxLightEntity = assert_entity_by_name(entities, 'Color Temp fader Light')
+
+        asyncio.run(dimmer.async_set_native_value(100))
+        asyncio.run(color_temp.async_set_native_value(color_temp.max_value))
+        assert_dmx_range(self.universe, 1, [255, 255, 255, 255])
+        self.assertEqual(255, light.brightness)
+        self.assertEqual(light.max_mireds, light.color_temp)
+
+        asyncio.run(dimmer.async_set_native_value(50))
+        asyncio.run(color_temp.async_set_native_value((color_temp.max_value + color_temp.min_value) / 2))
+        assert_dmx_range(self.universe, 1, [127, 127, 128, 128])
+        self.assertEqual(light.brightness, 127)
+        self.assertEqual((light.min_mireds + light.max_mireds) / 2, light.color_temp)
+
+        asyncio.run(dimmer.async_set_native_value(100))
+        asyncio.run(color_temp.async_set_native_value(color_temp.min_value))
+        assert_dmx_range(self.universe, 1, [255, 255, 0, 0])
+        self.assertEqual(light.brightness, 255)
+        self.assertEqual(light.min_mireds, light.color_temp)
+
+    def test_16bit_dimmer_color_temp_light_updates(self):
+        channels = self.fixture.select_mode('16bit')
+        entities = delegator.create_entities('Color Temp fader', 1, channels, None, self.universe)
+
+        dimmer: DmxNumberEntity = assert_entity_by_name(entities, 'Color Temp fader Intensity')
+        color_temp: DmxNumberEntity = assert_entity_by_name(entities, 'Color Temp fader Color Temperature')
+        light: DmxLightEntity = assert_entity_by_name(entities, 'Color Temp fader Light')
+
+        asyncio.run(light.async_turn_on(brightness=69.2, color_temp=light.max_mireds))
+        assert_dmx_range(self.universe, 1, [69, 0, 255, 255])
+        self.assertEqual(int(69.0 / 2.55), dimmer.native_value)
+        self.assertEqual(color_temp.max_value, color_temp.native_value)
+
+        mid_mired = (light.min_mireds + light.max_mireds) / 2
+        asyncio.run(light.async_turn_on(brightness=255, color_temp=mid_mired))
+        assert_dmx_range(self.universe, 1, [255, 255, 127, 255])
+        self.assertEqual(100, dimmer.native_value)
+        self.assertAlmostEqual((color_temp.max_value + color_temp.min_value) / 2, color_temp.native_value, None, "", 5)
+
+        asyncio.run(light.async_turn_on(brightness=255, color_temp=light.min_mireds))
+        assert_dmx_range(self.universe, 1, [255, 255, 0, 0])
+        self.assertEqual(100, dimmer.native_value)
+        self.assertEqual(color_temp.min_value, color_temp.native_value)
+
+
 if __name__ == "__main__":
     unittest.main()
