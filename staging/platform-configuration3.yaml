@@ -93,10 +93,11 @@ frontend:
 logger:
   default: warning
   logs:
-    custom_components.dmx: debug
-    custom_components.dmx.client: debug
-    custom_components.dmx.util: debug
-    custom_components.dmx.bridge: debug
+    custom_components.artnet_led: debug
+    custom_components.artnet_led.client: info
+    custom_components.artnet_led.entity.node_handler: info
+    custom_components.artnet_led.util: debug
+    custom_components.artnet_led.bridge: debug
 
 # Text to speech
 #tts:

@@ -4,6 +4,10 @@ from homeassistant.components.light import ColorMode
 
 from custom_components.artnet_led.entity.light.color_converter import ColorConverter
 
+import logging
+
+log = logging.getLogger(__name__)
+
 
 class LightState:
     def __init__(self, color_mode: ColorMode, converter: ColorConverter):
@@ -33,12 +37,20 @@ class LightState:
     def update_white(self, value: int, is_cold: bool):
         if is_cold:
             self.cold_white = value
-            if value > 0:
+            if value > 0 or self.last_warm_white > 0:
                 self.last_cold_white = value
         else:
             self.warm_white = value
-            if value > 0:
+            if value > 0 or self.last_cold_white > 0:
                 self.last_warm_white = value
+
+    def update_whites(self, cold: int, warm: int):
+        if cold > 0 or warm > 0:
+            self.last_cold_white = cold
+            self.last_warm_white = warm
+
+        self.cold_white = cold
+        self.warm_white = warm
 
     def update_brightness(self, value: int):
         self.brightness = value

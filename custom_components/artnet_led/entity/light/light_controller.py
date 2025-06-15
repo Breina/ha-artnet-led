@@ -24,6 +24,9 @@ class LightController:
 
     async def turn_off(self):
         self.state.is_on = False
+
+        preserved_state = self._capture_current_state()
+
         updates = {}
 
         if self.updater.has_channel(ChannelType.DIMMER):
@@ -36,6 +39,39 @@ class LightController:
                     updates[channel_type] = 0
 
         await self.updater.send_updates(updates)
+
+        self._save_last_state(preserved_state)
+
+    def _capture_current_state(self) -> dict:
+        """Capture current state values that should be preserved"""
+        return {
+            'brightness': self.state.brightness if self.state.brightness > 0 else None,
+            'rgb': self.state.rgb if any(c > 0 for c in self.state.rgb) else None,
+            'cold_white': self.state.cold_white if self.state.cold_white > 0 else None,
+            'warm_white': self.state.warm_white if self.state.warm_white > 0 else None,
+            'color_temp': self.state.color_temp if self.state.color_temp > 0 else None,
+            'color_temp_dmx': self.state.color_temp_dmx if self.state.color_temp_dmx > 0 else None,
+        }
+
+    def _save_last_state(self, preserved_state: dict):
+        """Restore preserved state values to their last_ counterparts"""
+        if preserved_state['brightness'] is not None:
+            self.state.last_brightness = preserved_state['brightness']
+
+        if preserved_state['rgb'] is not None:
+            self.state.last_rgb = preserved_state['rgb']
+
+        if preserved_state['cold_white'] is not None:
+            self.state.last_cold_white = preserved_state['cold_white']
+
+        if preserved_state['warm_white'] is not None:
+            self.state.last_warm_white = preserved_state['warm_white']
+
+        if preserved_state['color_temp'] is not None:
+            self.state.last_color_temp = preserved_state['color_temp']
+
+        if preserved_state['color_temp_dmx'] is not None:
+            self.state.last_color_temp_dmx = preserved_state['color_temp_dmx']
 
     def _process_kwargs(self, kwargs: Dict[str, Any], updates: Dict[ChannelType, int]) -> bool:
         has_updates = False
@@ -59,21 +95,17 @@ class LightController:
             has_updates = True
 
         if "color_temp" in kwargs:
-            # For color temp changes, preserve current brightness unless explicitly specified
             brightness = kwargs.get("brightness", self.state.brightness)
             self._handle_color_temp(kwargs["color_temp"], brightness, updates)
             has_updates = True
 
-        # Handle brightness for color temp mode when no dimmer channel exists
         if "brightness" in kwargs and not self.updater.has_channel(ChannelType.DIMMER):
             if self.state.color_mode == ColorMode.COLOR_TEMP and self.updater.has_cw_ww():
                 brightness = kwargs["brightness"]
                 self.state.update_brightness(brightness)
-                # If we're only setting brightness (no color temp), scale current CW/WW values
                 if "color_temp" not in kwargs:
                     cold, warm = self.state.converter.temp_to_cw_ww(self.state.color_temp, brightness)
-                    self.state.update_white(cold, is_cold=True)
-                    self.state.update_white(warm, is_cold=False)
+                    self.state.update_whites(cold, warm)
                     updates[ChannelType.COLD_WHITE] = cold
                     updates[ChannelType.WARM_WHITE] = warm
                 has_updates = True
@@ -101,8 +133,7 @@ class LightController:
 
     def _handle_rgbww_color(self, rgbww: Tuple[int, int, int, int, int], updates: Dict[ChannelType, int]):
         self.state.update_rgb(rgbww[0], rgbww[1], rgbww[2])
-        self.state.update_white(rgbww[3], is_cold=True)
-        self.state.update_white(rgbww[4], is_cold=False)
+        self.state.update_whites(rgbww[3], rgbww[4])
 
         if self.updater.has_rgb():
             updates[ChannelType.RED] = rgbww[0]
@@ -126,8 +157,7 @@ class LightController:
             updates[ChannelType.COLOR_TEMPERATURE] = self.state.color_temp_dmx
         elif self.updater.has_cw_ww():
             cold, warm = self.state.converter.temp_to_cw_ww(temp_mired, brightness)
-            self.state.update_white(cold, is_cold=True)
-            self.state.update_white(warm, is_cold=False)
+            self.state.update_whites(cold, warm)
             updates[ChannelType.COLD_WHITE] = cold
             updates[ChannelType.WARM_WHITE] = warm
 
