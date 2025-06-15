@@ -134,7 +134,7 @@ def _make_interpolater(from_range_min: float, from_range_max: float,
     scale_factor = float(to_range) / float(from_range)
 
     def interp_fn(value: float) -> float:
-        return int(to_range_min + (value - from_range_min) * scale_factor)
+        return round(to_range_min + (value - from_range_min) * scale_factor)
 
     return interp_fn
 

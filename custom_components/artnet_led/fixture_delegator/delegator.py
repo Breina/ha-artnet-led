@@ -7,7 +7,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 
 from custom_components.artnet_led.entity.light import ChannelMapping, ChannelType
-from custom_components.artnet_led.entity.light.light_entity import DMXLightEntity
+from custom_components.artnet_led.entity.light.light_entity import DmxLightEntity
 from custom_components.artnet_led.entity.number import DmxNumberEntity
 from custom_components.artnet_led.entity.select import DmxSelectEntity
 from custom_components.artnet_led.fixture.capability import ColorIntensity, \
@@ -179,7 +179,7 @@ def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping
             'has_separate_dimmer': has_separate_dimmer,
         }
 
-        entities.append(DMXLightEntity(
+        entities.append(DmxLightEntity(
             name=name,
             matrix_key=matrix_key,
             color_mode=color_mode,

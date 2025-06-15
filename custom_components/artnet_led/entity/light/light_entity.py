@@ -15,7 +15,7 @@ from custom_components.artnet_led.entity.light.light_controller import LightCont
 from custom_components.artnet_led.entity.light.light_state import LightState
 
 
-class DMXLightEntity(LightEntity, RestoreEntity):
+class DmxLightEntity(LightEntity, RestoreEntity):
     def __init__(
             self,
             name: str,
