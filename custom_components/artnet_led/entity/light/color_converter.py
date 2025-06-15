@@ -2,8 +2,8 @@ class ColorConverter:
     def __init__(self, min_kelvin: int = 2000, max_kelvin: int = 6500):
         self.min_kelvin = min_kelvin
         self.max_kelvin = max_kelvin
-        self.min_mired = 1000000 // max_kelvin  # ~154 mired for 6500K
-        self.max_mired = 1000000 // min_kelvin  # 500 mired for 2000K
+        self.min_mired = 1000000 // max_kelvin
+        self.max_mired = 1000000 // min_kelvin
 
     def temp_to_cw_ww(self, temp_mired: int, brightness: int) -> tuple[int, int]:
         """

@@ -10,6 +10,7 @@ from custom_components.artnet_led.entity.light import ChannelMapping, ChannelTyp
 from custom_components.artnet_led.entity.light.light_entity import DmxLightEntity
 from custom_components.artnet_led.entity.number import DmxNumberEntity
 from custom_components.artnet_led.entity.select import DmxSelectEntity
+from custom_components.artnet_led.fixture import entity
 from custom_components.artnet_led.fixture.capability import ColorIntensity, \
     SingleColor, Intensity, ColorTemperature
 from custom_components.artnet_led.fixture.channel import ChannelOffset, \
@@ -99,6 +100,8 @@ def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping
 
         channels_data = []
         has_separate_dimmer = False
+        min_kelvin = 2000
+        max_kelvin = 6500
 
         if has_rgb:
             if has_dimmer:
@@ -121,9 +124,16 @@ def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping
                 if ChannelType.COLOR_TEMPERATURE in channel_map:
                     channel_temp = channel_map[ChannelType.COLOR_TEMPERATURE]
                     channels_data.append(channel_temp)
-                    # TODO pass color temperature onto light
-                    # if isinstance(channel_temp.channel.capabilities[0], ColorTemperature):
-                    #     channel_temp.channel.capabilities[0].static_entities[0]
+
+                    if isinstance(channel_temp.channel.capabilities[0], ColorTemperature):
+                        color_temperature: ColorTemperature = channel_temp.channel.capabilities[0]
+
+                        min_color_temp_entity, max_color_temp_entity = color_temperature.color_temperature
+                        if min_color_temp_entity.unit == 'K':
+                            min_kelvin = min_color_temp_entity.value
+
+                        if max_color_temp_entity.unit == 'K':
+                            max_kelvin = max_color_temp_entity.value
 
             elif has_single_white:
                 color_mode = ColorMode.RGBW
@@ -150,7 +160,18 @@ def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping
                 channels_data.append(channel_map[ChannelType.WARM_WHITE])
 
             if ChannelType.COLOR_TEMPERATURE in channel_map:
-                channels_data.append(channel_map[ChannelType.COLOR_TEMPERATURE])
+                channel_temp = channel_map[ChannelType.COLOR_TEMPERATURE]
+                channels_data.append(channel_temp)
+
+                if isinstance(channel_temp.channel.capabilities[0], ColorTemperature):
+                    color_temperature: ColorTemperature = channel_temp.channel.capabilities[0]
+
+                    min_color_temp_entity, max_color_temp_entity = color_temperature.color_temperature
+                    if min_color_temp_entity.unit == 'K':
+                        min_kelvin = min_color_temp_entity.value
+
+                    if max_color_temp_entity.unit == 'K':
+                        max_kelvin = max_color_temp_entity.value
 
         elif has_single_white or has_dimmer:
             color_mode = ColorMode.BRIGHTNESS
@@ -169,16 +190,6 @@ def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping
             # No suitable channels for a light entity
             continue
 
-        kwargs = {
-            'name': name,
-            'matrix_key': matrix_key,
-            'color_mode': color_mode,
-            'channels': channels_data,
-            'device': device,
-            'universe': universe,
-            'has_separate_dimmer': has_separate_dimmer,
-        }
-
         entities.append(DmxLightEntity(
             name=name,
             matrix_key=matrix_key,
@@ -187,10 +198,11 @@ def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping
             device=device,
             universe=universe,
             has_separate_dimmer=has_separate_dimmer,
+            min_kelvin=min_kelvin,
+            max_kelvin=max_kelvin,
         ))
 
     return entities
-
 
 def create_entities(
         name: str,

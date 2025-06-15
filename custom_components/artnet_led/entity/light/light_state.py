@@ -60,17 +60,15 @@ class LightState:
 
     def update_color_temp_dmx(self, dmx_value: int):
         self.color_temp_dmx = dmx_value
-        if dmx_value > 0:
-            self.last_color_temp_dmx = dmx_value
-            self.color_temp = self.converter.dmx_to_mired(dmx_value)
-            self.last_color_temp = self.color_temp
+        self.last_color_temp_dmx = dmx_value
+        self.color_temp = self.converter.dmx_to_mired(dmx_value)
+        self.last_color_temp = self.color_temp
 
     def update_color_temp_mired(self, mireds: int):
         self.color_temp = mireds
-        if mireds > 0:
-            self.last_color_temp = mireds
-            self.color_temp_dmx = self.converter.mired_to_dmx(mireds)
-            self.last_color_temp_dmx = self.color_temp_dmx
+        self.last_color_temp = mireds
+        self.color_temp_dmx = self.converter.mired_to_dmx(mireds)
+        self.last_color_temp_dmx = self.color_temp_dmx
 
     def reset(self):
         self.brightness = 0

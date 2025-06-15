@@ -19,3 +19,13 @@ docker build -f Dockerfile -t ha-artnet-led-staging . && docker run -p 0.0.0.0:8
 ``` 
 
 [Open browser](http://localhost:8123/)
+
+## Run tests
+
+```shell
+cd tests
+```
+
+```shell
+pytest
+```

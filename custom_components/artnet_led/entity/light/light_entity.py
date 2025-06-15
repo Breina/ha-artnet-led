@@ -5,6 +5,7 @@ from homeassistant.components.light import LightEntity, ColorMode
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.util.color import color_temperature_kelvin_to_mired
 
 from custom_components.artnet_led import DOMAIN
 from custom_components.artnet_led.io.dmx_io import DmxUniverse
@@ -38,6 +39,8 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         if ColorMode.COLOR_TEMP in self.supported_color_modes:
             self._attr_min_color_temp_kelvin = min_kelvin
             self._attr_max_color_temp_kelvin = max_kelvin
+            self._attr_min_mireds = color_temperature_kelvin_to_mired(max_kelvin)
+            self._attr_max_mireds = color_temperature_kelvin_to_mired(min_kelvin)
 
         converter = ColorConverter(min_kelvin, max_kelvin)
         self._state = LightState(color_mode, converter)
