@@ -80,8 +80,15 @@ class DmxNumberEntity(RestoreNumber):
         if last_number is not None and last_number.native_value is not None:
             self._attr_native_value = last_number.native_value
             # Update the DMX values to match the restored state
-            dmx_value = self.dynamic_entity.to_dmx(self._attr_native_value)
-            await self.universe.update_value(self.dmx_indexes, dmx_value, send_immediately=True)
+            if len(self.dmx_indexes) > 1:
+                # Handle multi-byte DMX values
+                dmx_values = self.dynamic_entity.to_dmx_fine(self._attr_native_value, len(self.dmx_indexes))
+                dmx_updates = {idx: dmx_values[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values)}
+                await self.universe.update_multiple_values(dmx_updates)
+            else:
+                # Single channel
+                dmx_value = self.dynamic_entity.to_dmx(self._attr_native_value)
+                await self.universe.update_value(self.dmx_indexes, dmx_value, send_immediately=True)
         elif last_state is not None and last_state.state not in ('unknown', 'unavailable'):
             try:
                 # Try to convert the state to a float
@@ -89,29 +96,66 @@ class DmxNumberEntity(RestoreNumber):
                 if self._attr_native_min_value <= restored_value <= self._attr_native_max_value:
                     self._attr_native_value = restored_value
                     # Update the DMX values to match the restored state
-                    dmx_value = self.dynamic_entity.to_dmx(self._attr_native_value)
-                    await self.universe.update_value(self.dmx_indexes, dmx_value, send_immediately=True)
+                    if len(self.dmx_indexes) > 1:
+                        # Handle multi-byte DMX values
+                        dmx_values = self.dynamic_entity.to_dmx_fine(self._attr_native_value, len(self.dmx_indexes))
+                        dmx_updates = {idx: dmx_values[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values)}
+                        await self.universe.update_multiple_values(dmx_updates)
+                    else:
+                        # Single channel
+                        dmx_value = self.dynamic_entity.to_dmx(self._attr_native_value)
+                        await self.universe.update_value(self.dmx_indexes, dmx_value, send_immediately=True)
             except (ValueError, TypeError):
                 # Unable to convert state to float, use default value
                 pass
 
     def update_value(self, dmx_index: int, value: int) -> None:
         # TODO maybe update self._attr_attribution from source ArtNet node?
+        # Skip processing during our own updates
         if getattr(self, '_is_updating', False):
             return
 
-        self._attr_native_value = self.dynamic_entity.from_dmx(value)
+        # If we have multiple DMX indexes, we need to get all values
+        # for proper fine channel handling
+        if len(self.dmx_indexes) > 1:
+            # Get all current DMX values for our channels
+            dmx_values = [self.universe.get_channel_value(idx) for idx in self.dmx_indexes]
+            # Convert from multi-byte DMX values to entity value
+            self._attr_native_value = self.dynamic_entity.from_dmx_fine(dmx_values)
+        else:
+            # Single channel - use existing method
+            self._attr_native_value = self.dynamic_entity.from_dmx(value)
+
         self.async_schedule_update_ha_state()
 
     async def async_set_native_value(self, value: float) -> None:
         self._attr_native_value = value
-        dmx_value = self.dynamic_entity.to_dmx(value)
 
-        self._is_updating = True
-        try:
-            await self.universe.update_value(self.dmx_indexes, dmx_value, send_immediately=True)
-        finally:
-            self._is_updating = False
+        # If we have multiple DMX indexes, we need fine channel handling
+        if len(self.dmx_indexes) > 1:
+            # Convert to multi-byte DMX values
+            dmx_values = self.dynamic_entity.to_dmx_fine(value, len(self.dmx_indexes))
+
+            # Create a dictionary of channel:value pairs for the universe update
+            dmx_updates = {}
+            for i, dmx_index in enumerate(self.dmx_indexes):
+                if i < len(dmx_values):  # Safety check
+                    dmx_updates[dmx_index] = dmx_values[i]
+
+            self._is_updating = True
+            try:
+                await self.universe.update_multiple_values(dmx_updates)
+            finally:
+                self._is_updating = False
+        else:
+            # Single channel - use existing method
+            dmx_value = self.dynamic_entity.to_dmx(value)
+
+            self._is_updating = True
+            try:
+                await self.universe.update_value(self.dmx_indexes, dmx_value, send_immediately=True)
+            finally:
+                self._is_updating = False
 
     @property
     def available(self) -> bool:

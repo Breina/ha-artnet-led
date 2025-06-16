@@ -5,12 +5,7 @@ https://github.com/OpenLightingProject/open-fixture-library/blob/master/docs/cap
 Most arguments, instance attributes and class names are directly mapped to
 values of the fixture format. Therefore, we will excuse the python linter.
 """
-import logging
 from collections.abc import Iterable
-# pylint: disable=too-many-lines, too-many-arguments
-# pylint: disable=too-many-instance-attributes
-
-
 from enum import Enum, auto
 from typing import Callable, List, Any
 
@@ -19,6 +14,10 @@ from custom_components.artnet_led.fixture.entity import RotationAngle, RotationS
     Brightness, SlotNumber, SwingAngle, Parameter, Percent, VerticalAngle, \
     HorizontalAngle, Distance, \
     IrisPercent, Insertion, Entity, ColorHex
+
+
+# pylint: disable=too-many-lines, too-many-arguments
+# pylint: disable=too-many-instance-attributes
 
 
 class DmxValueResolution(Enum):
@@ -134,7 +133,7 @@ def _make_interpolater(from_range_min: float, from_range_max: float,
     scale_factor = float(to_range) / float(from_range)
 
     def interp_fn(value: float) -> float:
-        return round(to_range_min + (value - from_range_min) * scale_factor)
+        return to_range_min + (value - from_range_min) * scale_factor
 
     return interp_fn
 
@@ -144,8 +143,7 @@ class DynamicMapping:
     Maps one range to another range by linear interpolation.
     """
 
-    def __init__(self, range_start: float, range_end: float, dmx_start: int,
-                 dmx_end: int):
+    def __init__(self, range_start: float, range_end: float, dmx_start: int, dmx_end: int):
         super().__init__()
 
         self.__interpolate_to_dmx = _make_interpolater(
@@ -170,6 +168,50 @@ class DynamicMapping:
         :return: The corresponding entity value
         """
         return self.__interpolate_from_dmx(value)
+
+    def to_dmx_fine(self, value: float, num_channels: int) -> list[int]:
+        """
+        Converts a float value to a list of DMX values with the appropriate
+        precision based on the number of channels (8, 16, or 24 bit).
+
+        :param value: The entity value to be converted
+        :param num_channels: The number of channels (1, 2, or 3)
+        :return: List of DMX values for each channel
+        """
+        # Calculate the full precision DMX value (0-255, 0-65535, or 0-16777215)
+        max_value = (256 ** num_channels) - 1
+        dmx_value = round(self.__interpolate_to_dmx(value) * max_value / 255)
+
+        # Split into individual bytes
+        result = []
+        for i in range(num_channels):
+            # Extract bytes from most significant to least significant
+            byte_value = (dmx_value >> (8 * (num_channels - i - 1))) & 0xFF
+            result.append(byte_value)
+
+        return result
+
+    def from_dmx_fine(self, values: list[int]) -> float:
+        """
+        Converts a list of DMX values with fine channel precision to a float entity value.
+
+        :param values: List of DMX values (coarse to fine)
+        :return: The corresponding entity value
+        """
+        num_channels = len(values)
+
+        # Combine the DMX values into a single value
+        combined_value = 0
+        for i, value in enumerate(values):
+            # Shift each byte to its appropriate position
+            combined_value |= value << (8 * (num_channels - i - 1))
+
+        # Scale to 0-255 range for the interpolation
+        max_value = (256 ** num_channels) - 1
+        scaled_value = combined_value * 255 / max_value
+
+        # Convert to entity value
+        return self.__interpolate_from_dmx(scaled_value)
 
 
 class DynamicEntity(DynamicMapping):
@@ -311,7 +353,7 @@ class Capability:
                 elif isinstance(arg, list) and len(arg) == 1:
                     arg = arg[0]
                 elif isinstance(arg, Iterable) and not isinstance(arg, str):
-                    arg = sorted(arg) # Sorts small to big, just like we have to do in DmxNumberEntity's constructor
+                    arg = sorted(arg)  # Sorts small to big, just like we have to do in DmxNumberEntity's constructor
 
                 s = s + f" {arg}"
 
@@ -1444,5 +1486,3 @@ class Generic(Capability):
 
     def icon(self) -> str:
         return "mdi:dots-horizontal-circle-outline"
-
-

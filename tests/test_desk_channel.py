@@ -87,7 +87,7 @@ class TestColorTemperatureFader(unittest.TestCase):
         asyncio.run(dimmer.async_set_native_value(0))
         assert_dmx_range(self.universe, 1, [0, 0])
 
-        asyncio.run(dimmer.async_set_native_value(1))
+        asyncio.run(dimmer.async_set_native_value(1.2))
         assert_dmx_range(self.universe, 1, [2, 140])
 
         asyncio.run(dimmer.async_set_native_value(99))
