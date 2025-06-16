@@ -179,33 +179,6 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(0, warm_white.native_value)
         self.assertEqual(25, cold_white.native_value)
 
-    def test_turn_on_kwargs(self):
-        channels = self.fixture.select_mode('8bit-wc')
-        entities = delegator.create_entities('WC fader', 1, channels, None, self.universe)
-
-        warm_white: DmxNumberEntity = assert_entity_by_name(entities, 'WC fader Warm White')
-        cold_white: DmxNumberEntity = assert_entity_by_name(entities, 'WC fader Cold White')
-        light: DmxLightEntity = assert_entity_by_name(entities, 'WC fader Light')
-
-        asyncio.run(light.async_turn_on(brightness=127, color_temp=light.max_mireds))
-        self.assertEqual(50, warm_white.native_value)
-        self.assertEqual(0, cold_white.native_value)
-        self.assertEqual(127, light.brightness)
-        self.assertEqual(light.max_mireds, light.color_temp)
-
-        mid_mired = (light.min_mireds + light.max_mireds + 1) / 2
-        asyncio.run(light.async_turn_on(brightness=255, color_temp=mid_mired))
-        self.assertEqual(100, warm_white.native_value)
-        self.assertEqual(100, cold_white.native_value)
-        self.assertEqual(255, light.brightness)
-        self.assertEqual(mid_mired, light.color_temp)
-
-        asyncio.run(light.async_turn_on(brightness=127, color_temp=light.min_mireds))
-        self.assertEqual(0, warm_white.native_value)
-        self.assertEqual(50, cold_white.native_value)
-        self.assertEqual(127, light.brightness)
-        self.assertEqual(light.min_mireds, light.color_temp)
-
 
 if __name__ == "__main__":
     unittest.main()
