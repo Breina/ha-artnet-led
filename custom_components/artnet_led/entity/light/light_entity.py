@@ -63,7 +63,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
                 )
 
     @callback
-    def _handle_channel_update(self, channel_type: ChannelType, dmx_index: int, value: int):
+    def _handle_channel_update(self, channel_type: ChannelType):
         # TODO rework this so that it's not called per channel, but per universe update, same in Number
 
         channel_mapping = self.channel_map[channel_type]

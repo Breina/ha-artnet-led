@@ -98,7 +98,7 @@ class DmxNumberEntity(RestoreNumber):
                 pass
 
     @callback
-    def update_value(self, dmx_index: int, value: int) -> None:
+    def update_value(self) -> None:
         # TODO maybe update self._attr_attribution from source ArtNet node?
         # Skip processing during our own updates
         if getattr(self, '_is_updating', False):

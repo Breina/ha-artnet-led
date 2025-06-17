@@ -22,8 +22,7 @@ class DmxUniverse:
         # Flag to track if this is the first send (to send full universe initially)
         self._first_send = True
 
-    def register_channel_listener(self, channels: int | List[int],
-                                  callback: Callable[[int, int], None]) -> None:
+    def register_channel_listener(self, channels: int | List[int], callback: Callable[[], None]) -> None:
         """
         Register a callback to be called when a channel value changes.
 
@@ -66,26 +65,26 @@ class DmxUniverse:
         else:
             channels = channel
 
-        # Update all specified channels
+        called_callbacks = set()
+        changed_channels = []
+
         for ch in channels:
-            # Only process if value has changed or channel is new
             if ch not in self._channel_values or self._channel_values[ch] != value:
-                # Update stored value
                 self._channel_values[ch] = value
-
-                # Track that this channel has changed
                 self._changed_channels.add(ch)
+                changed_channels.append(ch)
 
-                # Notify all listeners for this channel
-                if ch in self._channel_callbacks:
-                    for callback in self._channel_callbacks[ch]:
-                        try:
-                            # Pass both channel and value to callback
-                            await self._call_callback(callback, ch, value)
-                        except Exception as e:
-                            print(f"Error calling callback for channel {ch}: {e}")
+        for ch in changed_channels:
+            if ch in self._channel_callbacks:
+                for callback in self._channel_callbacks[ch]:
+                    if callback in called_callbacks:
+                        continue
+                    called_callbacks.add(callback)
+                    try:
+                        await self._call_callback(callback, ch, value)
+                    except Exception as e:
+                        print(f"Error calling callback for channel {ch}: {e}")
 
-        # Only send updates immediately if explicitly requested
         if send_immediately:
             self.send_universe_data()
 

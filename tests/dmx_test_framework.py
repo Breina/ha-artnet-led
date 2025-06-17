@@ -21,8 +21,6 @@ class MockDmxUniverse(DmxUniverse):
     def __init__(self):
         super().__init__(None, None, True)
         self.values = [0] * 512
-        self.update_callbacks = []
-        self.send_updates = True
         self.channel_callbacks = {}
 
     def register_channel_listener(self, channels, callback):
@@ -69,18 +67,25 @@ class MockDmxUniverse(DmxUniverse):
 
     def set_values(self, values: dict):
         """Set DMX values for channels."""
+        changed_channels = []
         for channel, value in values.items():
             if 1 <= channel <= 512:
                 assert 0 <= value <= 255, f"DMX value {value} for channel {channel} must be between 0 and 255"
                 assert isinstance(value, int), f"DMX value {value} for channel {channel} must be an integer"
                 self.values[channel - 1] = value
-                if channel in self.channel_callbacks:
-                    for callback in self.channel_callbacks[channel]:
-                        callback(channel, value)
+                changed_channels.append(channel)
 
-        if self.send_updates:
-            for callback in self.update_callbacks:
-                callback()
+        called_callbacks = set()
+        for channel in changed_channels:
+            if channel in self.channel_callbacks:
+                for callback in self.channel_callbacks[channel]:
+                    if callback in called_callbacks:
+                        continue
+                    called_callbacks.add(callback)
+                    try:
+                        callback()
+                    except Exception as e:
+                        print(f"Error calling callback for channel {channel}: {e}")
 
 
 class MockHomeAssistant(MagicMock):
