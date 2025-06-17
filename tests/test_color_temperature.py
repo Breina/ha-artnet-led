@@ -144,6 +144,38 @@ class TestColorTemperatureFader(unittest.TestCase):
         self.assertEqual(100, dimmer.native_value)
         self.assertEqual(color_temp.min_value, color_temp.native_value)
 
+    def test_turn_on_restore_last_value(self):
+        channels = self.fixture.select_mode('16bit')
+        entities = delegator.create_entities('Color Temp fader', 1, channels, None, self.universe)
+
+        dimmer: DmxNumberEntity = assert_entity_by_name(entities, 'Color Temp fader Intensity')
+        color_temp: DmxNumberEntity = assert_entity_by_name(entities, 'Color Temp fader Color Temperature')
+        light: DmxLightEntity = assert_entity_by_name(entities, 'Color Temp fader Light')
+
+        mid_value = (color_temp.max_value + color_temp.min_value) / 2
+
+        asyncio.run(dimmer.async_set_native_value(69))
+        asyncio.run(color_temp.async_set_native_value(mid_value))
+        self.assertTrue(light.is_on)
+
+        asyncio.run(light.async_turn_off())
+        self.assertFalse(light.is_on)
+        self.assertEqual(0, dimmer.native_value)
+        self.assertEqual(mid_value, color_temp.native_value)
+
+        asyncio.run(light.async_turn_on())
+        self.assertTrue(light.is_on)
+        self.assertAlmostEqual(69.0, dimmer.native_value, 0)
+        self.assertAlmostEqual(mid_value, color_temp.native_value, None, "", 5)
+
+        asyncio.run(dimmer.async_set_native_value(0))
+        self.assertFalse(light.is_on)
+
+        asyncio.run(light.async_turn_on())
+        self.assertTrue(light.is_on)
+        self.assertAlmostEqual(69.0, dimmer.native_value, 0)
+        self.assertAlmostEqual(mid_value, color_temp.native_value, None, "", 5)
+
 
 if __name__ == "__main__":
     unittest.main()

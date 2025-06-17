@@ -64,14 +64,19 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
     @callback
     def _handle_channel_update(self, channel_type: ChannelType, dmx_index: int, value: int):
+        # TODO rework this so that it's not called per channel, but per universe update, same in Number
+
         channel_mapping = self.channel_map[channel_type]
         [capability] = channel_mapping.channel.capabilities
         assert (len(capability.dynamic_entities) == 1)
+        dynamic_entity = capability.dynamic_entities[0]
 
         dmx_values = [self._universe.get_channel_value(idx) for idx in channel_mapping.dmx_indexes]
-        value = from_dmx_value(dmx_values)
 
-        if self._controller.handle_channel_update(channel_type, int(value)):
+        normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
+        value = dynamic_entity.unnormalize(normalized_value)
+
+        if self._controller.handle_channel_update(channel_type, round(value)):
             self.async_write_ha_state()
 
     @property

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://raw.githubusercontent.com/OpenLightingProject/open-fixture-library/schema-12.5.0/schemas/fixture.json",
+  "name": "Desk Channel",
+  "shortName": "DeskCh",
+  "categories": ["Dimmer"],
+  "meta": {
+    "authors": ["Breina"],
+    "createDate": "2025-06-17",
+    "lastModifyDate": "2025-06-17"
+  },
+  "availableChannels": {
+    "Intensity": {
+      "fineChannelAliases": ["Intensity fine", "Intensity fine^2"],
+      "capability": {
+        "type": "Intensity",
+        "brightnessStart": "100%",
+        "brightnessEnd": "0%"
+      }
+    }
+  },
+  "modes": [
+    {
+      "name": "8 bit",
+      "shortName": "8bit",
+      "channels": [
+        "Intensity"
+      ]
+    },
+    {
+      "name": "16 bit",
+      "shortName": "16bit",
+      "channels": [
+        "Intensity",
+        "Intensity fine"
+      ]
+    },
+    {
+      "name": "24 bit",
+      "shortName": "24bit",
+      "channels": [
+        "Intensity",
+        "Intensity fine",
+        "Intensity fine^2"
+      ]
+    }
+  ],
+  "fixtureKey": "desk-channel",
+  "manufacturerKey": "generic",
+  "oflURL": "https://open-fixture-library.org/generic/desk-channel"
+}

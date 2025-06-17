@@ -123,14 +123,11 @@ class FogTypeOutput(Enum):
 
 
 def _make_interpolater(from_range_min: float, from_range_max: float,
-                       to_range_min: float, to_range_max: float) -> Callable[
-    [float], float]:
+                       to_range_min: float, to_range_max: float) -> Callable[[float], float]:
     if from_range_min == from_range_max:
         return lambda _: to_range_min
 
-    from_range = from_range_max - from_range_min
-    to_range = to_range_max - to_range_min
-    scale_factor = float(to_range) / float(from_range)
+    scale_factor = (to_range_max - to_range_min) / (from_range_max - from_range_min)
 
     def interp_fn(value: float) -> float:
         return to_range_min + (value - from_range_min) * scale_factor
@@ -151,6 +148,14 @@ class DynamicMapping:
         )
         self.__interpolate_from_dmx = _make_interpolater(
             dmx_start, dmx_end, range_start, range_end
+        )
+
+        range_start, range_end = sorted((range_start, range_end))
+        self.__normalize = _make_interpolater(
+            0, 255, range_start, range_end
+        )
+        self.__unnormalize = _make_interpolater(
+            range_start, range_end, 0, 255
         )
 
     def to_dmx(self, value: float) -> int:
@@ -214,6 +219,14 @@ class DynamicMapping:
 
         # Convert to entity value
         return self.__interpolate_from_dmx(scaled_value)
+
+    def normalize(self, value: int):
+        assert 0 <= value <= 255
+
+        return self.__normalize(value)
+
+    def unnormalize(self, value: float):
+        return self.__unnormalize(value)
 
 
 class DynamicEntity(DynamicMapping):

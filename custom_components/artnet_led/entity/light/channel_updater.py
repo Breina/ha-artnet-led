@@ -18,24 +18,6 @@ class ChannelUpdater:
         self.channels = channels
         self.universe = universe
 
-    async def send_updates(self, updates: Dict[ChannelType, int]):
-        dmx_updates = {}
-        for channel_type, value in updates.items():
-            if channel_type in self.channels:
-                dmx_indexes = self.channels[channel_type].dmx_indexes
-                num_channels = len(dmx_indexes)
-                max_value = 256 ** num_channels - 1
-
-                scaled_total = int((value / 255) * max_value)
-
-                for i in range(num_channels):
-                    shift = 8 * (num_channels - i - 1)
-                    dmx_value = (scaled_total >> shift) & 0xFF
-                    dmx_updates[dmx_indexes[i]] = dmx_value
-
-        if dmx_updates:
-            await self.universe.update_multiple_values(dmx_updates)
-
     def has_channel(self, channel_type: ChannelType) -> bool:
         return channel_type in self.channels
 

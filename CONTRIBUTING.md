@@ -29,3 +29,14 @@ cd tests
 ```shell
 pytest
 ```
+
+## Development
+
+[Capabilities](custom_components/artnet_led/fixture/capability.py) and [wheels](custom_components/artnet_led/fixture/wheel.py) use some magic in the name of expandability and low coupling.
+The [parser](custom_components/artnet_led/fixture/parser.py) directly instances these classes.
+The mandatory and optional parameters directly match [OpenFixtureLibrary's spec](https://github.com/OpenLightingProject/open-fixture-library/blob/master/docs/capability-types.md).
+
+## Useful tools
+
+* [The ArtNetominator](https://www.lightjams.com/artnetominator/): Discovers ArtNet controllers and shows channel updates
+* [DMX-Workshop](https://singularity-uk.com/product/dmx-workshop/): Easy tool to send universe updates and ArtNet triggers to the integration

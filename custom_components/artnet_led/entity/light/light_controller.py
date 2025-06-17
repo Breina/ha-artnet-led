@@ -20,7 +20,7 @@ class LightController:
         if not self._process_kwargs(kwargs, updates):
             self._restore_previous_state(updates)
 
-        await self.updater.send_updates(updates)
+        await self.__update_dmx_values(updates)
 
     async def turn_off(self):
         self.state.is_on = False
@@ -38,9 +38,24 @@ class LightController:
                 if channel_type != ChannelType.COLOR_TEMPERATURE:
                     updates[channel_type] = 0
 
-        await self.updater.send_updates(updates)
+        await self.__update_dmx_values(updates)
 
         self._save_last_state(preserved_state)
+
+    async def __update_dmx_values(self, unnormalized_updates):
+        dmx_updates = {}
+        for channel_type, denormalized_value in unnormalized_updates.items():
+            channel_mapping = self.updater.channels[channel_type]
+            [capability] = channel_mapping.channel.capabilities
+            assert (len(capability.dynamic_entities) == 1)
+            dynamic_entity = capability.dynamic_entities[0]
+
+            normalized_value = dynamic_entity.normalize(denormalized_value)
+            dmx_values = dynamic_entity.to_dmx_fine(normalized_value, num_channels=len(channel_mapping.dmx_indexes))
+
+            for i in range(len(channel_mapping.dmx_indexes)):
+                dmx_updates[channel_mapping.dmx_indexes[i]] = dmx_values[i]
+        await self.updater.universe.update_multiple_values(dmx_updates)
 
     def _capture_current_state(self) -> dict:
         """Capture current state values that should be preserved"""
