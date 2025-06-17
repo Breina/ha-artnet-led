@@ -2,6 +2,7 @@ from typing import List
 
 from homeassistant.components.number import NumberMode, \
     RestoreNumber
+from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from custom_components.artnet_led import DOMAIN
@@ -96,6 +97,7 @@ class DmxNumberEntity(RestoreNumber):
             except (ValueError, TypeError):
                 pass
 
+    @callback
     def update_value(self, dmx_index: int, value: int) -> None:
         # TODO maybe update self._attr_attribution from source ArtNet node?
         # Skip processing during our own updates

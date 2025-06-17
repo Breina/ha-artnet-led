@@ -8,12 +8,12 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util.color import color_temperature_kelvin_to_mired
 
 from custom_components.artnet_led import DOMAIN
-from custom_components.artnet_led.io.dmx_io import DmxUniverse
 from custom_components.artnet_led.entity.light import ChannelMapping, ChannelType
-from custom_components.artnet_led.entity.light.channel_updater import ChannelUpdater
+from custom_components.artnet_led.entity.light.channel_updater import ChannelUpdater, from_dmx_value
 from custom_components.artnet_led.entity.light.color_converter import ColorConverter
 from custom_components.artnet_led.entity.light.light_controller import LightController
 from custom_components.artnet_led.entity.light.light_state import LightState
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 
 
 class DmxLightEntity(LightEntity, RestoreEntity):
@@ -45,14 +45,14 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         converter = ColorConverter(min_kelvin, max_kelvin)
         self._state = LightState(color_mode, converter)
 
-        channel_map = {ch.channel_type: ch for ch in channels}
-        updater = ChannelUpdater(channel_map, universe)
+        self.channel_map = {ch.channel_type: ch for ch in channels}
+        updater = ChannelUpdater(self.channel_map, universe)
 
         self._controller = LightController(self._state, updater)
         self._has_separate_dimmer = has_separate_dimmer
         self._universe = universe
 
-        self._register_channel_listeners(channel_map)
+        self._register_channel_listeners(self.channel_map)
 
     def _register_channel_listeners(self, channel_map: Dict[ChannelType, ChannelMapping]):
         for channel_type, channel_data in channel_map.items():
@@ -64,7 +64,14 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
     @callback
     def _handle_channel_update(self, channel_type: ChannelType, dmx_index: int, value: int):
-        if self._controller.handle_channel_update(channel_type, value):
+        channel_mapping = self.channel_map[channel_type]
+        [capability] = channel_mapping.channel.capabilities
+        assert (len(capability.dynamic_entities) == 1)
+
+        dmx_values = [self._universe.get_channel_value(idx) for idx in channel_mapping.dmx_indexes]
+        value = from_dmx_value(dmx_values)
+
+        if self._controller.handle_channel_update(channel_type, int(value)):
             self.async_write_ha_state()
 
     @property
