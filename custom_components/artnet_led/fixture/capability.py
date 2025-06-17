@@ -159,7 +159,8 @@ class DynamicMapping:
         :param value: The entity value to be converted
         :return: The corresponding DMX value
         """
-        return round(self.__interpolate_to_dmx(value))
+        # Use to_dmx_fine with a single channel and return the first value
+        return self.to_dmx_fine(value, num_channels=1)[0]
 
     def from_dmx(self, value: int) -> float:
         """
@@ -167,7 +168,8 @@ class DynamicMapping:
         :param value: The DMX value to be converted.
         :return: The corresponding entity value
         """
-        return self.__interpolate_from_dmx(value)
+        # Use from_dmx_fine with a single value list
+        return self.from_dmx_fine([value])
 
     def to_dmx_fine(self, value: float, num_channels: int) -> list[int]:
         """

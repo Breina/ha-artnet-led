@@ -10,7 +10,6 @@ from custom_components.artnet_led.entity.light import ChannelMapping, ChannelTyp
 from custom_components.artnet_led.entity.light.light_entity import DmxLightEntity
 from custom_components.artnet_led.entity.number import DmxNumberEntity
 from custom_components.artnet_led.entity.select import DmxSelectEntity
-from custom_components.artnet_led.fixture import entity
 from custom_components.artnet_led.fixture.capability import ColorIntensity, \
     SingleColor, Intensity, ColorTemperature
 from custom_components.artnet_led.fixture.channel import ChannelOffset, \
@@ -62,7 +61,8 @@ def __accumulate_light_entities(accumulator: dict[str, list[ChannelMapping]],
     elif isinstance(capability, ColorTemperature):
         light_channel = ChannelType.COLOR_TEMPERATURE
 
-    # TODO how to handle hue / saturation? Not in the standard. See arri/l10-c.json for example.
+    # TODO hue / saturation https://github.com/OpenLightingProject/open-fixture-library/issues/4927
+    # TODO XY color https://github.com/OpenLightingProject/open-fixture-library/issues/4900
 
     else:
         return
@@ -153,6 +153,8 @@ def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping
                 has_separate_dimmer = True
                 channels_data.append(channel_map[ChannelType.DIMMER])
 
+            # TODO color temperature bounds https://github.com/OpenLightingProject/open-fixture-library/issues/4922
+
             if ChannelType.COLD_WHITE in channel_map:
                 channels_data.append(channel_map[ChannelType.COLD_WHITE])
 
@@ -204,6 +206,7 @@ def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping
 
     return entities
 
+
 def create_entities(
         name: str,
         dmx_start: int,
@@ -254,16 +257,3 @@ def create_entities(
     entities.extend(__build_light_entities(name, lights_accumulator, device, universe))
 
     return entities
-
-# fixture = parse("../../../staging/fixtures/hotbox-rgbw.json")
-# channels = fixture.select_mode("9-channel B")
-# fixture = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
-# channels = fixture.select_mode("42-channel")
-# fixture = parse("../../../staging/fixtures/jbled-a7.json")
-# channels = fixture.select_mode("Standard 16bit")
-#
-# entities = create_entities(100, channels)
-#
-# print("\nThe entities:")
-# for entity in entities:
-#     print(entity)

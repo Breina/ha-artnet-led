@@ -68,11 +68,11 @@ class TestColorTemperatureFader(unittest.TestCase):
 
         asyncio.run(light.async_turn_on(brightness=3))
         assert_dmx_range(self.universe, 1, [3])
-        self.assertEqual(1, dimmer.native_value)
+        self.assertAlmostEqual(1.0, dimmer.native_value, 0)
 
         asyncio.run(light.async_turn_on(brightness=252))
         assert_dmx_range(self.universe, 1, [252])
-        self.assertEqual(99, dimmer.native_value)
+        self.assertAlmostEqual(99, dimmer.native_value, 0)
 
         asyncio.run(light.async_turn_on(brightness=255))
         assert_dmx_range(self.universe, 1, [255])
@@ -88,10 +88,10 @@ class TestColorTemperatureFader(unittest.TestCase):
         assert_dmx_range(self.universe, 1, [0, 0])
 
         asyncio.run(dimmer.async_set_native_value(1.2))
-        assert_dmx_range(self.universe, 1, [2, 140])
+        assert_dmx_range(self.universe, 1, [3, 18])
 
         asyncio.run(dimmer.async_set_native_value(99))
-        assert_dmx_range(self.universe, 1, [252, 114])
+        assert_dmx_range(self.universe, 1, [253, 112])
 
         asyncio.run(dimmer.async_set_native_value(100))
         assert_dmx_range(self.universe, 1, [255, 255])

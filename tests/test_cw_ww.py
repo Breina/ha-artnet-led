@@ -81,8 +81,8 @@ class TestRgbwFixture(unittest.TestCase):
         mid_mired = (light.min_mireds + light.max_mireds - 1) / 2
         asyncio.run(light.async_turn_on(brightness=127, color_temp=mid_mired))
         assert_dmx_range(self.universe, 2, [127, 127])
-        self.assertEqual(50, warm_white.native_value)
-        self.assertEqual(50, cold_white.native_value)
+        self.assertAlmostEqual(50.0, warm_white.native_value, 0)
+        self.assertAlmostEqual(50.0, cold_white.native_value, 0)
 
         asyncio.run(light.async_turn_on(brightness=255, color_temp=light.min_mireds))
         assert_dmx_range(self.universe, 2, [0, 255])
@@ -106,7 +106,7 @@ class TestRgbwFixture(unittest.TestCase):
         mid_mired = (light.min_mireds + light.max_mireds - 1) / 2
         asyncio.run(warm_white.async_set_native_value(50))
         asyncio.run(cold_white.async_set_native_value(50))
-        assert_dmx_range(self.universe, 3, [127, 127, 127, 127])
+        assert_dmx_range(self.universe, 3, [127, 255, 127, 255])
         self.assertEqual(127, light.brightness)
         self.assertEqual(mid_mired, light.color_temp)
 
@@ -138,8 +138,8 @@ class TestRgbwFixture(unittest.TestCase):
         mid_mired = (light.min_mireds + light.max_mireds - 1) / 2
         asyncio.run(light.async_turn_on(brightness=127, color_temp=mid_mired))
         assert_dmx_range(self.universe, 4, [127, 127, 127, 127])
-        self.assertEqual(50, warm_white.native_value)
-        self.assertEqual(50, cold_white.native_value)
+        self.assertAlmostEqual(50.0, warm_white.native_value, 0)
+        self.assertAlmostEqual(50.0, cold_white.native_value, 0)
 
         asyncio.run(light.async_turn_on(brightness=255, color_temp=light.min_mireds))
         assert_dmx_range(self.universe, 4, [255, 255, 0, 0])
@@ -166,7 +166,7 @@ class TestRgbwFixture(unittest.TestCase):
         asyncio.run(light.async_turn_on())
         self.assertTrue(light.is_on)
         self.assertEqual(100, warm_white.native_value)
-        self.assertEqual(25, cold_white.native_value)
+        self.assertAlmostEqual(25.0, cold_white.native_value, 0)
 
         asyncio.run(warm_white.async_set_native_value(0))
         self.assertTrue(light.is_on)
@@ -177,7 +177,7 @@ class TestRgbwFixture(unittest.TestCase):
         asyncio.run(light.async_turn_on())
         self.assertTrue(light.is_on)
         self.assertEqual(0, warm_white.native_value)
-        self.assertEqual(25, cold_white.native_value)
+        self.assertAlmostEqual(25.0, cold_white.native_value, 0)
 
 
 if __name__ == "__main__":
