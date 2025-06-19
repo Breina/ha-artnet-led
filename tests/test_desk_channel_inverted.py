@@ -9,7 +9,7 @@ from custom_components.artnet_led.entity.light.light_entity import DmxLightEntit
 from custom_components.artnet_led.entity.number import DmxNumberEntity
 from custom_components.artnet_led.fixture import parser
 from custom_components.artnet_led.fixture_delegator import delegator
-from tests.dmx_test_framework import MockDmxUniverse, assert_entity_by_name, MockHomeAssistant, assert_dmx_range
+from tests.dmx_test_framework import MockDmxUniverse, get_entity_by_name, MockHomeAssistant, assert_dmx_range
 
 device_info_mock = MagicMock()
 homeassistant.helpers.device_registry.DeviceInfo = device_info_mock
@@ -36,8 +36,8 @@ class TestColorTemperatureFader(unittest.TestCase):
         channels = self.fixture.select_mode('8bit')
         entities = delegator.create_entities('Desk channel', 1, channels, None, self.universe)
 
-        dimmer: DmxNumberEntity = assert_entity_by_name(entities, 'Desk channel Intensity')
-        light: DmxLightEntity = assert_entity_by_name(entities, 'Desk channel Light')
+        dimmer: DmxNumberEntity = get_entity_by_name(entities, 'Desk channel Intensity')
+        light: DmxLightEntity = get_entity_by_name(entities, 'Desk channel Light')
 
         asyncio.run(dimmer.async_set_native_value(0))
         assert_dmx_range(self.universe, 1, [255])
@@ -59,8 +59,8 @@ class TestColorTemperatureFader(unittest.TestCase):
         channels = self.fixture.select_mode('8bit')
         entities = delegator.create_entities('Desk channel', 1, channels, None, self.universe)
 
-        dimmer: DmxNumberEntity = assert_entity_by_name(entities, 'Desk channel Intensity')
-        light: DmxLightEntity = assert_entity_by_name(entities, 'Desk channel Light')
+        dimmer: DmxNumberEntity = get_entity_by_name(entities, 'Desk channel Intensity')
+        light: DmxLightEntity = get_entity_by_name(entities, 'Desk channel Light')
 
         asyncio.run(light.async_turn_on(brightness=0))
         assert_dmx_range(self.universe, 1, [255])

@@ -1,3 +1,6 @@
+from homeassistant.core import callback
+
+import logging
 from typing import List
 
 from homeassistant.components.number import NumberMode, \
@@ -8,15 +11,8 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from custom_components.artnet_led import DOMAIN
 from custom_components.artnet_led.fixture.capability import DynamicEntity, Capability
 from custom_components.artnet_led.io.dmx_io import DmxUniverse
-from typing import List
 
-from homeassistant.components.number import NumberMode, \
-    RestoreNumber
-from homeassistant.helpers.device_registry import DeviceInfo
-
-from custom_components.artnet_led import DOMAIN
-from custom_components.artnet_led.fixture.capability import DynamicEntity, Capability
-from custom_components.artnet_led.io.dmx_io import DmxUniverse
+log = logging.getLogger(__name__)
 
 
 class DmxNumberEntity(RestoreNumber):
@@ -35,7 +31,7 @@ class DmxNumberEntity(RestoreNumber):
         self._attr_unique_id = f"{DOMAIN}_{name}"  # TODO add device
 
         self._attr_icon = capability.icon()
-        self._attr_extra_state_attributes = capability.extra_attributes()  # TODO not working?
+        self._attr_extra_state_attributes = capability.extra_attributes()
 
         self.universe = universe
         self.dmx_indexes = dmx_indexes
@@ -98,16 +94,21 @@ class DmxNumberEntity(RestoreNumber):
                 pass
 
     @callback
-    def update_value(self) -> None:
-        # TODO maybe update self._attr_attribution from source ArtNet node?
-        # Skip processing during our own updates
+    def update_value(self, source: str | None) -> None:
+        self._attr_attribution = source
+
         if getattr(self, '_is_updating', False):
             return
 
         dmx_values = [self.universe.get_channel_value(idx) for idx in self.dmx_indexes]
         self._attr_native_value = self.dynamic_entity.from_dmx_fine(dmx_values)
 
+        if not self.hass:
+            log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
+            return
+
         self.async_schedule_update_ha_state()
+        log.debug(f"Finished updating number channel {self.dmx_indexes} from DMX values {dmx_values}, which resulted in value {self._attr_native_value}")
 
     async def async_set_native_value(self, value: float) -> None:
         self._attr_native_value = value
@@ -133,9 +134,11 @@ class DmxNumberEntity(RestoreNumber):
     def available(self, is_available: bool) -> None:
         self._attr_available = is_available
 
-        # Only refresh state after added to hass
-        if self.hass:
-            self.async_schedule_update_ha_state()
+        if not self.hass:
+            log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
+            return
+
+        self.async_schedule_update_ha_state()
 
     @property
     def native_value(self) -> float | None:

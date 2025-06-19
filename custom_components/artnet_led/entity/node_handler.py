@@ -124,7 +124,11 @@ class DynamicNodeHandler:
                     entity.art_poll_reply = artpoll_reply
 
                     # Schedule an update for the entity
-                    if hasattr(entity, "async_schedule_update_ha_state"):
+
+                    if not self.hass:
+                        log.debug(f"Not updating {self.controller} because it hasn't been added to hass yet.")
+
+                    elif hasattr(entity, "async_schedule_update_ha_state"):
                         entity.async_schedule_update_ha_state()
 
         log.debug(f"Updated ArtNet node: {artpoll_reply.long_name}")
@@ -151,7 +155,10 @@ class DynamicNodeHandler:
                     if isinstance(entity, ArtNetOnlineBinarySensor):
                         entity.connected = False
 
-                        if hasattr(entity, "async_schedule_update_ha_state"):
+                        if not self.hass:
+                            log.debug(f"Not updating {self.controller} because it hasn't been added to hass yet.")
+
+                        elif hasattr(entity, "async_schedule_update_ha_state"):
                             entity.async_schedule_update_ha_state()
                         continue
 
@@ -179,7 +186,10 @@ class DynamicNodeHandler:
                     if isinstance(entity, ArtNetOnlineBinarySensor):
                         entity.connected = True
 
-                        if hasattr(entity, "async_schedule_update_ha_state"):
+                        if not self.hass:
+                            log.debug(f"Not updating {self.controller} because it hasn't been added to hass yet.")
+
+                        elif hasattr(entity, "async_schedule_update_ha_state"):
                             entity.async_schedule_update_ha_state()
                         continue
 

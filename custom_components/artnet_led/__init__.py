@@ -235,7 +235,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     log.debug("Found %d fixtures", len(processed_fixtures))
 
     entities: list[Entity] = []
-    universes = {}
+    universes: dict[PortAddress, DmxUniverse] = {}
 
     # Process ArtNet
     if (artnet_yaml := dmx_yaml.get(CONF_NODE_TYPE_ARTNET)) is not None:
@@ -248,7 +248,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         universe_rate_limiters = {}
 
         # Function to process universe updates with rate limiting
-        def state_callback(port_address: PortAddress, data: bytearray):
+        def state_callback(port_address: PortAddress, data: bytearray, source: str | None = None):
             """
             Callback for incoming ArtNet DMX data with rate limiting.
 
@@ -256,7 +256,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                 port_address: The port address (universe) the data is for
                 data: The DMX data (512 bytes)
             """
-            callback_universe = universes.get(port_address)
+            callback_universe: DmxUniverse = universes.get(port_address)
             if callback_universe is None:
                 log.warning(f"Received DMX data for unknown universe: {port_address}")
                 return
@@ -270,7 +270,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     updates_dict.clear()
 
                     if updates_to_process:
-                        await callback_universe.update_multiple_values(updates_to_process)
+                        await callback_universe.update_multiple_values(updates_to_process, source, send_update=False)
 
                 limiter = RateLimiter(
                     hass,
@@ -287,7 +287,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
             for channel, value in enumerate(data, start=1):  # DMX channels are 1-based
                 if value > 0 or callback_universe.get_channel_value(channel) != value:
-                    # Store the update in our dictionary to be processed later
                     updates_dict[channel] = value
                     changes_detected = True
 

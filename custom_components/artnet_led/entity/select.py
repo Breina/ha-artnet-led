@@ -62,8 +62,8 @@ class DmxSelectEntity(SelectEntity):
 
         self.__set_availability(True)
 
-    def update_value(self) -> None:
-        # TODO maybe update self._attr_attribution from source ArtNet node?
+    def update_value(self, source: str | None) -> None:
+        self._attr_attribution = source
 
         value = self.universe.get_channel_value(self.dmx_index)
 
@@ -77,7 +77,10 @@ class DmxSelectEntity(SelectEntity):
                 f"{value}")
 
         self.update_current_option(str(capability[0]))
-        self.async_schedule_update_ha_state()
+        if self.hass:
+            self.async_schedule_update_ha_state()
+        else:
+            log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
 
     async def async_select_option(self, option: str) -> None:
         self.update_current_option(option)

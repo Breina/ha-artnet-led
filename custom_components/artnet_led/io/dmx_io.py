@@ -22,7 +22,7 @@ class DmxUniverse:
         # Flag to track if this is the first send (to send full universe initially)
         self._first_send = True
 
-    def register_channel_listener(self, channels: int | List[int], callback: Callable[[], None]) -> None:
+    def register_channel_listener(self, channels: int | List[int], callback: Callable[[str | None], None]) -> None:
         """
         Register a callback to be called when a channel value changes.
 
@@ -50,7 +50,7 @@ class DmxUniverse:
             if channel in self._channel_callbacks and callback in self._channel_callbacks[channel]:
                 self._channel_callbacks[channel].remove(callback)
 
-    async def update_value(self, channel: int | List[int], value: int, send_immediately: bool = False) -> None:
+    async def update_value(self, channel: int | List[int], value: int, send_immediately: bool = False, source: str | None = None) -> set[Callable[[str | None], None]]:
         """
         Update the value of one or more channels and notify all listeners.
 
@@ -58,6 +58,7 @@ class DmxUniverse:
             channel: Single channel number or list of channel numbers
             value: New value for the channel(s)
             send_immediately: Whether to send the universe data immediately after update
+            source: From where the update came from
         """
         # Convert to list if single channel
         if isinstance(channel, int):
@@ -65,7 +66,7 @@ class DmxUniverse:
         else:
             channels = channel
 
-        called_callbacks = set()
+        callbacks_to_call = set()
         changed_channels = []
 
         for ch in channels:
@@ -77,37 +78,45 @@ class DmxUniverse:
         for ch in changed_channels:
             if ch in self._channel_callbacks:
                 for callback in self._channel_callbacks[ch]:
-                    if callback in called_callbacks:
+                    if callback in callbacks_to_call:
                         continue
-                    called_callbacks.add(callback)
+                    callbacks_to_call.add(callback)
                     try:
-                        await self._call_callback(callback, ch, value)
+                        await self._call_callback(callback, source)
                     except Exception as e:
                         print(f"Error calling callback for channel {ch}: {e}")
 
         if send_immediately:
             self.send_universe_data()
 
-    async def update_multiple_values(self, updates: Dict[int, int]) -> None:
+        return callbacks_to_call
+
+    async def update_multiple_values(self, updates: Dict[int, int], source: str | None = None, send_update: bool = True) -> None:
         """
         Update multiple channel values in a batch and send once at the end.
 
         Args:
             updates: Dictionary mapping channel numbers to values
+            source: From where the update came from
+            :param send_update:
         """
-        # Update each channel value without sending immediately
+        callbacks_to_call = set()
         for channel, value in updates.items():
-            await self.update_value(channel, value, send_immediately=False)
+            callbacks_to_call.update(await self.update_value(channel, value, send_immediately=False, source=source))
 
-        # Send all updates at once
-        self.send_universe_data()
+        for callback in callbacks_to_call:
+            await self._call_callback(callback, source)
 
-    async def _call_callback(self, callback, channel, value):
+        if send_update:
+            self.send_universe_data()
+
+    @staticmethod
+    async def _call_callback(callback, source: str | None = None):
         """Helper method to call callbacks that might be async or regular functions."""
         if asyncio.iscoroutinefunction(callback):
-            await callback(channel, value)
+            await callback(source)
         else:
-            callback(channel, value)
+            callback(source)
 
     def get_channel_value(self, channel: int) -> int:
         """Get the current value of a channel."""

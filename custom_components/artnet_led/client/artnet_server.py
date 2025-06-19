@@ -33,6 +33,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Node:
+    name: str = "Unknown node"
     addr: bytes = [0x00] * 4,
     bind_index: int = 0,
     mac_address: bytes = [0x00] * 6,
@@ -480,7 +481,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
             log.debug(f"Received DMX data from {addr[0]}\n"
                       f"  Address: {dmx.port_address}")
-            self.handle_dmx(dmx)
+            self.handle_dmx(dmx, addr)
 
         elif opcode == OpCode.OP_SYNC:
             # No action
@@ -524,7 +525,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
         current_time = datetime.datetime.now()
         if not node:
-            node = Node(source_ip, bind_index, mac_address, current_time)
+            node = Node(reply.short_name, source_ip, bind_index, mac_address, current_time)
             self.add_node_by_ip(node, source_ip, bind_index)
             log.info(f"Discovered new node at {inet_ntoa(source_ip)}@{bind_index} with "
                      f"{reply.net_switch}/{reply.sub_switch}/[{','.join([str(p.sw_out) for p in reply.ports if p.output])}]"
@@ -627,20 +628,33 @@ class ArtNetServer(asyncio.DatagramProtocol):
             "payload": payload_str
         })
 
-    def handle_dmx(self, dmx: ArtDmx):
+    def handle_dmx(self, dmx: ArtDmx, sender_addr: tuple[str, int] = None):
         own_port = self.own_port_addresses.get(dmx.port_address)
         if not own_port:
             log.debug(f"Received ArtDmx for port address that we don't care about: {dmx.port_address}")
             return
 
-        if own_port.port.good_input.data_received:
+        if not own_port.port.good_input.data_received:
             own_port.port.good_input.data_received = True
             self.update_subscribers()
 
         own_port.port.last_input_seen = datetime.datetime.now()
         self.__hass.async_create_task(self.disable_input_flag(own_port))
+
+        # Find the sender node information
+        sender_node_name = "Unknown controller"
+
+        if sender_addr:
+            sender_ip = sender_addr[0]
+            sender_ip_bytes = inet_aton(sender_ip)
+
+            for (ip_bytes, bind_index), node in self.nodes_by_ip.items():
+                if ip_bytes == sender_ip_bytes:
+                    sender_node_name = node.name
+                    break
+
         if self.__state_update_callback:
-            self.__state_update_callback(dmx.port_address, dmx.data)
+            self.__state_update_callback(dmx.port_address, dmx.data, sender_node_name)
 
     async def disable_input_flag(self, own_port: OwnPort):
         await asyncio.sleep(4)

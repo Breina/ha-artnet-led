@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import List
+from typing import List, Dict
 from unittest.mock import MagicMock
 
 from homeassistant.helpers.entity import Entity
@@ -41,14 +41,16 @@ class MockDmxUniverse(DmxUniverse):
                 if callback in self.channel_callbacks[channel]:
                     self.channel_callbacks[channel].remove(callback)
 
-    async def update_value(self, channel, value, send_immediately=False):
+    async def update_value(self, channel, value, send_immediately=False, source: str | None = None):
         """Update single value."""
         if isinstance(channel, int):
             channel = [channel]
-        await self.update_multiple_values({ch: value for ch in channel})
+        await self.update_multiple_values({ch: value for ch in channel}, source)
 
-    async def update_multiple_values(self, updates):
-        """Update multiple values."""
+    async def update_multiple_values(self, updates: Dict[int, int], source: str | None = None, send_update=True):
+        """Update multiple values.
+        :param send_update:
+        """
         self.set_values(updates)
 
     def get_values(self):
@@ -83,7 +85,7 @@ class MockDmxUniverse(DmxUniverse):
                         continue
                     called_callbacks.add(callback)
                     try:
-                        callback()
+                        callback("Test LOL!")
                     except Exception as e:
                         print(f"Error calling callback for channel {channel}: {e}")
 
@@ -135,7 +137,8 @@ def assert_dmx_range(universe: MockDmxUniverse, start_channel: int, values: List
         assert False, error_msg
 
 
-def assert_entity_by_name(entities: List[Entity], name: str) -> DmxNumberEntity | DmxSelectEntity | DmxLightEntity:
+def get_entity_by_name(entities: List[Entity], name: str) -> DmxNumberEntity | DmxSelectEntity | DmxLightEntity:
     found = next((entity for entity in entities if entity._attr_name == name), None)
+    found.hass = MagicMock()
     assert found, f"{name} entity not found, valid names are: {[e._attr_name for e in entities]}"
     return found

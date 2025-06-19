@@ -15,6 +15,10 @@ from custom_components.artnet_led.entity.light.light_controller import LightCont
 from custom_components.artnet_led.entity.light.light_state import LightState
 from custom_components.artnet_led.io.dmx_io import DmxUniverse
 
+import logging
+
+log = logging.getLogger(__name__)
+
 
 class DmxLightEntity(LightEntity, RestoreEntity):
     def __init__(
@@ -63,8 +67,8 @@ class DmxLightEntity(LightEntity, RestoreEntity):
                 )
 
     @callback
-    def _handle_channel_update(self, channel_type: ChannelType):
-        # TODO rework this so that it's not called per channel, but per universe update, same in Number
+    def _handle_channel_update(self, channel_type: ChannelType, source: str | None):
+        self._attr_attribution = source
 
         channel_mapping = self.channel_map[channel_type]
         [capability] = channel_mapping.channel.capabilities
@@ -75,6 +79,10 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
         value = dynamic_entity.unnormalize(normalized_value)
+
+        if not self.hass:
+            log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
+            return
 
         if self._controller.handle_channel_update(channel_type, round(value)):
             self.async_write_ha_state()
@@ -105,10 +113,20 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
     async def async_turn_on(self, **kwargs: Any):
         await self._controller.turn_on(**kwargs)
+
+        if not self.hass:
+            log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
+            return
+
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any):
         await self._controller.turn_off()
+
+        if not self.hass:
+            log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
+            return
+
         self.async_write_ha_state()
 
     async def async_added_to_hass(self):
@@ -141,8 +159,8 @@ class DmxLightEntity(LightEntity, RestoreEntity):
                 not self._has_separate_dimmer and
                 "brightness" in attrs and "color_temp" in attrs):
             # Reconstruct CW/WW values from brightness and color temp
-            brightness = attrs["brightness"]
-            color_temp = attrs["color_temp"]
+            brightness = attrs["brightness"] or 100
+            color_temp = attrs["color_temp"] or (self.min_mireds + self.max_mireds) / 2
             cold, warm = self._state.converter.temp_to_cw_ww(color_temp, brightness)
             self._state.cold_white = cold
             self._state.warm_white = warm
