@@ -1,3 +1,4 @@
+import logging
 from functools import partial
 from typing import Optional, List, Dict, Tuple, Any
 
@@ -9,13 +10,10 @@ from homeassistant.util.color import color_temperature_kelvin_to_mired
 
 from custom_components.artnet_led import DOMAIN
 from custom_components.artnet_led.entity.light import ChannelMapping, ChannelType
-from custom_components.artnet_led.entity.light.channel_updater import ChannelUpdater, from_dmx_value
 from custom_components.artnet_led.entity.light.color_converter import ColorConverter
 from custom_components.artnet_led.entity.light.light_controller import LightController
 from custom_components.artnet_led.entity.light.light_state import LightState
 from custom_components.artnet_led.io.dmx_io import DmxUniverse
-
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -47,12 +45,11 @@ class DmxLightEntity(LightEntity, RestoreEntity):
             self._attr_max_mireds = color_temperature_kelvin_to_mired(min_kelvin)
 
         converter = ColorConverter(min_kelvin, max_kelvin)
-        self._state = LightState(color_mode, converter)
 
         self.channel_map = {ch.channel_type: ch for ch in channels}
-        updater = ChannelUpdater(self.channel_map, universe)
+        self._state = LightState(color_mode, converter, self.channel_map)
+        self._controller = LightController(self._state, universe)
 
-        self._controller = LightController(self._state, updater)
         self._has_separate_dimmer = has_separate_dimmer
         self._universe = universe
 
@@ -84,8 +81,8 @@ class DmxLightEntity(LightEntity, RestoreEntity):
             log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
             return
 
-        if self._controller.handle_channel_update(channel_type, round(value)):
-            self.async_write_ha_state()
+        self._state.apply_channel_update(channel_type, round(value))
+        self.async_write_ha_state()
 
     @property
     def is_on(self) -> bool:

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 from homeassistant.helpers.entity import Entity
 
-from custom_components.artnet_led import DmxUniverse
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 from custom_components.artnet_led.entity.number import DmxNumberEntity
 from custom_components.artnet_led.entity.select import DmxSelectEntity
 
