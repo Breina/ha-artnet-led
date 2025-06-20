@@ -5,9 +5,9 @@ from unittest.mock import MagicMock
 
 from homeassistant.helpers.entity import Entity
 
-from custom_components.artnet_led.io.dmx_io import DmxUniverse
 from custom_components.artnet_led.entity.number import DmxNumberEntity
 from custom_components.artnet_led.entity.select import DmxSelectEntity
+from custom_components.artnet_led.io.dmx_io import DmxUniverse
 
 # Ensure custom_components can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -139,6 +139,6 @@ def assert_dmx_range(universe: MockDmxUniverse, start_channel: int, values: List
 
 def get_entity_by_name(entities: List[Entity], name: str) -> DmxNumberEntity | DmxSelectEntity | DmxLightEntity:
     found = next((entity for entity in entities if entity._attr_name == name), None)
-    found.hass = MagicMock()
     assert found, f"{name} entity not found, valid names are: {[e._attr_name for e in entities]}"
+    found.hass = MagicMock()
     return found

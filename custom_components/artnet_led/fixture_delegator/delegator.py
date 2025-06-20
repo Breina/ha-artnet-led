@@ -243,7 +243,7 @@ def create_entities(
             }
 
             select_entity = DmxSelectEntity(
-                channel, number_entities, universe, dmx_indexes[0], device
+                f"{name} {channel.name}", channel, number_entities, universe, dmx_indexes[0], device
             )
 
             entities.append(select_entity)
