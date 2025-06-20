@@ -135,8 +135,7 @@ class LightController:
             updates[ChannelType.BLUE] = rgb[2]
 
     def _handle_rgbw_color(self, rgbw: Tuple[int, int, int, int], updates: Dict[ChannelType, int]):
-        self.state.update_rgb(rgbw[0], rgbw[1], rgbw[2])
-        self.state.update_white(rgbw[3], is_cold=True)
+        self.state.update_rgbw(rgbw[0], rgbw[1], rgbw[2], rgbw[3])
 
         if self.updater.has_rgb():
             updates[ChannelType.RED] = rgbw[0]
@@ -147,8 +146,7 @@ class LightController:
             updates[ChannelType.COLD_WHITE] = rgbw[3]
 
     def _handle_rgbww_color(self, rgbww: Tuple[int, int, int, int, int], updates: Dict[ChannelType, int]):
-        self.state.update_rgb(rgbww[0], rgbww[1], rgbww[2])
-        self.state.update_whites(rgbww[3], rgbww[4])
+        self.state.update_rgbww(rgbww[0], rgbww[1], rgbww[2], rgbww[3], rgbww[4])
 
         if self.updater.has_rgb():
             updates[ChannelType.RED] = rgbww[0]
@@ -203,6 +201,37 @@ class LightController:
             elif self.updater.has_channel(ChannelType.WARM_WHITE):
                 updates[ChannelType.WARM_WHITE] = brightness
 
+    def _update_brightness_from_channels(self):
+        """Calculate and update brightness as the maximum of all color channel values."""
+        has_dimmer = self.updater.has_channel(ChannelType.DIMMER)
+
+        if has_dimmer:
+            return
+
+        channel_values = []
+
+        if self.updater.has_rgb():
+            channel_values.extend(self.state.rgb)
+
+        if self.updater.has_channel(ChannelType.COLD_WHITE):
+            channel_values.append(self.state.cold_white)
+
+        if self.updater.has_channel(ChannelType.WARM_WHITE):
+            channel_values.append(self.state.warm_white)
+
+        if channel_values:
+            brightness = max(channel_values)
+            old_brightness = self.state.brightness
+            self.state.brightness = brightness
+
+            if brightness > 0:
+                self.state.last_brightness = brightness
+
+            if brightness == 0 and old_brightness > 0:
+                self.state.is_on = False
+            elif brightness > 0 and not self.state.is_on:
+                self.state.is_on = True
+
     def handle_channel_update(self, channel_type: ChannelType, value: int):
         if self.is_updating:
             return False
@@ -219,13 +248,16 @@ class LightController:
             if value == 0:
                 self.state.is_on = False
         elif channel_type == ChannelType.RED:
-            self.state.update_rgb(value, self.state.rgb[1], self.state.rgb[2])
+            self.state.update_r(value)
+            self._update_brightness_from_channels()
         elif channel_type == ChannelType.GREEN:
-            self.state.update_rgb(self.state.rgb[0], value, self.state.rgb[2])
+            self.state.update_g(value)
+            self._update_brightness_from_channels()
         elif channel_type == ChannelType.BLUE:
-            self.state.update_rgb(self.state.rgb[0], self.state.rgb[1], value)
+            self.state.update_b(value)
+            self._update_brightness_from_channels()
         elif channel_type == ChannelType.COLD_WHITE:
-            self.state.update_white(value, is_cold=True)
+            self.state.update_cw(value)
             if self.state.color_mode == ColorMode.BRIGHTNESS and not has_dimmer:
                 self.state.update_brightness(value)
                 if value == 0:
@@ -236,8 +268,10 @@ class LightController:
                 if self.state.brightness == 0 and old_brightness > 0:
                     self.state.is_on = False
                 self._update_color_temp_from_cw_ww()
+            else:
+                self._update_brightness_from_channels()
         elif channel_type == ChannelType.WARM_WHITE:
-            self.state.update_white(value, is_cold=False)
+            self.state.update_ww(value)
             if self.state.color_mode == ColorMode.BRIGHTNESS and not has_dimmer:
                 self.state.update_brightness(value)
                 if value == 0:
@@ -248,6 +282,8 @@ class LightController:
                 if self.state.brightness == 0 and old_brightness > 0:
                     self.state.is_on = False
                 self._update_color_temp_from_cw_ww()
+            else:
+                self._update_brightness_from_channels()
         elif channel_type == ChannelType.COLOR_TEMPERATURE:
             self.state.update_color_temp_dmx(value)
 

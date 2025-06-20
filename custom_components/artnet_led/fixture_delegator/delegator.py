@@ -36,8 +36,7 @@ def __get_all_channels(index_channels: list[tuple[int, None | ChannelOffset | Sw
     return [c for channel_sub in index_channels for c in __get_channel(channel_sub)]
 
 
-def __accumulate_light_entities(accumulator: dict[str, list[ChannelMapping]],
-                                dmx_channel_indexes: List[int], channel: Channel, universe: DmxUniverse) -> None:
+def __accumulate_light_entities(accumulator: dict[str, list[ChannelMapping]], dmx_channel_indexes: List[int], channel: Channel) -> None:
     assert len(channel.capabilities) == 1
 
     capability = channel.capabilities[0]
@@ -50,7 +49,7 @@ def __accumulate_light_entities(accumulator: dict[str, list[ChannelMapping]],
             light_channel = ChannelType.BLUE
         elif capability.color == SingleColor.ColdWhite:
             light_channel = ChannelType.COLD_WHITE
-        elif capability.color == SingleColor.WarmWhite:
+        elif capability.color == SingleColor.WarmWhite or capability.color == SingleColor.White: # Treat normal white as Warm white so make logic simpler
             light_channel = ChannelType.WARM_WHITE
         else:
             return
@@ -229,7 +228,7 @@ def create_entities(
                     dmx_indexes, device
                 )
             )
-            __accumulate_light_entities(lights_accumulator, dmx_indexes, channel, universe)
+            __accumulate_light_entities(lights_accumulator, dmx_indexes, channel)
 
         else:
             assert len(dmx_indexes) == 1

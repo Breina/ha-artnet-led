@@ -161,7 +161,7 @@ class TestColorTemperatureFader(unittest.TestCase):
         asyncio.run(light.async_turn_off())
         self.assertFalse(light.is_on)
         self.assertEqual(0, dimmer.native_value)
-        self.assertEqual(mid_value, color_temp.native_value)
+        self.assertAlmostEqual(mid_value, color_temp.native_value, 1)
 
         asyncio.run(light.async_turn_on())
         self.assertTrue(light.is_on)

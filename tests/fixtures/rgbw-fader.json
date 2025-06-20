@@ -1,0 +1,88 @@
+{
+  "$schema": "https://raw.githubusercontent.com/OpenLightingProject/open-fixture-library/schema-12.5.0/schemas/fixture.json",
+  "name": "RGBW Fader",
+  "shortName": "RGBW",
+  "categories": ["Color Changer"],
+  "meta": {
+    "authors": ["Flo Edelmann"],
+    "createDate": "2017-12-07",
+    "lastModifyDate": "2018-07-21"
+  },
+  "availableChannels": {
+    "Red": {
+      "fineChannelAliases": ["Red fine", "Red fine^2"],
+      "capability": {
+        "type": "ColorIntensity",
+        "color": "Red"
+      }
+    },
+    "Green": {
+      "fineChannelAliases": ["Green fine", "Green fine^2"],
+      "capability": {
+        "type": "ColorIntensity",
+        "color": "Green"
+      }
+    },
+    "Blue": {
+      "fineChannelAliases": ["Blue fine", "Blue fine^2"],
+      "capability": {
+        "type": "ColorIntensity",
+        "color": "Blue"
+      }
+    },
+    "White": {
+      "fineChannelAliases": ["White fine", "White fine^2"],
+      "capability": {
+        "type": "ColorIntensity",
+        "color": "White"
+      }
+    }
+  },
+  "modes": [
+    {
+      "name": "8 bit",
+      "shortName": "8bit",
+      "channels": [
+        "Red",
+        "Green",
+        "Blue",
+        "White"
+      ]
+    },
+    {
+      "name": "16 bit",
+      "shortName": "16bit",
+      "channels": [
+        "Red",
+        "Red fine",
+        "Green",
+        "Green fine",
+        "Blue",
+        "Blue fine",
+        "White",
+        "White fine"
+      ]
+    },
+    {
+      "name": "24 bit",
+      "shortName": "24bit",
+      "channels": [
+        "Red",
+        "Red fine",
+        "Red fine^2",
+        "Green",
+        "Green fine",
+        "Green fine^2",
+        "Blue",
+        "Blue fine",
+        "Blue fine^2",
+        "White",
+        "White fine",
+        "White fine^2"
+      ]
+    }
+  ],
+  "fixtureKey": "rgbw-fader",
+  "manufacturerKey": "generic",
+  "oflURL": "https://open-fixture-library.org/generic/rgbw-fader"
+}

@@ -111,9 +111,9 @@ class DmxNumberEntity(RestoreNumber):
         log.debug(f"Finished updating number channel {self.dmx_indexes} from DMX values {dmx_values}, which resulted in value {self._attr_native_value}")
 
     async def async_set_native_value(self, value: float) -> None:
-        self._attr_native_value = value
-
         dmx_values = self.dynamic_entity.to_dmx_fine(value, len(self.dmx_indexes))
+
+        self._attr_native_value = self.dynamic_entity.from_dmx_fine(dmx_values) # Set to closest value that can be represented through DMX values
 
         dmx_updates = {}
         for i, dmx_index in enumerate(self.dmx_indexes):
