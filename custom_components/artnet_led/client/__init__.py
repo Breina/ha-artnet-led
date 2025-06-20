@@ -459,11 +459,11 @@ class ArtBase:
             # if there is a NUL character in the bytearry, it terminates earlier
             nul_terminator = re.compile(b"([^\\x00]+)")
 
-            terminated_string = nul_terminator.match(raw_string_from_packet).group(1)  \
+            terminated_string = nul_terminator.match(raw_string_from_packet).group(1) \
                 if nul_terminator.match(raw_string_from_packet) else raw_string_from_packet
 
             # remove every other control character
-            sanitized_str = re.sub(b"[^\x00-\x7F]",b"", terminated_string)
+            sanitized_str = re.sub(b"[^\x00-\x7F]", b"", terminated_string)
 
             # decode
             decoded_str = sanitized_str.decode('ascii')
@@ -1288,6 +1288,7 @@ class ArtTrigger(ArtBase):
             log.exception(e)
 
         return index
+
 
 class ArtDmx(ArtBase):
 

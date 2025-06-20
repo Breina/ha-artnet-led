@@ -87,7 +87,7 @@ class TestRgbwFixture(unittest.TestCase):
         light: DmxLightEntity = get_entity_by_name(entities, 'RGBW fader Light')
 
         # Test setting pure red
-        asyncio.run(light.async_turn_on(brightness=255, rgb_color=(255, 0, 0)))
+        asyncio.run(light.async_turn_on(rgbw_color=(255, 0, 0, 0)))
         assert_dmx_range(self.universe, 2, [255, 0, 0, 0])
         self.assertEqual(100, red.native_value)
         self.assertEqual(0, green.native_value)
@@ -95,7 +95,7 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(0, white.native_value)
 
         # Test setting mixed color
-        asyncio.run(light.async_turn_on(brightness=191, rgb_color=(127, 191, 63)))
+        asyncio.run(light.async_turn_on(rgbw_color=(127, 191, 63, 0)))
         assert_dmx_range(self.universe, 2, [127, 191, 63, 0])
         self.assertAlmostEqual(50.0, red.native_value, 0)
         self.assertAlmostEqual(75.0, green.native_value, 0)
@@ -103,7 +103,7 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(0, white.native_value)
 
         # Test setting white
-        asyncio.run(light.async_turn_on(brightness=255, rgb_color=(255, 255, 255)))
+        asyncio.run(light.async_turn_on(rgbw_color=(255, 255, 255, 0)))
         # White light might be handled differently - adjust expectations based on implementation
         self.assertTrue(light.is_on)
 
@@ -154,7 +154,7 @@ class TestRgbwFixture(unittest.TestCase):
         light: DmxLightEntity = get_entity_by_name(entities, 'RGBW fader Light')
 
         # Test setting pure red
-        asyncio.run(light.async_turn_on(brightness=255, rgb_color=(255, 0, 0)))
+        asyncio.run(light.async_turn_on(rgbw_color=(255, 0, 0, 0)))
         assert_dmx_range(self.universe, 4, [255, 255, 0, 0, 0, 0, 0, 0])
         self.assertEqual(100, red.native_value)
         self.assertEqual(0, green.native_value)
@@ -162,7 +162,7 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(0, white.native_value)
 
         # Test setting mixed color
-        asyncio.run(light.async_turn_on(brightness=127, rgb_color=(127, 127, 127)))
+        asyncio.run(light.async_turn_on(rgbw_color=(127, 127, 127, 0)))
         assert_dmx_range(self.universe, 4, [127, 127, 127, 127, 127, 127, 0, 0])
         self.assertAlmostEqual(50.0, red.native_value, 0)
         self.assertAlmostEqual(50.0, green.native_value, 0)
@@ -233,7 +233,7 @@ class TestRgbwFixture(unittest.TestCase):
         ]
 
         for rgb in colors_to_test:
-            asyncio.run(light.async_turn_on(brightness=255, rgb_color=rgb))
+            asyncio.run(light.async_turn_on(rgbw_color=(rgb[0], rgb[1], rgb[2], 0)))
             self.assertEqual(rgb, light.rgb_color)
             self.assertTrue(light.is_on)
 

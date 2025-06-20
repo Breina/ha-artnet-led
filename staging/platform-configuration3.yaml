@@ -35,6 +35,10 @@ artnet_led:
                 fixture: CW/WW Fader
                 start_address: 247
                 mode: 8bit-wc
+            - Test RGBWW fixture:
+                fixture: RGBWW
+                start_address: 100
+                mode: 8bit
           compatibility:
             manual_nodes:
               - { host: 192.168.1.12 }

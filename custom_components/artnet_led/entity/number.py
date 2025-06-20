@@ -108,7 +108,6 @@ class DmxNumberEntity(RestoreNumber):
             return
 
         self.async_schedule_update_ha_state()
-        log.debug(f"Finished updating number channel {self.dmx_indexes} from DMX values {dmx_values}, which resulted in value {self._attr_native_value}")
 
     async def async_set_native_value(self, value: float) -> None:
         dmx_values = self.dynamic_entity.to_dmx_fine(value, len(self.dmx_indexes))
