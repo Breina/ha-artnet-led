@@ -12,6 +12,8 @@
         <link rel="prev" href="..">
       
       
+        <link rel="next" href="../artnet-controller-communication/">
+      
       
       <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
@@ -430,6 +432,28 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artnet-controller-communication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    External Art-Net controller
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -626,6 +650,7 @@
 <span class="w">  </span><span class="nt">artnet</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">max_fps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">43</span>
 <span class="w">    </span><span class="nt">refresh_every</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.2</span>
+<span class="w">    </span><span class="nt">rate_limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
 
 <span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">1/2/0</span><span class="p">:</span>
@@ -656,9 +681,11 @@
 <h4 id="dmxartnet"><code>dmx.artnet</code><a class="headerlink" href="#dmxartnet" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong><code>max_fps</code></strong> <em>(optional, default: <code>30</code>)</em><br />
-  Maximum frames per second for Art-Net output [0, 43]</li>
+  Maximum frames per second for animations [0, 43]</li>
 <li><strong><code>refresh_every</code></strong> <em>(optional, default: <code>0.8</code>)</em><br />
-  The interval in seconds in which universe data is retransmitted. Set to <code>0</code> to disable this behavior</li>
+  The interval in seconds in which universe data is retransmitted. This is useful when there are external controllers sending to the same universes. Set to <code>0</code> to disable this behavior.</li>
+<li><strong><code>refresh_every</code></strong> <em>(optional, default: <code>0.5</code>)</em><br />
+  The rate limit in seconds between each entity update when received from an external controller. Increase this value if HomeAssistant slows down too much when receiving updates.</li>
 </ul>
 <h4 id="dmxartnetuniverses"><code>dmx.artnet.universes</code><a class="headerlink" href="#dmxartnetuniverses" title="Permanent link">&para;</a></h4>
 <p>Universe definitions. Each universe can be specified as:</p>
@@ -710,7 +737,7 @@
 <p>Add this to your <code>configuration.yaml</code> for detailed debugging:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">logger</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">logs</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">custom_components.artnet_led</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
+<span class="w">    </span><span class="nt">custom_components.dmx</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
 </code></pre></div>
 <p><strong>Important</strong>: Restart Home Assistant after adding debug logging.</p>
 <hr />

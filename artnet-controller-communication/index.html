@@ -1,0 +1,685 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../config/">
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>External Art-Net controller - Art-net LED Lighting for DMX</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="lime">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#external-art-net-controller-communication" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Art-net LED Lighting for DMX" class="md-header__button md-logo" aria-label="Art-net LED Lighting for DMX" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Art-net LED Lighting for DMX
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              External Art-Net controller
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="lime"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Art-net LED Lighting for DMX" class="md-nav__button md-logo" aria-label="Art-net LED Lighting for DMX" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Art-net LED Lighting for DMX
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    External Art-Net controller
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    External Art-Net controller
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auto-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auto-Discovery
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#receiving-data-from-external-controllers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Receiving Data from External Controllers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Receiving Data from External Controllers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dmx-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      DMX Data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arttrigger-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      ArtTrigger Events
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscriber-mechanism" class="md-nav__link">
+    <span class="md-ellipsis">
+      Subscriber Mechanism
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subscriber Mechanism">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-subscribers-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      How Subscribers Work
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-updates-are-sent-to-subscribers" class="md-nav__link">
+    <span class="md-ellipsis">
+      When Updates Are Sent to Subscribers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removing-subscribers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removing Subscribers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnostic-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diagnostic Messages
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auto-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auto-Discovery
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#receiving-data-from-external-controllers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Receiving Data from External Controllers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Receiving Data from External Controllers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dmx-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      DMX Data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arttrigger-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      ArtTrigger Events
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscriber-mechanism" class="md-nav__link">
+    <span class="md-ellipsis">
+      Subscriber Mechanism
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subscriber Mechanism">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-subscribers-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      How Subscribers Work
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-updates-are-sent-to-subscribers" class="md-nav__link">
+    <span class="md-ellipsis">
+      When Updates Are Sent to Subscribers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removing-subscribers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removing Subscribers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnostic-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diagnostic Messages
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="external-art-net-controller-communication">External Art-Net Controller Communication<a class="headerlink" href="#external-art-net-controller-communication" title="Permanent link">&para;</a></h1>
+<p>This documentation covers how your Home Assistant ArtNet integration communicates with external ArtNet controllers.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The ArtNet integration in Home Assistant sets up a software-based ArtNet controller that can be discovered by other ArtNet controllers.</p>
+<p>The OEM code of integration is <code>0x2BE9</code>, which is <a href="https://art-net.org.uk/oem-code-zone/">registered with Art-Net</a>. </p>
+<h2 id="auto-discovery">Auto-Discovery<a class="headerlink" href="#auto-discovery" title="Permanent link">&para;</a></h2>
+<p>ArtNet controllers are typically auto-discovered through ArtNet's built-in discovery mechanism:</p>
+<ol>
+<li>When your integration receives an <strong>ArtPoll</strong> request from external controllers, it evaluates whether to respond.</li>
+<li>If the targeted mode on the external controller is disabled, the integration will always respond.</li>
+<li>Otherwise, your controller checks if its universes match what the external controller is looking for and only responds if an overlap is found.</li>
+<li>If no matching universes exist, the request is ignored (debug log: <code>Received ArtPoll, but ignoring it since none of its universes overlap with our universes.</code>)</li>
+</ol>
+<h2 id="receiving-data-from-external-controllers">Receiving Data from External Controllers<a class="headerlink" href="#receiving-data-from-external-controllers" title="Permanent link">&para;</a></h2>
+<h3 id="dmx-data">DMX Data<a class="headerlink" href="#dmx-data" title="Permanent link">&para;</a></h3>
+<p>External controllers can send DMX data to universes configured in your Home Assistant controller. When received:</p>
+<ul>
+<li>The integration updates the corresponding entity values</li>
+<li>Entity updates are limited to 2 updates per second to not flood HomeAssistant with updates.</li>
+</ul>
+<h3 id="arttrigger-events">ArtTrigger Events<a class="headerlink" href="#arttrigger-events" title="Permanent link">&para;</a></h3>
+<p>External controllers can send <strong>ArtTrigger</strong> messages which are converted to Home Assistant events:</p>
+<ul>
+<li>Event type: <code>artnet_trigger</code></li>
+<li>Payload must be a null-terminated string (<code>UTF-8</code> preferred, maximum 512 bytes)</li>
+<li>The event contains metadata about the trigger source</li>
+</ul>
+<p>Example event structure in Home Assistant:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">event_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artnet_trigger</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">oem</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">11241</span><span class="w"> </span><span class="c1"># Decimal representation of OEM code</span>
+<span class="w">  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">sub_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">  </span><span class="nt">payload</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Test 123 This is a system test</span>
+<span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LOCAL</span>
+<span class="nt">time_fired</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2025-06-09T12:34:44.691947+00:00&quot;</span>
+<span class="nt">context</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">01JXAAZ7AKF1BE86A78RWME2KY</span>
+<span class="w">  </span><span class="nt">parent_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+<span class="w">  </span><span class="nt">user_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+</code></pre></div>
+<h2 id="subscriber-mechanism">Subscriber Mechanism<a class="headerlink" href="#subscriber-mechanism" title="Permanent link">&para;</a></h2>
+<p>The integration implements a subscriber mechanism to manage communication with other ArtNet nodes, ensuring they receive timely updates when changes occur in Home Assistant.</p>
+<h3 id="how-subscribers-work">How Subscribers Work<a class="headerlink" href="#how-subscribers-work" title="Permanent link">&para;</a></h3>
+<p>When an external controller sends an ArtPoll request with the <code>notify_on_change</code> flag set to true, it is automatically added to a subscriber pool:</p>
+<p>These subscribers receive automatic updates whenever relevant changes occur in your controller, without needing to continuously poll for changes.</p>
+<h3 id="when-updates-are-sent-to-subscribers">When Updates Are Sent to Subscribers<a class="headerlink" href="#when-updates-are-sent-to-subscribers" title="Permanent link">&para;</a></h3>
+<p>Updates are sent to all subscribers in the following scenarios:</p>
+<ol>
+<li><strong>Configuration Changes</strong>: When universes or ports are added or removed from your controller</li>
+<li><strong>Status Changes</strong>: When the status of a port changes (e.g., data transmission begins or ends)</li>
+<li><strong>Input Activity</strong>: When data is received on an input port, and the flag changes</li>
+</ol>
+<h3 id="removing-subscribers">Removing Subscribers<a class="headerlink" href="#removing-subscribers" title="Permanent link">&para;</a></h3>
+<p>A background task periodically checks for nodes that haven't been seen in 10 seconds.
+When a stale node is found, they are removed from the subscriber pool.</p>
+<h3 id="diagnostic-messages">Diagnostic Messages<a class="headerlink" href="#diagnostic-messages" title="Permanent link">&para;</a></h3>
+<p>To aid in troubleshooting, the integration logs activity when subscribers are added or removed:</p>
+<ul>
+<li>When a node is added: <code>Discovered new node at X.X.X.X@Y with Z/W/[universe list]</code></li>
+<li>When a node hasn't been seen for a while: <code>Haven't seen node X.X.X.X#Y for Z seconds; removing it.</code></li>
+</ul>
+<hr />
+<p><em>Art-Net™ Designed by and Copyright Artistic Licence</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
