@@ -2,7 +2,6 @@
 import json
 import logging
 import os
-from os import walk
 from pathlib import Path
 from typing import Any
 
@@ -19,11 +18,9 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, CONF_FIXTURE_ENTITIES
+from custom_components.dmx.fixture.delegator import create_entities
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.fixture.parser import parse
-from custom_components.dmx.fixtures.delegator import create_entities
-from custom_components.dmx.fixtures.ha_fixture import parse_json
-from custom_components.dmx.fixtures.model import HaFixture
 from custom_components.dmx.io.dmx_io import DmxUniverse
 from custom_components.dmx.server import PortAddress, ArtPollReply
 from custom_components.dmx.server.artnet_server import ArtNetServer, Node, ManualNode
@@ -88,25 +85,6 @@ class UnknownFixtureError(IntegrationError):
             return f"Could not find any fixture named '{self._fixture}, should be one of {self._discovered_fixtures}'. " \
                    f"Note that first the fixture's `fixtureKey` is matched, if that's not " \
                    f"available `shortName`, or finally `name`."
-
-
-def load_fixtures(hass: HomeAssistant, platform_config: ConfigType):
-    fixtures_config = platform_config.get(CONF_FIXTURES, {})
-    folder = fixtures_config.get(CONF_FOLDER)
-    path = f"{hass.config.config_dir}/{folder}"
-
-    filenames = next(walk(path), (None, None, []))[2]
-
-    for filename in filenames:
-        fixture = parse_json(f"{path}/{filename}")
-        FIXTURES[fixture.fixture_key] = fixture
-
-
-def get_fixture(name: str) -> HaFixture:
-    fixture = FIXTURES.get(name)
-    if not fixture:
-        raise UnknownFixtureError(name, list(FIXTURES.keys()))
-    return fixture
 
 
 def port_address_config(value: Any) -> int:
