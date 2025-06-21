@@ -10,7 +10,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import DeviceInfo
 
 from custom_components.artnet_led import ArtPollReply
-from custom_components.artnet_led.client import StyleCode, IndicatorState, BootProcess, FailsafeState, PortAddressProgrammingAuthority
+from custom_components.artnet_led.server import StyleCode, IndicatorState, BootProcess, FailsafeState, PortAddressProgrammingAuthority
 
 _LOGGER = logging.getLogger(__name__)
 

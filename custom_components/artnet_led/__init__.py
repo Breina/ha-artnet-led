@@ -18,8 +18,8 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 
-from custom_components.artnet_led.client import PortAddress, ArtPollReply
-from custom_components.artnet_led.client.artnet_server import ArtNetServer, Node, ManualNode
+from custom_components.artnet_led.server import PortAddress, ArtPollReply
+from custom_components.artnet_led.server.artnet_server import ArtNetServer, Node, ManualNode
 from custom_components.artnet_led.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, UNDO_UPDATE_LISTENER, CONF_FIXTURE_ENTITIES
 from custom_components.artnet_led.fixture.fixture import Fixture
 from custom_components.artnet_led.fixture.parser import parse

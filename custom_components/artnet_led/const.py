@@ -18,7 +18,7 @@ HA_OEM = 0x2BE9
 #
 # CONF_MANUAL_INPUT = 'Manually configure EnergyTag Link Gateway'
 #
-# CONF_CLIENT = 'client'
+# CONF_CLIENT = 'server'
 #
 # DPWS_MODEL_NAME = 'ModelName'
 # DPWS_PRESENTATION_URL = 'PresentationUrl'
