@@ -220,6 +220,9 @@ def create_entities(
         for channel_group in sorted(group, key=lambda g: g[1].byte_offset):
             dmx_indexes.append(channel_group[0] + dmx_start)
 
+        if channel.constant:
+            universe.set_constant_value(dmx_indexes, channel.default_value)
+
         if not channel.has_multiple_capabilities():
             entities.append(
                 DmxNumberEntity(

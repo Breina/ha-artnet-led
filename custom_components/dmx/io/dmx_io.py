@@ -14,6 +14,9 @@ class DmxUniverse:
         # Dictionary to store channel value: {channel_number: current_value}
         self._channel_values = {}
 
+        # Dictionary to store constant values: {channel_number: constant_value}
+        self._constant_values = {}
+
         # Dictionary to store callbacks: {channel_number: [callback1, callback2, ...]}
         self._channel_callbacks = {}
 
@@ -22,6 +25,22 @@ class DmxUniverse:
 
         # Flag to track if this is the first send (to send full universe initially)
         self._first_send = True
+
+    def set_constant_value(self, channels: List[int], value: int) -> None:
+        """
+        Set a constant value for one or more channels. These values will be maintained
+        during internal updates but can be overridden by external sources.
+
+        Args:
+            channel: List of channel numbers
+            value: Constant value to maintain for the channel(s)
+        """
+
+        for ch in channels:
+            self._constant_values[ch] = value
+            # Apply the constant value immediately
+            self._channel_values[ch] = value
+            self._changed_channels.add(ch)
 
     def register_channel_listener(self, channels: int | List[int], callback: Callable[[str | None], None]) -> None:
         """
@@ -41,16 +60,6 @@ class DmxUniverse:
             if callback not in self._channel_callbacks[channel]:
                 self._channel_callbacks[channel].append(callback)
 
-    def unregister_channel_listener(self, channels: int | List[int],
-                                    callback: Callable[[int, int], None]) -> None:
-        """Remove a callback from the registry."""
-        if isinstance(channels, int):
-            channels = [channels]
-
-        for channel in channels:
-            if channel in self._channel_callbacks and callback in self._channel_callbacks[channel]:
-                self._channel_callbacks[channel].remove(callback)
-
     async def update_value(self, channel: int | List[int], value: int, send_immediately: bool = False, source: str | None = None) -> set[Callable[[str | None], None]]:
         """
         Update the value of one or more channels and notify all listeners.
@@ -61,7 +70,6 @@ class DmxUniverse:
             send_immediately: Whether to send the universe data immediately after update
             source: From where the update came from
         """
-        # Convert to list if single channel
         if isinstance(channel, int):
             channels = [channel]
         else:
@@ -71,6 +79,9 @@ class DmxUniverse:
         changed_channels = []
 
         for ch in channels:
+            if ch in self._constant_values and source is None:
+                continue
+
             if ch not in self._channel_values or self._channel_values[ch] != value:
                 self._channel_values[ch] = value
                 self._changed_channels.add(ch)
@@ -99,7 +110,7 @@ class DmxUniverse:
         Args:
             updates: Dictionary mapping channel numbers to values
             source: From where the update came from
-            :param send_update:
+            send_update: Whether to send the universe data after updates
         """
         callbacks_to_call = set()
         for channel, value in updates.items():
@@ -128,7 +139,13 @@ class DmxUniverse:
         Gather all channel values into a bytearray and send it via ArtNet.
         If use_partial_universe is enabled, only send up to the highest
         changed channel since last transmission (rounded up to a multiple of 2).
+        Before sending, apply constant values to their respective channels.
         """
+        for channel, constant_value in self._constant_values.items():
+            if self._channel_values.get(channel) != constant_value:
+                self._channel_values[channel] = constant_value
+                self._changed_channels.add(channel)
+
         if not self._channel_values:
             # If no channels have been set, send a minimum-sized packet
             data = bytearray(2)  # Minimum size is 2 bytes
@@ -147,21 +164,15 @@ class DmxUniverse:
             # Ensure data_length is at least 2 bytes
             data_length = max(2, data_length)
 
-            # Create a byte array of the appropriate size
             data = bytearray(data_length)
         else:
-            # Use the full DMX universe (512 channels) for first send or when partial universe is disabled
             data = bytearray(512)
 
-        # Fill in the values for channels that have been set
         for channel, value in self._channel_values.items():
-            # DMX channels are 1-based, but bytearray indices are 0-based
             if 1 <= channel <= len(data):
                 data[channel - 1] = value
 
-        # Send the data via the controller
         self.controller.send_dmx(self.port_address, data)
 
-        # Clear the changed channels set after sending
         self._changed_channels.clear()
         self._first_send = False
