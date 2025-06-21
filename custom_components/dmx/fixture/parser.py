@@ -34,7 +34,6 @@ underscore_pattern = re.compile(r"(?<!^)(?=[A-Z])")
 entity_value = re.compile(r"([-\d.]*)(.*)")
 
 log = logging.getLogger(__name__)
-log.setLevel("ERROR")
 
 
 def parse(json_file: str) -> Fixture:
@@ -392,43 +391,3 @@ def __parse_mode_channel(mode_channel: None | str | dict) \
     return MatrixChannelInsertBlock(
         repeat_for, channel_order, template_channels
     )
-
-# TODO move this code to a test or something
-# fixture = parse(
-#     "F:/Projects/Home/open-fixture-library/fixtures/arri/l10-c.json")
-# print(fixture)
-# for mode in fixture.modes.values():
-#     print(f"  {mode}")
-#     print(f"    {fixture.select_mode(mode.name)}")
-#
-# dir = "F:/Projects/Home/open-fixture-library/fixtures/"
-# for brand in os.listdir(dir):
-#     if brand.endswith("json"):
-#         continue
-#     # print(brand)
-#     for file in os.listdir(dir + brand):
-#         # print(f"  {file}")
-#         try:
-#             with open(dir + brand + "/" + file, encoding='utf-8') as json_data:
-#                 data = json.load(json_data)
-#
-#                 if data.get("redirectTo"):
-#                     continue
-#
-#             fixture = parse(dir + brand + "/" + file)
-#             print(fixture.name)
-#             for mode in fixture.modes.values():
-#                 print(f"  {mode}")
-#                 print(f"    {fixture.select_mode(mode.name)}")
-#
-#         except Exception as e:
-#             print(f"BIG ERROR!!! {brand}/{file}: {e}")
-#             print()
-
-# fixture = parse("../../../staging/fixtures/hydrabeam-300-rgbw.json")
-# fixture = parse("../../../staging/fixtures/ultrapanelpro-dual-color-30.json")
-# capabilities = parse("../../../staging/fixtures/l10-c.json")
-
-
-# print(fixture.select_channels("26-channel"))
-# print(fixture.select_channels("42-channel"))

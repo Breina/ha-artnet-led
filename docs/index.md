@@ -111,7 +111,7 @@ graph TB
 
 ## Getting Started
 
-Ready to transform your lighting setup? Head over to the [Configuration](config.md) section to learn how to set up your first Art-Net universe and fixtures, or check out the [Examples](examples.md) to see real-world configurations in action.
+Ready to transform your lighting setup? Head over to the [Configuration](config.md) section to learn how to set up your first Art-Net universe and fixtures.
 
 ---
 

@@ -4,6 +4,7 @@ from homeassistant.components.select import SelectEntity
 from homeassistant.helpers.entity import DeviceInfo
 
 from custom_components.dmx import DOMAIN
+from custom_components.dmx.entity.icon_helper import determine_icon
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.fixture.capability import Capability
 from custom_components.dmx.fixture.channel import Channel
@@ -26,10 +27,9 @@ class DmxSelectEntity(SelectEntity):
 
         self._attr_name = name
         self._attr_device_info = device
-        self._attr_unique_id = f"{DOMAIN}_{channel.name}"  # TODO add device
+        self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{str(dmx_index)}_{name}"
 
-        # TODO icon
-        # self._attr_icon
+        self._attr_icon = determine_icon(channel)
 
         name_counts: dict[str, int] = {}
         self.capability_types: dict[str, Capability] = {}

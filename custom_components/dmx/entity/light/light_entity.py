@@ -32,6 +32,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
             max_kelvin: int = 6500,
     ):
         self._matrix_key = matrix_key
+        self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{'/'.join(['-'.join(map(str, cm.dmx_indexes)) for cm in channels])}_{name}"
         self._attr_name = f"{name} Light {matrix_key}" if matrix_key else f"{name} Light"
         self._attr_device_info = device
         self._attr_unique_id = f"{DOMAIN}_light_{name}_{matrix_key}"

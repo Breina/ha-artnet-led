@@ -17,18 +17,16 @@ class DmxNumberEntity(RestoreNumber):
     def __init__(self, name: str, capability: Capability,
                  universe: DmxUniverse, dmx_indexes: List[int],
                  device: DeviceInfo,
-                 available: bool = True,  # TODO something wrong here?
+                 available: bool = True,
                  ) -> None:
         super().__init__()
-
-        # TODO make sure that every number's initial value is within the range
 
         assert capability.dynamic_entities \
                and len(capability.dynamic_entities) == 1
 
         self._attr_name = name
         self._attr_device_info = device
-        self._attr_unique_id = f"{DOMAIN}_{name}"  # TODO add device
+        self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{'-'.join(map(str, dmx_indexes))}_{name}"
 
         self._attr_icon = capability.icon()
         self._attr_extra_state_attributes = capability.extra_attributes()
@@ -54,14 +52,13 @@ class DmxNumberEntity(RestoreNumber):
             self.dynamic_entity.entity_start.unit
 
         possible_dmx_states = pow(2, len(dmx_indexes) * 8)
-        native_value_range = (
-                self._attr_native_max_value - self._attr_native_min_value)
+        native_value_range = (self._attr_native_max_value - self._attr_native_min_value)
         self._attr_native_step = native_value_range / float(possible_dmx_states)
 
         if capability.menu_click:
-            self._attr_native_value = capability.menu_click_value
+            self._attr_native_value = self.dynamic_entity.from_dmx(capability.menu_click_value)
         else:
-            self._attr_native_value = 0
+            self._attr_native_value = self.dynamic_entity.from_dmx(0)
 
         self._is_updating = False
         self.universe.register_channel_listener(dmx_indexes, self.update_value)

@@ -52,7 +52,7 @@ There are currently 3 types of entities;
 
 * [DmxNumberEntity](custom_components/dmx/entity/number.py): These are created for every entity that has a DMX range.
 * [DmxSelectEntity](custom_components/dmx/entity/select.py): Created for channels that have multiple capabilities.
-* [DmxLightEntity](custom_components/dmx/entity/light/light_entity.py): A best effort light fixture is configured based on the light channels it can find.
+* [DmxLightEntity](custom_components/dmx/entity/light/light_entity.py): A light fixture is configured based on the best effort channels it can find.
 
 ### Design decisions
 

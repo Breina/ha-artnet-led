@@ -51,6 +51,7 @@ dmx:
 📖 **[Complete Documentation](https://breina.github.io/ha-artnet-led/)**
 
 - [Configuration Guide](https://breina.github.io/ha-artnet-led/config/) - Detailed setup instructions
+- [Art-Net controller overview](https://breina.github.io/ha-artnet-led/artnet-controller-communication/) - Detailed setup instructions
 
 ## Works Great With
 
@@ -61,7 +62,7 @@ dmx:
 
 ```mermaid
 graph LR
-    HA[Home Assistant] <--> ARTNET[Art-Net Integration]
+    HA[Home Assistant] <--> ARTNET[DMX Integration]
     ARTNET <--> NETWORK[Art-Net Network]
     NETWORK --> NODE[Art-Net Node]
     NODE --> FIXTURES[DMX Fixtures]
