@@ -1,5 +1,6 @@
 import asyncio
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -25,7 +26,8 @@ class TestColorTemperatureFader(unittest.TestCase):
         self.schedule_update_patcher = patch('homeassistant.helpers.entity.Entity.async_schedule_update_ha_state')
         self.mock_schedule_update = self.schedule_update_patcher.start()
 
-        self.fixture = parser.parse('fixtures/desk-channel.json')
+        fixture_path = Path(__file__).parent / 'fixtures' / 'desk-channel.json'
+        self.fixture = parser.parse(str(fixture_path))
         self.universe = MockDmxUniverse()
 
     def tearDown(self):

@@ -1,5 +1,6 @@
 import asyncio
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -25,7 +26,8 @@ class TestRgbwwFixture(unittest.TestCase):
         self.schedule_update_patcher = patch('homeassistant.helpers.entity.Entity.async_schedule_update_ha_state')
         self.mock_schedule_update = self.schedule_update_patcher.start()
 
-        self.fixture = parser.parse('fixtures/rgbww-fader.json')
+        fixture_path = Path(__file__).parent / 'fixtures' / 'rgbww-fader.json'
+        self.fixture = parser.parse(str(fixture_path))
         self.universe = MockDmxUniverse()
 
     def tearDown(self):
@@ -130,8 +132,8 @@ class TestRgbwwFixture(unittest.TestCase):
         self.assertEqual(0, cold_white.native_value)
 
         # Test setting warm white
-        asyncio.run(light.async_turn_on(rgbww_color=(0, 0, 0, 0,255)))
-        assert_dmx_range(self.universe, 2, [0, 0, 0, 255, 0]) # = [127, 191, 63, 255, 0]
+        asyncio.run(light.async_turn_on(rgbww_color=(0, 0, 0, 0, 255)))
+        assert_dmx_range(self.universe, 2, [0, 0, 0, 255, 0])  # = [127, 191, 63, 255, 0]
         self.assertEqual(0, red.native_value)
         self.assertEqual(0, green.native_value)
         self.assertEqual(0, blue.native_value)
@@ -230,13 +232,13 @@ class TestRgbwwFixture(unittest.TestCase):
 
         # Test various RGB colors
         colors_to_test = [
-            (255, 0, 0),    # Red
-            (0, 255, 0),    # Green
-            (0, 0, 255),    # Blue
+            (255, 0, 0),  # Red
+            (0, 255, 0),  # Green
+            (0, 0, 255),  # Blue
             (255, 255, 0),  # Yellow
             (255, 0, 255),  # Magenta
             (0, 255, 255),  # Cyan
-            (255, 128, 64), # Orange
+            (255, 128, 64),  # Orange
         ]
 
         for rgb in colors_to_test:

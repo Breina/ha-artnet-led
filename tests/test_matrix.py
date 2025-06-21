@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -29,7 +30,8 @@ class TestSelectEntity(unittest.TestCase):
         self.schedule_update_patcher.stop()
 
     def test_matrix_abc(self):
-        fixture = parser.parse('fixtures/hydrabeam-300-rgbw.json')
+        fixture_path = Path(__file__).parent / 'fixtures' / 'hydrabeam-300-rgbw.json'
+        fixture = parser.parse(str(fixture_path))
         channels = fixture.select_mode('42ch')
         entities = delegator.create_entities('Hydrabeam', 1, channels, None, self.universe)
 
@@ -76,7 +78,8 @@ class TestSelectEntity(unittest.TestCase):
         self.assertEqual([42], get_entity_by_name(entities, "Hydrabeam White 3").dmx_indexes)
 
     def test_matrix_per_pixel(self):
-        fixture = parser.parse('fixtures/solaris-flare.json')
+        fixture_path = Path(__file__).parent / 'fixtures' / 'solaris-flare.json'
+        fixture = parser.parse(str(fixture_path))
         channels = fixture.select_mode('RGBWstrobe12pix')
         entities = delegator.create_entities('Flare', 1, channels, None, self.universe)
 
