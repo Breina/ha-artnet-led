@@ -74,3 +74,23 @@ class TestSelectEntity(unittest.TestCase):
         self.assertEqual([40], get_entity_by_name(entities, "Hydrabeam Green 3").dmx_indexes)
         self.assertEqual([41], get_entity_by_name(entities, "Hydrabeam Blue 3").dmx_indexes)
         self.assertEqual([42], get_entity_by_name(entities, "Hydrabeam White 3").dmx_indexes)
+
+    def test_matrix_per_pixel(self):
+        fixture = parser.parse('fixtures/solaris-flare.json')
+        channels = fixture.select_mode('RGBWstrobe12pix')
+        entities = delegator.create_entities('Flare', 1, channels, None, self.universe)
+
+        self.assertEqual([9], get_entity_by_name(entities, "Flare 12-Pixel 1 Red").dmx_indexes)
+        self.assertEqual([10], get_entity_by_name(entities, "Flare 12-Pixel 1 Green").dmx_indexes)
+        self.assertEqual([11], get_entity_by_name(entities, "Flare 12-Pixel 1 Blue").dmx_indexes)
+        self.assertEqual([12], get_entity_by_name(entities, "Flare 12-Pixel 1 White").dmx_indexes)
+
+        self.assertEqual([13], get_entity_by_name(entities, "Flare 12-Pixel 2 Red").dmx_indexes)
+        self.assertEqual([14], get_entity_by_name(entities, "Flare 12-Pixel 2 Green").dmx_indexes)
+        self.assertEqual([15], get_entity_by_name(entities, "Flare 12-Pixel 2 Blue").dmx_indexes)
+        self.assertEqual([16], get_entity_by_name(entities, "Flare 12-Pixel 2 White").dmx_indexes)
+
+        self.assertEqual([17], get_entity_by_name(entities, "Flare 12-Pixel 3 Red").dmx_indexes)
+        self.assertEqual([18], get_entity_by_name(entities, "Flare 12-Pixel 3 Green").dmx_indexes)
+        self.assertEqual([19], get_entity_by_name(entities, "Flare 12-Pixel 3 Blue").dmx_indexes)
+        self.assertEqual([20], get_entity_by_name(entities, "Flare 12-Pixel 3 White").dmx_indexes)
