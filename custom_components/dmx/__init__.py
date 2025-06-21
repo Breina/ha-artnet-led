@@ -13,8 +13,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT, CONF_MODE, Platform, CONF_
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import IntegrationError
 from homeassistant.helpers import discovery_flow
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity import Entity, DeviceInfo
 from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, CONF_FIXTURE_ENTITIES

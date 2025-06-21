@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Tuple, Any
 
 from homeassistant.components.light import LightEntity, ColorMode
 from homeassistant.core import callback
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util.color import color_temperature_kelvin_to_mired
 

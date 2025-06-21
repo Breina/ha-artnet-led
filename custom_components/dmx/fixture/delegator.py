@@ -3,8 +3,7 @@ from itertools import groupby
 from typing import List
 
 from homeassistant.components.light import ColorMode
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity import Entity, DeviceInfo
 
 from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from custom_components.dmx.entity.light.light_entity import DmxLightEntity

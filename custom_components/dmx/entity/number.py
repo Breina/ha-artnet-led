@@ -1,12 +1,10 @@
-from homeassistant.core import callback
-
 import logging
 from typing import List
 
 from homeassistant.components.number import NumberMode, \
     RestoreNumber
 from homeassistant.core import callback
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo
 
 from custom_components.dmx import DOMAIN
 from custom_components.dmx.fixture.capability import DynamicEntity, Capability
@@ -117,7 +115,7 @@ class DmxNumberEntity(RestoreNumber):
     async def async_set_native_value(self, value: float) -> None:
         dmx_values = self.dynamic_entity.to_dmx_fine(value, len(self.dmx_indexes))
 
-        self._attr_native_value = self.dynamic_entity.from_dmx_fine(dmx_values) # Set to closest value that can be represented through DMX values
+        self._attr_native_value = self.dynamic_entity.from_dmx_fine(dmx_values)  # Set to closest value that can be represented through DMX values
 
         dmx_updates = {}
         for i, dmx_index in enumerate(self.dmx_indexes):

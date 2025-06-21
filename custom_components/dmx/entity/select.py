@@ -1,7 +1,7 @@
 import logging
 
 from homeassistant.components.select import SelectEntity
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo
 
 from custom_components.dmx import DOMAIN
 from custom_components.dmx.entity.number import DmxNumberEntity
