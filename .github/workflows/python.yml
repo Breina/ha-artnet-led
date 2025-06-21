@@ -1,4 +1,4 @@
-name: test.yml
+name: python.yml
 on:
   push:
   pull_request:
