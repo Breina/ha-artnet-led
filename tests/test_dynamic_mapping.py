@@ -2,7 +2,7 @@
 import unittest
 from decimal import Decimal
 
-from custom_components.artnet_led.fixture.capability import DynamicMapping
+from custom_components.dmx.fixture.capability import DynamicMapping
 
 
 class TestDynamicMapping(unittest.TestCase):

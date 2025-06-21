@@ -5,14 +5,14 @@ from unittest.mock import MagicMock
 
 from homeassistant.helpers.entity import Entity
 
-from custom_components.artnet_led.entity.number import DmxNumberEntity
-from custom_components.artnet_led.entity.select import DmxSelectEntity
-from custom_components.artnet_led.io.dmx_io import DmxUniverse
+from custom_components.dmx.entity.number import DmxNumberEntity
+from custom_components.dmx.entity.select import DmxSelectEntity
+from custom_components.dmx.io.dmx_io import DmxUniverse
 
 # Ensure custom_components can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from custom_components.artnet_led.entity.light.light_entity import DmxLightEntity
+from custom_components.dmx.entity.light.light_entity import DmxLightEntity
 
 
 class MockDmxUniverse(DmxUniverse):

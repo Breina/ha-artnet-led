@@ -1,5 +1,5 @@
 light:
-- platform: artnet_led
+- platform: dmx
   host: 192.168.1.239                              # IP of Art-Net Node
   port: 6038
   max_fps: 25                           # Max 40 per second

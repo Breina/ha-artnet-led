@@ -1,4 +1,4 @@
-artnet_led:
+dmx:
   fixtures:
     folder: fixtures
 
@@ -97,15 +97,11 @@ frontend:
 logger:
   default: warning
   logs:
-    custom_components.artnet_led: debug
-    custom_components.artnet_led.client: info
-    custom_components.artnet_led.entity.node_handler: info
-    custom_components.artnet_led.util: debug
-    custom_components.artnet_led.bridge: debug
-
-# Text to speech
-#tts:
-#  - platform: google_translate
+    custom_components.dmx: debug
+    custom_components.dmx.client: info
+    custom_components.dmx.entity.node_handler: info
+    custom_components.dmx.util: debug
+    custom_components.dmx.bridge: debug
 
 #automation: !include automations.yaml
 #script: !include scripts.yaml

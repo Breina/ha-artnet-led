@@ -9,7 +9,8 @@ Show docs on localhost
 ```shell
 mkdocs serve
 ```
-[Open browser](http://localhost:8000/) 
+
+[Open browser](http://localhost:8000/)
 
 ### Deploy
 
@@ -41,9 +42,24 @@ pytest
 
 ### Magic code
 
-[Capabilities](custom_components/artnet_led/fixture/capability.py) and [wheels](custom_components/artnet_led/fixture/wheel.py) use some magic in the name of expandability and low coupling.
-The [parser](custom_components/artnet_led/fixture/parser.py) directly instances these classes.
+[Capabilities](custom_components/dmx/fixture/capability.py) and [wheels](custom_components/dmx/fixture/wheel.py) use some magic in the name of expandability and low coupling.
+The [parser](custom_components/dmx/fixture/parser.py) directly instances these classes.
 The mandatory and optional parameters directly match [OpenFixtureLibrary's spec](https://github.com/OpenLightingProject/open-fixture-library/blob/master/docs/capability-types.md).
+
+### Entities
+
+There are currently 3 types of entities;
+
+* [DmxNumberEntity](custom_components/dmx/entity/number.py): These are created for every entity that has a DMX range.
+* [DmxSelectEntity](custom_components/dmx/entity/select.py): Created for channels that have multiple capabilities.
+* [DmxLightEntity](custom_components/dmx/entity/light/light_entity.py): A best effort light fixture is configured based on the light channels it can find.
+
+### Design decisions
+
+* We are fully compatible with OpenFixtureLibrary. When requiring features that are not yet supported in their format, open a GitHub issue or create a PR on their end. Do not deviate from the spec.
+* Don't change the unique entity ID, this will cause mayhem.
+
+Other than that, we're open to changes, improvements and refactorings.
 
 ### Useful tools
 

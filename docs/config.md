@@ -109,7 +109,7 @@ Add this to your `configuration.yaml` for detailed debugging:
 ```yaml
 logger:
   logs:
-    custom_components.artnet_led: debug
+    custom_components.dmx: debug
 ```
 
 **Important**: Restart Home Assistant after adding debug logging.

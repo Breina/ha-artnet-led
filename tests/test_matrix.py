@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import homeassistant.helpers.device_registry
 
-from custom_components.artnet_led.fixture import parser
-from custom_components.artnet_led.fixture_delegator import delegator
+from custom_components.dmx.fixture import parser
+from custom_components.dmx.fixtures import delegator
 from tests.dmx_test_framework import MockDmxUniverse, get_entity_by_name, MockHomeAssistant
 
 device_info_mock = MagicMock()
