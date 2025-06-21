@@ -95,10 +95,13 @@ class DmxNumberEntity(RestoreNumber):
 
     @callback
     def update_value(self, source: str | None) -> None:
-        self._attr_attribution = source
+        if not self.available:
+            return
 
         if getattr(self, '_is_updating', False):
             return
+
+        self._attr_attribution = source
 
         dmx_values = [self.universe.get_channel_value(idx) for idx in self.dmx_indexes]
         self._attr_native_value = self.dynamic_entity.from_dmx_fine(dmx_values)

@@ -9,7 +9,7 @@ from custom_components.artnet_led.entity.number import DmxNumberEntity
 from custom_components.artnet_led.entity.select import DmxSelectEntity
 from custom_components.artnet_led.fixture import parser
 from custom_components.artnet_led.fixture_delegator import delegator
-from tests.dmx_test_framework import MockDmxUniverse, get_entity_by_name, MockHomeAssistant, assert_dmx
+from tests.dmx_test_framework import MockDmxUniverse, get_entity_by_name, MockHomeAssistant, assert_dmx, assert_dmx_range
 
 device_info_mock = MagicMock()
 homeassistant.helpers.device_registry.DeviceInfo = device_info_mock
@@ -107,10 +107,36 @@ class TestSelectEntity(unittest.TestCase):
         speed: DmxNumberEntity = get_entity_by_name(entities, "Hydrabeam Show mode speed 1")
         sound: DmxNumberEntity = get_entity_by_name(entities, "Hydrabeam Sound sensitivity 1")
 
-        self.assertEqual('No function', mode.current_option, "Default value")
+        asyncio.run(speed.async_set_native_value(1))
+        asyncio.run(sound.async_set_native_value(1))
 
-        self.asserTrue(speed.available)
+        self.assertEqual('No function', mode.current_option, "Default value")
+        self.assertTrue(speed.available)
         self.assertFalse(sound.available)
+        assert_dmx_range(self.universe, 9, [0, 0])
+
+        asyncio.run(mode.async_select_option('Show mode 1'))
+        self.assertTrue(speed.available)
+        self.assertFalse(sound.available)
+        assert_dmx_range(self.universe, 9, [8, 0])
+
+        asyncio.run(speed.async_set_native_value(100))
+        self.assertEqual(1, sound.native_value)
+
+        assert_dmx_range(self.universe, 9, [8, 255])
+
+        asyncio.run(mode.async_select_option('Sound control sound controlled'))
+        self.assertFalse(speed.available)
+        self.assertTrue(sound.available)
+        assert_dmx_range(self.universe, 9, [100, 0])
+
+        asyncio.run(sound.async_set_native_value(100))
+        assert_dmx_range(self.universe, 9, [100, 255])
+
+        asyncio.run(mode.async_select_option('Show mode 2'))
+        self.assertTrue(speed.available)
+        self.assertFalse(sound.available)
+        assert_dmx_range(self.universe, 9, [31, 255])
 
 
 if __name__ == "__main__":

@@ -55,7 +55,6 @@ class DmxSelectEntity(SelectEntity):
         self.switching_entities = {}
 
         self._attr_current_option = self._attr_options[0]
-        self.__set_availability(True)
 
         self.universe = universe
         self.universe.register_channel_listener(dmx_index, self.update_value)
@@ -70,7 +69,7 @@ class DmxSelectEntity(SelectEntity):
 
             for channel_name in capability.switch_channels.values():
                 for entity in entities:
-                    if entity.name == channel_name:
+                    if entity.name.endswith(channel_name):
                         self.switching_entities[capability_name] = entity
                         entity.available = False
                         break
@@ -98,10 +97,11 @@ class DmxSelectEntity(SelectEntity):
                 f"Fixture {self._attr_name} received an invalid DMX value: "
                 f"{value}")
 
-        self.update_current_option(str(capability[0]))
+        # Only update the option, don't handle availability here
+        self._update_current_option_sync(str(capability[0]))
 
     async def async_select_option(self, option: str) -> None:
-        self.update_current_option(option)
+        await self._update_current_option_async(option)
 
         capability = self.capability_types[option]
         if capability.menu_click:
@@ -111,18 +111,39 @@ class DmxSelectEntity(SelectEntity):
 
         await self.universe.update_value(self.dmx_index, dmx_value, send_immediately=True)
 
-    def update_current_option(self, new_option: str) -> None:
+    def _update_current_option_sync(self, new_option: str) -> None:
+        """Synchronous version for initialization and DMX value updates"""
         self.__set_availability(False)
         self._attr_current_option = new_option
         self.__set_availability(True)
 
+    async def _update_current_option_async(self, new_option: str) -> None:
+        """Async version for user interactions that need to reapply values"""
+        await self.__async_set_availability(False)
+        self._attr_current_option = new_option
+        await self.__async_set_availability(True)
+
     def __set_availability(self, availability: bool) -> None:
+        """Synchronous availability setting (no value reapplication)"""
         if self._attr_current_option in self.capability_entities:
             self.capability_entities[self._attr_current_option].available = availability
 
         if self._attr_current_option in self.switching_entities:
-            self.switching_entities[
-                self._attr_current_option].available = availability
+            switching_entity: DmxNumberEntity = self.switching_entities[self._attr_current_option]
+            switching_entity.available = availability
+
+    async def __async_set_availability(self, availability: bool) -> None:
+        """Async availability setting with value reapplication"""
+        if self._attr_current_option in self.capability_entities:
+            self.capability_entities[self._attr_current_option].available = availability
+
+        if self._attr_current_option in self.switching_entities:
+            switching_entity: DmxNumberEntity = self.switching_entities[self._attr_current_option]
+            switching_entity.available = availability
+
+            if availability:
+                # Reapply the current value when the entity becomes available
+                await switching_entity.async_set_native_value(switching_entity.native_value)
 
     def __str__(self) -> str:
         return f"{self._attr_name}: {self.capability_attributes['options']}"
