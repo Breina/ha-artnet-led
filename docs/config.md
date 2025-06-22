@@ -56,7 +56,7 @@ dmx:
   Maximum frames per second for animations [0, 43]
 - **`refresh_every`** *(optional, default: `0.8`)*  
   The interval in seconds in which universe data is retransmitted. This is useful when there are external controllers sending to the same universes. Set to `0` to disable this behavior.
-- **`refresh_every`** *(optional, default: `0.5`)*  
+- **`rate_limit`** *(optional, default: `0.5`)*  
   The rate limit in seconds between each entity update when received from an external controller. Increase this value if HomeAssistant slows down too much when receiving updates.
 
 #### `dmx.artnet.universes`
@@ -95,8 +95,6 @@ Universe definitions. Each universe can be specified as:
 2. Check that your fixtures appear as entities in Home Assistant
 
 ## Troubleshooting
-
-If fixtures don't appear after restart:
 
 ### Check Logs
 1. Go to **Settings** → **System** → **Logs**

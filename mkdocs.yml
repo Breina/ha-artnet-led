@@ -10,6 +10,7 @@ nav:
   - Overview: index.md
   - Configuration: config.md
   - External Art-Net controller: artnet-controller-communication.md
+  - Beta information: beta.md
 
 plugins:
   - search
