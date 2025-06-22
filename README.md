@@ -51,7 +51,7 @@ dmx:
 📖 **[Complete Documentation](https://breina.github.io/ha-artnet-led/)**
 
 - [Configuration Guide](https://breina.github.io/ha-artnet-led/config/) - Detailed setup instructions
-- [Art-Net controller overview](https://breina.github.io/ha-artnet-led/artnet-controller-communication/) - Detailed setup instructions
+- [Art-Net controller overview](https://breina.github.io/ha-artnet-led/artnet-controller-communication/) - Information on how to the integrated Art-Net controller works
 
 ## Works Great With
 
