@@ -14,6 +14,7 @@ from custom_components.dmx.server import StyleCode, IndicatorState, BootProcess,
 
 _LOGGER = logging.getLogger(__name__)
 
+
 def bind_index_str(artpoll_reply: ArtPollReply):
     if artpoll_reply.bind_index == 0:
         return ""

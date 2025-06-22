@@ -3,9 +3,9 @@ from typing import Dict, Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import async_get_platforms
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 
 from custom_components.dmx import ArtPollReply, DOMAIN, Node
@@ -13,8 +13,6 @@ from custom_components.dmx.const import CONF_NODE_ENTITIES
 from custom_components.dmx.entity.node import ArtNetOnlineBinarySensor, ArtNetIndicatorStateSensor, ArtNetBootProcessSensor, ArtNetRDMBinarySensor, ArtNetDHCPBinarySensor, \
     ArtNetFailsafeStateSensor, ArtNetACNPrioritySensor, ArtNetNodeReportSensor, ArtNetPortAddressProgrammingAuthoritySensor, ArtNetPortInputBinarySensor, \
     ArtNetPortUniverseSensor, ArtNetPortOutputBinarySensor, ArtNetPortMergeModeSelect, ArtNetPortSACNBinarySensor, ArtNetPortRDMBinarySensor, ArtNetPortOutputModeSensor
-
-
 
 log = logging.getLogger(__name__)
 
@@ -90,46 +88,29 @@ class DynamicNodeHandler:
         if unique_id not in self.discovered_nodes:
             return
 
-        # Update our stored reference with the latest data
         self.discovered_nodes[unique_id] = artpoll_reply
 
-        # Find all entities for this node and update their art_poll_reply reference
         if CONF_NODE_ENTITIES in self.hass.data[DOMAIN][self.entry.entry_id]:
             entities = self.hass.data[DOMAIN][self.entry.entry_id][CONF_NODE_ENTITIES]
 
-            # Find entities belonging to this node and update them
             mac_string = ":".join(f"{b:02x}" for b in artpoll_reply.mac_address)
             for entity in entities:
-                # # Skip if entity isn't properly initialized
                 if not hasattr(entity, "hass") or entity.hass is None:
-                    log.warning(
-                        f"Found entity with hass=None.\n"
-                        f"Type: {type(entity)}\n"
-                        f"Attributes: {[attr for attr in dir(entity) if not attr.startswith('__')]}\n"
-                        f"MAC: {getattr(entity, '_mac_address', 'N/A')}\n"
-                        f"Bind index: {getattr(getattr(entity, 'art_poll_reply', None), 'bind_index', 'N/A')}\n"
-                        f"Entity ID: {getattr(entity, 'entity_id', 'N/A')}\n"
-                        f"Name: {getattr(entity, 'name', 'N/A')}\n"
-                        f"Unique ID: {getattr(entity, 'unique_id', 'N/A')}"
-                    )
+                    log.debug(f"Skipping entity {getattr(entity, 'unique_id', 'unknown')} - not yet initialized")
                     continue
 
-                # Check if this entity belongs to the node being updated
                 if (hasattr(entity, "_mac_address") and
                         entity._mac_address == mac_string and
                         hasattr(entity, "art_poll_reply") and
                         entity.art_poll_reply.bind_index == artpoll_reply.bind_index):
 
-                    # Update the entity with the new ArtPollReply data
                     entity.art_poll_reply = artpoll_reply
 
-                    # Schedule an update for the entity
-
-                    if not self.hass:
-                        log.debug(f"Not updating {self.controller} because it hasn't been added to hass yet.")
-
-                    elif hasattr(entity, "async_schedule_update_ha_state"):
-                        entity.async_schedule_update_ha_state()
+                    if hasattr(entity, "async_schedule_update_ha_state"):
+                        try:
+                            entity.async_schedule_update_ha_state()
+                        except Exception as e:
+                            log.warning(f"Failed to schedule update for entity {entity.unique_id}: {e}")
 
         log.debug(f"Updated ArtNet node: {artpoll_reply.long_name}")
 
@@ -197,12 +178,12 @@ class DynamicNodeHandler:
 
     async def _add_entities(self, entities) -> None:
         """Add entities to Home Assistant."""
-        if CONF_NODE_ENTITIES not in self.hass.data[DOMAIN][self.entry.entry_id]:
-            self.hass.data[DOMAIN][self.entry.entry_id][CONF_NODE_ENTITIES] = []
-
-        self.hass.data[DOMAIN][self.entry.entry_id][CONF_NODE_ENTITIES].extend(entities)
-
         for platform in async_get_platforms(self.hass, DOMAIN):
             platform_entities = [e for e in entities if e.platform_type == platform.domain]
             if platform_entities:
                 await platform.async_add_entities(platform_entities)
+
+        if CONF_NODE_ENTITIES not in self.hass.data[DOMAIN][self.entry.entry_id]:
+            self.hass.data[DOMAIN][self.entry.entry_id][CONF_NODE_ENTITIES] = []
+
+        self.hass.data[DOMAIN][self.entry.entry_id][CONF_NODE_ENTITIES].extend(entities)
