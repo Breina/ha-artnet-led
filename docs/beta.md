@@ -5,7 +5,9 @@ This means we now support moving heads, strobes, and much more. Since this stand
 
 ## How to use it?
 
-Part of the beta is to test if my documentation suffices. So head over to [the index](index.md) and see if you can figure out how to install and use it.
+Since the DOMAIN has been renamed from `artnet_led` to `dmx`, HACS might get angry, so for now it will require a manual installation by copying `custom_components/dmx` into your `custom_components` folder on HomeAssistant, then restarting.
+
+Part of the beta is to test if my documentation suffices. So head over to [the index](index.md) and see if you can figure out how to use it.
 
 ## What's in the box?
 
