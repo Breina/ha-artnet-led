@@ -61,12 +61,13 @@ def parse(json_file: str) -> Fixture:
     assert available_channels_json or available_template_channels_json
 
     if available_channels_json:
-        __parse_channels(available_channels_json, fixture_model.define_channel)
+        __parse_channels(available_channels_json, fixture_model.define_channel, fixture_model.config_url)
 
     if available_template_channels_json:
         __parse_channels(
             available_template_channels_json,
-            fixture_model.define_template_channel
+            fixture_model.define_template_channel,
+            fixture_model.config_url
         )
 
     fixture_model.resolve_channels()
@@ -81,17 +82,23 @@ def __parse_fixture(fixture_json: dict) -> Fixture:
     short_name = fixture_json.get('shortName', name)
     categories = fixture_json['categories']
 
-    help_wanted = fixture_json.get('helpWanted')
-    if help_wanted:
-        log.warning(
-            "Looks like %s's fixture JSON could use some love: %s",
-            name, help_wanted
-        )
-
     fixture_key = fixture_json.get('fixtureKey')
     manufacturer_key = fixture_json.get('manufacturerKey')
-    config_url = f"{OFL_URL}/{manufacturer_key}/{fixture_key}" \
-        if fixture_key and manufacturer_key else None
+
+    help_wanted = fixture_json.get('helpWanted')
+    config_url = f"{OFL_URL}/{manufacturer_key}/{fixture_key}" if fixture_key and manufacturer_key else None
+
+    if help_wanted:
+        if config_url:
+            log.warning(
+                f"HELP WANTED: Looks like the fixture over at %s/%s/%s could use some love: %s.",
+                OFL_URL, manufacturer_key, fixture_key, help_wanted
+            )
+        else:
+            log.warning(
+                "HELP WANTED: Looks like the fixture %s could use some love: %s",
+                name, help_wanted
+            )
 
     return Fixture(name, short_name, categories, config_url)
 
@@ -141,8 +148,7 @@ def __parse_wheels(fixture_model: Fixture, wheels_json: dict):
                 if key in ["type"]:
                     continue
 
-                # Spec is defined in camelCase, but Python likes parameters in
-                # snake_case.
+                # Spec is defined in camelCase, but Python likes parameters in snake_case.
                 arg_name = underscore_pattern.sub('_', key).lower()
 
                 if arg_name in params:
@@ -163,8 +169,7 @@ def __parse_wheels(fixture_model: Fixture, wheels_json: dict):
         fixture_model.define_wheel(Wheel(wheel_name, slots, direction))
 
 
-def __parse_channels(available_channels_json: dict,
-                     add_channel: typing.Callable[[Channel], None]):
+def __parse_channels(available_channels_json: dict, add_channel: typing.Callable[[Channel], None], config_url: str | None):
     # pylint: disable=protected-access
     for name, channel_json in available_channels_json.items():
         dmx_value_resolution_str = channel_json.get("dmxValueResolution")
@@ -175,8 +180,7 @@ def __parse_channels(available_channels_json: dict,
                     if dvr.name.endswith(dmx_value_resolution_str.upper())
                 ][0]
         else:
-            # Underscore is because we can't start with a number, not because
-            # we want to protect it.
+            # Underscore is because we can't start with a number, not because we want to protect it.
             # noinspection PyProtectedMember
             dmx_value_resolution = DmxValueResolution._8BIT
 
@@ -191,7 +195,7 @@ def __parse_channels(available_channels_json: dict,
 
         capability_json = channel_json.get("capability")
         if capability_json:
-            channel_json = __parse_capability(channel, capability_json)
+            channel_json = __parse_capability(channel, capability_json, config_url)
             if channel_json:
                 channel.define_capability(channel_json)
             add_channel(channel)
@@ -201,7 +205,7 @@ def __parse_channels(available_channels_json: dict,
         if capabilities_json:
             channel_buffer = []
             for capability_json in capabilities_json:
-                channel_json = __parse_capability(channel, capability_json)
+                channel_json = __parse_capability(channel, capability_json, config_url)
                 if channel_json and channel_json.menu_click != MenuClick.hidden:
                     channel_buffer.append(channel_json)
             channel.define_capability(channel_buffer)
@@ -209,11 +213,8 @@ def __parse_channels(available_channels_json: dict,
             continue
 
 
-def __parse_capability(channel: Channel,
-                       capability_json: dict) -> Capability | None:
+def __parse_capability(channel: Channel, capability_json: dict, config_url: str | None) -> Capability | None:
     capability_type = capability_json["type"]
-    # if capability_type == "NoFunction":
-    #     return None
 
     # This is directly mapped to the class names inside capability.py.
     capability_obj = getattr(capability, capability_type)
@@ -235,22 +236,25 @@ def __parse_capability(channel: Channel,
 
     for key, value_json in capability_json.items():
         if key == "helpWanted":
-            log.warning(
-                "The channel '%s' could use some help: %s",
-                channel.name, value_json
-            )
+            if config_url:
+                log.warning(
+                    f"HELP WANTED: Channel '%s' of fixture over at %s could use some love: %s",
+                    channel.name, config_url, value_json
+                )
+            else:
+                log.warning(
+                    "HELP WANTED: Channel '%s' could use some love: %s",
+                    channel.name, value_json
+                )
             continue
 
         if key in ["type"]:
             continue
 
-        # Spec is defined in camelCase, but Python likes parameters in
-        # snake_case.
+        # Spec is defined in camelCase, but Python likes parameters in snake_case.
         arg_name = underscore_pattern.sub('_', key).lower()
 
-        # Bundle the _start and _end capabilities into a list.
-        # This reduces the amount of variables we have to write in
-        # capabilities.py.
+        # Bundle the _start and _end capabilities into a list. This reduces the amount of variables we have to write in capabilities.py.
         is_combined = False
         is_start = arg_name.endswith("_start")
         if is_start or arg_name.endswith("_end"):
