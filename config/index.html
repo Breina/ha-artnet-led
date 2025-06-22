@@ -454,6 +454,28 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beta/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Beta information
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -684,7 +706,7 @@
   Maximum frames per second for animations [0, 43]</li>
 <li><strong><code>refresh_every</code></strong> <em>(optional, default: <code>0.8</code>)</em><br />
   The interval in seconds in which universe data is retransmitted. This is useful when there are external controllers sending to the same universes. Set to <code>0</code> to disable this behavior.</li>
-<li><strong><code>refresh_every</code></strong> <em>(optional, default: <code>0.5</code>)</em><br />
+<li><strong><code>rate_limit</code></strong> <em>(optional, default: <code>0.5</code>)</em><br />
   The rate limit in seconds between each entity update when received from an external controller. Increase this value if HomeAssistant slows down too much when receiving updates.</li>
 </ul>
 <h4 id="dmxartnetuniverses"><code>dmx.artnet.universes</code><a class="headerlink" href="#dmxartnetuniverses" title="Permanent link">&para;</a></h4>
@@ -726,7 +748,6 @@
 <li>Check that your fixtures appear as entities in Home Assistant</li>
 </ol>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<p>If fixtures don't appear after restart:</p>
 <h3 id="check-logs">Check Logs<a class="headerlink" href="#check-logs" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Go to <strong>Settings</strong> → <strong>System</strong> → <strong>Logs</strong></li>
