@@ -2,18 +2,16 @@ class ColorConverter:
     def __init__(self, min_kelvin: int = 2000, max_kelvin: int = 6500):
         self.min_kelvin = min_kelvin
         self.max_kelvin = max_kelvin
-        self.min_mired = 1000000 // max_kelvin
-        self.max_mired = 1000000 // min_kelvin
 
-    def temp_to_cw_ww(self, temp_mired: int, brightness: int) -> tuple[int, int]:
+    def temp_to_cw_ww(self, temp_kelvin: int, brightness: int) -> tuple[int, int]:
         """
-        Convert color temperature in mireds and brightness to cold white and warm white values.
+        Convert color temperature in kelvin and brightness to cold white and warm white values.
 
         For neutral white (middle temperature), both channels will be at full brightness.
         For pure warm/cold, only one channel will be active.
 
         Args:
-            temp_mired: Color temperature in mireds
+            temp_kelvin: Color temperature in kelvin
             brightness: Overall brightness (0-255)
 
         Returns:
@@ -22,9 +20,9 @@ class ColorConverter:
         if brightness == 0:
             return 0, 0
 
-        temp_mired = max(self.min_mired, min(self.max_mired, temp_mired))
+        temp_kelvin = max(self.min_kelvin, min(self.max_kelvin, temp_kelvin))
 
-        temp_ratio = (temp_mired - self.min_mired) / (self.max_mired - self.min_mired)
+        temp_ratio = 1.0 - (temp_kelvin - self.min_kelvin) / (self.max_kelvin - self.min_kelvin)
 
         if temp_ratio <= 0.5:
             cold_ratio = 1.0
@@ -36,7 +34,6 @@ class ColorConverter:
         cold_white = round(cold_ratio * brightness)
         warm_white = round(warm_ratio * brightness)
 
-        # Ensure values stay within valid range
         cold_white = max(0, min(255, cold_white))
         warm_white = max(0, min(255, warm_white))
 
@@ -51,39 +48,35 @@ class ColorConverter:
             warm_white: Warm white value (0-255)
 
         Returns:
-            Tuple of (brightness, color_temp_mired)
+            Tuple of (brightness, color_temp_kelvin)
         """
         if cold_white == 0 and warm_white == 0:
-            return 0, self.min_mired
+            return 0, self.min_kelvin
 
         brightness = max(cold_white, warm_white)
+        temp_kelvin = self.cw_ww_to_temp(cold_white, warm_white)
 
-        temp_mired = self.cw_ww_to_temp(cold_white, warm_white)
+        return brightness, temp_kelvin
 
-        return brightness, temp_mired
-
-    def dmx_to_mired(self, dmx_value: int) -> int:
-        """Convert DMX value (0-255) to color temperature in mireds."""
+    def dmx_to_kelvin(self, dmx_value: int) -> int:
+        """Convert DMX value (0-255) to color temperature in kelvin."""
         ratio = dmx_value / 255.0
-        return int(self.min_mired + (self.max_mired - self.min_mired) * ratio)
+        return int(self.min_kelvin + (self.max_kelvin - self.min_kelvin) * ratio)
 
     def cw_ww_to_temp(self, cold_white: int, warm_white: int) -> int:
         """
-        Convert cold white and warm white values to color temperature in mireds.
+        Convert cold white and warm white values to color temperature in kelvin.
 
         Args:
             cold_white: Cold white value (0-255)
             warm_white: Warm white value (0-255)
 
         Returns:
-            Color temperature in mireds
+            Color temperature in kelvin
         """
-        if cold_white == 0 and warm_white == 0:
-            return self.min_mired
-
         max_channel = max(cold_white, warm_white)
         if max_channel == 0:
-            return self.min_mired
+            return self.min_kelvin
 
         cold_norm = cold_white / max_channel
         warm_norm = warm_white / max_channel
@@ -95,13 +88,14 @@ class ColorConverter:
         elif cold_norm == 1.0 and warm_norm == 1.0:
             temp_ratio = 0.5
         else:
+            # General case: more cold white = higher kelvin
             total = cold_white + warm_white
-            temp_ratio = warm_white / total if total > 0 else 0.0
+            temp_ratio = cold_white / total if total > 0 else 0.0
 
-        temp_mired = self.min_mired + (self.max_mired - self.min_mired) * temp_ratio
-        return int(temp_mired)
+        temp_kelvin = self.max_kelvin - (self.max_kelvin - self.min_kelvin) * temp_ratio
+        return int(temp_kelvin)
 
-    def mired_to_dmx(self, mireds: int) -> int:
-        """Convert color temperature in mireds to DMX value (0-255)."""
-        ratio = (mireds - self.min_mired) / (self.max_mired - self.min_mired)
-        return int(ratio * 255)
+    def kelvin_to_dmx(self, kelvin: int) -> float:
+        """Convert color temperature in kelvin to DMX value (0-255)."""
+        ratio = (kelvin - self.min_kelvin) / (self.max_kelvin - self.min_kelvin)
+        return ratio * 255

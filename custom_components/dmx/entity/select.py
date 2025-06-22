@@ -59,6 +59,7 @@ class DmxSelectEntity(SelectEntity):
         self.universe = universe
         self.universe.register_channel_listener(dmx_index, self.update_value)
 
+        # TODO /config/custom_components/dmx/entity/select.py:62: RuntimeWarning: coroutine 'DmxUniverse.update_value' was never awaited self.universe.update_value(self.dmx_index, channel.default_value, send_immediately=False)
         self.universe.update_value(self.dmx_index, channel.default_value, send_immediately=False)
         self.update_option_to_dmx_value(channel.default_value)
 

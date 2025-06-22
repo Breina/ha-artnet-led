@@ -20,14 +20,14 @@ class LightState:
         self.rgb = (255, 255, 255)
         self.cold_white = 255
         self.warm_white = 255
-        self.color_temp = 500
+        self.color_temp_kelvin = 3000
         self.color_temp_dmx = 255
 
         self.last_brightness = 255
         self.last_rgb = (255, 255, 255)
         self.last_cold_white = 255
         self.last_warm_white = 255
-        self.last_color_temp = 500
+        self.last_color_temp_kelvin = 3000
         self.last_color_temp_dmx = 255
 
         self._channel_handlers = {
@@ -207,13 +207,13 @@ class LightState:
     def update_color_temp_dmx(self, dmx_value: int):
         self.color_temp_dmx = dmx_value
         self.last_color_temp_dmx = dmx_value
-        self.color_temp = self.converter.dmx_to_mired(dmx_value)
-        self.last_color_temp = self.color_temp
+        self.color_temp_kelvin = self.converter.dmx_to_kelvin(dmx_value)
+        self.last_color_temp_kelvin = self.color_temp_kelvin
 
-    def update_color_temp_mired(self, mireds: int):
-        self.color_temp = mireds
-        self.last_color_temp = mireds
-        self.color_temp_dmx = self.converter.mired_to_dmx(mireds)
+    def update_color_temp_kelvin(self, kelvin: int):
+        self.color_temp_kelvin = kelvin
+        self.last_color_temp_kelvin = kelvin
+        self.color_temp_dmx = self.converter.kelvin_to_dmx(kelvin)
         self.last_color_temp_dmx = self.color_temp_dmx
 
     def reset(self):
@@ -265,8 +265,8 @@ class LightState:
 
     def _update_color_temp_from_cw_ww(self):
         if self.color_mode == ColorMode.COLOR_TEMP and self.has_cw_ww():
-            color_temp = self.converter.cw_ww_to_temp(self.cold_white, self.warm_white)
-            self.update_color_temp_mired(color_temp)
+            color_temp_kelvin = self.converter.cw_ww_to_temp(self.cold_white, self.warm_white)
+            self.update_color_temp_kelvin(color_temp_kelvin)
 
     @property
     def rgbw_color(self) -> Tuple[int, int, int, int]:

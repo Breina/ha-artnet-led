@@ -45,26 +45,26 @@ class TestRgbwFixture(unittest.TestCase):
         asyncio.run(cold_white.async_set_native_value(0))
         assert_dmx_range(self.universe, 1, [255, 0])
         self.assertEqual(255, light.brightness)
-        self.assertEqual(light.max_mireds, light.color_temp)
+        self.assertEqual(light.min_color_temp_kelvin, light.color_temp_kelvin)
 
-        mid_mired = (light.min_mireds + light.max_mireds - 1) / 2
+        mid_kelvin = (light.max_color_temp_kelvin + light.min_color_temp_kelvin - 1) / 2
         asyncio.run(warm_white.async_set_native_value(50))
         asyncio.run(cold_white.async_set_native_value(50))
         assert_dmx_range(self.universe, 1, [127, 127])
         self.assertEqual(127, light.brightness)
-        self.assertEqual(mid_mired, light.color_temp)
+        self.assertAlmostEqual(mid_kelvin, light.color_temp_kelvin, None, "", 5)
 
         asyncio.run(warm_white.async_set_native_value(100))
         asyncio.run(cold_white.async_set_native_value(100))
         assert_dmx_range(self.universe, 1, [255, 255])
         self.assertEqual(255, light.brightness)
-        self.assertEqual(mid_mired, light.color_temp)
+        self.assertAlmostEqual(mid_kelvin, light.color_temp_kelvin, None, "", 5)
 
         asyncio.run(warm_white.async_set_native_value(0))
         asyncio.run(cold_white.async_set_native_value(100))
         assert_dmx_range(self.universe, 1, [0, 255])
         self.assertEqual(255, light.brightness)
-        self.assertEqual(light.min_mireds, light.color_temp)
+        self.assertEqual(light.max_color_temp_kelvin, light.color_temp_kelvin)
 
     def test_8bit_wc_light_updates(self):
         channels = self.fixture.select_mode('8bit-wc')
@@ -74,18 +74,18 @@ class TestRgbwFixture(unittest.TestCase):
         cold_white: DmxNumberEntity = get_entity_by_name(entities, 'WC fader Cold White')
         light: DmxLightEntity = get_entity_by_name(entities, 'WC fader Light')
 
-        asyncio.run(light.async_turn_on(brightness=255, color_temp=light.max_mireds))
+        asyncio.run(light.async_turn_on(brightness=255, color_temp_kelvin=light.min_color_temp_kelvin))
         assert_dmx_range(self.universe, 2, [255, 0])
         self.assertEqual(100, warm_white.native_value)
         self.assertEqual(0, cold_white.native_value)
 
-        mid_mired = (light.min_mireds + light.max_mireds - 1) / 2
-        asyncio.run(light.async_turn_on(brightness=127, color_temp=mid_mired))
+        mid_kelvin = (light.max_color_temp_kelvin + light.min_color_temp_kelvin - 1) / 2
+        asyncio.run(light.async_turn_on(brightness=127, color_temp_kelvin=mid_kelvin))
         assert_dmx_range(self.universe, 2, [127, 127])
         self.assertAlmostEqual(50.0, warm_white.native_value, 0)
         self.assertAlmostEqual(50.0, cold_white.native_value, 0)
 
-        asyncio.run(light.async_turn_on(brightness=255, color_temp=light.min_mireds))
+        asyncio.run(light.async_turn_on(brightness=255, color_temp_kelvin=light.max_color_temp_kelvin))
         assert_dmx_range(self.universe, 2, [0, 255])
         self.assertEqual(0, warm_white.native_value)
         self.assertEqual(100, cold_white.native_value)
@@ -102,26 +102,26 @@ class TestRgbwFixture(unittest.TestCase):
         asyncio.run(cold_white.async_set_native_value(0))
         assert_dmx_range(self.universe, 3, [0, 0, 255, 255])
         self.assertEqual(255, light.brightness)
-        self.assertEqual(light.max_mireds, light.color_temp)
+        self.assertEqual(light.min_color_temp_kelvin, light.color_temp_kelvin)
 
-        mid_mired = (light.min_mireds + light.max_mireds - 1) / 2
+        mid_kelvin = (light.max_color_temp_kelvin + light.min_color_temp_kelvin - 1) / 2
         asyncio.run(warm_white.async_set_native_value(50))
         asyncio.run(cold_white.async_set_native_value(50))
         assert_dmx_range(self.universe, 3, [127, 255, 127, 255])
         self.assertEqual(127, light.brightness)
-        self.assertEqual(mid_mired, light.color_temp)
+        self.assertAlmostEqual(mid_kelvin, light.color_temp_kelvin, None, "", 5)
 
         asyncio.run(warm_white.async_set_native_value(100))
         asyncio.run(cold_white.async_set_native_value(100))
         assert_dmx_range(self.universe, 3, [255, 255, 255, 255])
         self.assertEqual(255, light.brightness)
-        self.assertEqual(mid_mired, light.color_temp)
+        self.assertAlmostEqual(mid_kelvin, light.color_temp_kelvin, None, "", 5)
 
         asyncio.run(warm_white.async_set_native_value(0))
         asyncio.run(cold_white.async_set_native_value(100))
         assert_dmx_range(self.universe, 3, [255, 255, 0, 0])
         self.assertEqual(255, light.brightness)
-        self.assertEqual(light.min_mireds, light.color_temp)
+        self.assertEqual(light.max_color_temp_kelvin, light.color_temp_kelvin)
 
     def test_16bit_cw_light_updates(self):
         channels = self.fixture.select_mode('16bit-cw')
@@ -131,18 +131,18 @@ class TestRgbwFixture(unittest.TestCase):
         cold_white: DmxNumberEntity = get_entity_by_name(entities, 'CW fader Cold White')
         light: DmxLightEntity = get_entity_by_name(entities, 'CW fader Light')
 
-        asyncio.run(light.async_turn_on(brightness=255, color_temp=light.max_mireds))
+        asyncio.run(light.async_turn_on(brightness=255, color_temp_kelvin=light.min_color_temp_kelvin))
         assert_dmx_range(self.universe, 4, [0, 0, 255, 255])
         self.assertEqual(100, warm_white.native_value)
         self.assertEqual(0, cold_white.native_value)
 
-        mid_mired = (light.min_mireds + light.max_mireds - 1) / 2
-        asyncio.run(light.async_turn_on(brightness=127, color_temp=mid_mired))
+        mid_kelvin = (light.max_color_temp_kelvin + light.min_color_temp_kelvin - 1) / 2
+        asyncio.run(light.async_turn_on(brightness=127, color_temp_kelvin=mid_kelvin))
         assert_dmx_range(self.universe, 4, [127, 127, 127, 127])
         self.assertAlmostEqual(50.0, warm_white.native_value, 0)
         self.assertAlmostEqual(50.0, cold_white.native_value, 0)
 
-        asyncio.run(light.async_turn_on(brightness=255, color_temp=light.min_mireds))
+        asyncio.run(light.async_turn_on(brightness=255, color_temp_kelvin=light.max_color_temp_kelvin))
         assert_dmx_range(self.universe, 4, [255, 255, 0, 0])
         self.assertEqual(0, warm_white.native_value)
         self.assertEqual(100, cold_white.native_value)

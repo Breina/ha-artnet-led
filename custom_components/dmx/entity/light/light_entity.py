@@ -106,8 +106,8 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         return self._state.rgbww_color if self._state.color_mode == ColorMode.RGBWW else None
 
     @property
-    def color_temp(self) -> int:
-        return self._state.color_temp
+    def color_temp_kelvin(self) -> int | None:
+        return self._state.color_temp_kelvin
 
     async def async_turn_on(self, **kwargs: Any):
         await self._controller.turn_on(**kwargs)
@@ -149,8 +149,8 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         if "color_temp" in attrs:
             color_temp = attrs["color_temp"]
-            self._state.color_temp = color_temp
-            self._state.last_color_temp = color_temp
+            self._state.color_temp_kelvin = color_temp
+            self._state.last_color_temp_kelvin = color_temp
 
         # For color temp mode without dimmer, restore CW/WW values if available
         if (self._state.color_mode == ColorMode.COLOR_TEMP and
@@ -158,7 +158,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
                 "brightness" in attrs and "color_temp" in attrs):
             # Reconstruct CW/WW values from brightness and color temp
             brightness = attrs["brightness"] or 100
-            color_temp = attrs["color_temp"] or (self.min_mireds + self.max_mireds) / 2
+            color_temp = attrs["color_temp"] or (self.min_color_temp_kelvin + self.max_color_temp_kelvin) / 2
             cold, warm = self._state.converter.temp_to_cw_ww(color_temp, brightness)
             self._state.cold_white = cold
             self._state.warm_white = warm

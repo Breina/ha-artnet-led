@@ -66,15 +66,15 @@ class LightController:
             set_if_applicable(self.state.has_channel(ChannelType.COLD_WHITE), ChannelType.COLD_WHITE, cw)
             set_if_applicable(self.state.has_channel(ChannelType.WARM_WHITE), ChannelType.WARM_WHITE, ww)
 
-        if "color_temp" in kwargs:
-            mired = kwargs["color_temp"]
-            self.state.update_color_temp_mired(mired)
+        if "color_temp_kelvin" in kwargs:
+            kelvin = kwargs["color_temp_kelvin"]
+            self.state.update_color_temp_kelvin(kelvin)
             brightness = kwargs.get("brightness", self.state.brightness)
 
             if self.state.has_channel(ChannelType.COLOR_TEMPERATURE):
                 updates[ChannelType.COLOR_TEMPERATURE] = self.state.color_temp_dmx
             elif self.state.has_cw_ww():
-                cw, ww = self.state.converter.temp_to_cw_ww(mired, brightness)
+                cw, ww = self.state.converter.temp_to_cw_ww(kelvin, brightness)
                 updates.update({ChannelType.COLD_WHITE: cw, ChannelType.WARM_WHITE: ww})
 
         return updates
@@ -103,7 +103,7 @@ class LightController:
             'rgb': self.state.rgb,
             'cold_white': self.state.cold_white,
             'warm_white': self.state.warm_white,
-            'color_temp': self.state.color_temp,
+            'color_temp_kelvin': self.state.color_temp_kelvin,
             'color_temp_dmx': self.state.color_temp_dmx
         }
 
@@ -112,5 +112,5 @@ class LightController:
         self.state.last_rgb = s['rgb']
         self.state.last_cold_white = s['cold_white']
         self.state.last_warm_white = s['warm_white']
-        self.state.last_color_temp = s['color_temp']
+        self.state.last_color_temp_kelvin = s['color_temp_kelvin']
         self.state.last_color_temp_dmx = s['color_temp_dmx']
