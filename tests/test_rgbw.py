@@ -87,26 +87,26 @@ class TestRgbwFixture(unittest.TestCase):
         white: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader White')
         light: DmxLightEntity = get_entity_by_name(entities, 'RGBW fader Light')
 
-        # Test setting pure red
-        asyncio.run(light.async_turn_on(rgbw_color=(255, 0, 0, 0)))
-        assert_dmx_range(self.universe, 2, [255, 0, 0, 0])
+        asyncio.run(light.async_turn_on(rgbw_color=(255, 128, 64, 0)))
+        assert_dmx_range(self.universe, 2, [255, 128, 64, 0])
         self.assertEqual(100, red.native_value)
-        self.assertEqual(0, green.native_value)
-        self.assertEqual(0, blue.native_value)
+        self.assertAlmostEqual(50.0, green.native_value, 0)
+        self.assertAlmostEqual(25.0, blue.native_value, 0)
         self.assertEqual(0, white.native_value)
 
-        # Test setting mixed color
+        asyncio.run(light.async_turn_on(brightness=128))
+        assert_dmx_range(self.universe, 2, [128, 64, 32, 0])
+        self.assertAlmostEqual(50.0, red.native_value, 0)
+        self.assertAlmostEqual(25.0, green.native_value, 0)
+        self.assertAlmostEqual(12.5, blue.native_value, 0)
+        self.assertEqual(0, white.native_value)
+
         asyncio.run(light.async_turn_on(rgbw_color=(127, 191, 63, 0)))
         assert_dmx_range(self.universe, 2, [127, 191, 63, 0])
         self.assertAlmostEqual(50.0, red.native_value, 0)
         self.assertAlmostEqual(75.0, green.native_value, 0)
         self.assertAlmostEqual(25.0, blue.native_value, 0)
         self.assertEqual(0, white.native_value)
-
-        # Test setting white
-        asyncio.run(light.async_turn_on(rgbw_color=(255, 255, 255, 0)))
-        # White light might be handled differently - adjust expectations based on implementation
-        self.assertTrue(light.is_on)
 
     def test_16bit_rgbw_number_updates(self):
         channels = self.fixture.select_mode('16bit')
@@ -118,7 +118,6 @@ class TestRgbwFixture(unittest.TestCase):
         white: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader White')
         light: DmxLightEntity = get_entity_by_name(entities, 'RGBW fader Light')
 
-        # Test pure red (16-bit: high byte, low byte for each channel)
         asyncio.run(red.async_set_native_value(100))
         asyncio.run(green.async_set_native_value(0))
         asyncio.run(blue.async_set_native_value(0))
@@ -127,7 +126,6 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(255, light.brightness)
         self.assertEqual((255, 0, 0), light.rgb_color)
 
-        # Test mixed color
         asyncio.run(red.async_set_native_value(50))
         asyncio.run(green.async_set_native_value(75))
         asyncio.run(blue.async_set_native_value(25))
@@ -136,7 +134,6 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(191, light.brightness)
         self.assertEqual((127, 191, 64), light.rgb_color)
 
-        # Test RGBW combination
         asyncio.run(red.async_set_native_value(50))
         asyncio.run(green.async_set_native_value(50))
         asyncio.run(blue.async_set_native_value(50))

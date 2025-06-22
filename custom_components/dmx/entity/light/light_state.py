@@ -112,6 +112,42 @@ class LightState:
         else:
             self.is_on = self.brightness > 0
 
+    def get_scaled_brightness_updates(self, new_brightness: int) -> Dict[ChannelType, int]:
+        updates: Dict[ChannelType, int] = {}
+
+        if self._has_dimmer():
+            updates[ChannelType.DIMMER] = new_brightness
+            return updates
+
+        if self.color_mode == ColorMode.COLOR_TEMP:
+            cw, ww = self.converter.temp_to_cw_ww(self.color_temp_kelvin, new_brightness)
+            updates[ChannelType.COLD_WHITE] = cw
+            updates[ChannelType.WARM_WHITE] = ww
+            return updates
+
+        channel_values = {}
+
+        if self.color_mode in [ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW]:
+            channel_values[ChannelType.RED] = self.rgb[0]
+            channel_values[ChannelType.GREEN] = self.rgb[1]
+            channel_values[ChannelType.BLUE] = self.rgb[2]
+
+        if self.color_mode == ColorMode.RGBW:
+            channel_values[ChannelType.WARM_WHITE] = self.warm_white
+
+        if self.color_mode == ColorMode.RGBWW:
+            channel_values[ChannelType.COLD_WHITE] = self.cold_white
+            channel_values[ChannelType.WARM_WHITE] = self.warm_white
+
+        max_current = max(channel_values.values(), default=1)
+        scale = new_brightness / max_current if max_current > 0 else 0
+
+        for channel, value in channel_values.items():
+            scaled = round(value * scale)
+            updates[channel] = min(255, scaled)
+
+        return updates
+
     def get_dmx_updates(self, values: Dict[ChannelType, int]) -> Dict[int, int]:
         updates = {}
         for channel_type, val in values.items():

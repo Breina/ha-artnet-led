@@ -85,6 +85,11 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertAlmostEqual(50.0, warm_white.native_value, 0)
         self.assertAlmostEqual(50.0, cold_white.native_value, 0)
 
+        asyncio.run(light.async_turn_on(brightness=64))
+        assert_dmx_range(self.universe, 2, [64, 64])
+        self.assertAlmostEqual(25.0, warm_white.native_value, 0)
+        self.assertAlmostEqual(25.0, cold_white.native_value, 0)
+
         asyncio.run(light.async_turn_on(brightness=255, color_temp_kelvin=light.max_color_temp_kelvin))
         assert_dmx_range(self.universe, 2, [0, 255])
         self.assertEqual(0, warm_white.native_value)

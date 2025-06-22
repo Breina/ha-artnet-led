@@ -90,6 +90,11 @@ class TestColorTemperatureFader(unittest.TestCase):
         self.assertEqual(100, dimmer.native_value)
         self.assertAlmostEqual((color_temp.max_value + color_temp.min_value) / 2, color_temp.native_value, None, "", 5)
 
+        asyncio.run(light.async_turn_on(brightness=128))
+        assert_dmx_range(self.universe, 1, [128, 128])
+        self.assertAlmostEqual(50.0, dimmer.native_value, 0)
+        self.assertAlmostEqual((color_temp.max_value + color_temp.min_value) / 2, color_temp.native_value, None, "", 5)
+
         asyncio.run(light.async_turn_on(brightness=255, color_temp_kelvin=light.max_color_temp_kelvin))
         assert_dmx_range(self.universe, 1, [255, 255])
         self.assertEqual(100, dimmer.native_value)

@@ -44,12 +44,9 @@ class LightController:
     def _collect_updates_from_kwargs(self, kwargs: Dict[str, Any]) -> Dict[ChannelType, int]:
         updates = {}
 
-        def set_if_applicable(cond, ct, val):
-            if cond:
-                updates[ct] = val
-
-        if "brightness" in kwargs and self.state.has_channel(ChannelType.DIMMER):
-            set_if_applicable(True, ChannelType.DIMMER, kwargs["brightness"])
+        if "brightness" in kwargs:
+            brightness = kwargs["brightness"]
+            updates.update(self.state.get_scaled_brightness_updates(brightness))
 
         if "rgb_color" in kwargs and self.state.has_rgb():
             r, g, b = kwargs["rgb_color"]
@@ -57,14 +54,11 @@ class LightController:
 
         if "rgbw_color" in kwargs:
             r, g, b, w = kwargs["rgbw_color"]
-            updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b})
-            set_if_applicable(self.state.has_channel(ChannelType.COLD_WHITE), ChannelType.COLD_WHITE, w)
+            updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b, ChannelType.WARM_WHITE: w})
 
         if "rgbww_color" in kwargs:
             r, g, b, cw, ww = kwargs["rgbww_color"]
-            updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b})
-            set_if_applicable(self.state.has_channel(ChannelType.COLD_WHITE), ChannelType.COLD_WHITE, cw)
-            set_if_applicable(self.state.has_channel(ChannelType.WARM_WHITE), ChannelType.WARM_WHITE, ww)
+            updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b,ChannelType.COLD_WHITE: cw, ChannelType.WARM_WHITE: ww})
 
         if "color_temp_kelvin" in kwargs:
             kelvin = kwargs["color_temp_kelvin"]
