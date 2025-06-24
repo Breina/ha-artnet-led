@@ -66,7 +66,7 @@ CONF_FOLDER = 'folder'
 CONF_FOLDER_DEFAULT = 'fixtures'
 CONF_ENTITY_ID_PREFIX = 'entity_id_prefix'
 
-PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT]
+PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT, Platform.SWITCH]
 
 FIXTURES = {}
 
@@ -343,11 +343,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         controller.start_server()
 
     hass.data[DOMAIN][entry.entry_id] = {
-        CONF_FIXTURE_ENTITIES: entities
+        CONF_FIXTURE_ENTITIES: entities,
+        "universes": universes
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
 
 COMPATIBILITY_SCHEMA = \
     vol.Schema(

@@ -28,6 +28,27 @@ class DmxUniverse:
         # Flag to track if this is the first send (to send full universe initially)
         self._first_send = True
 
+        # Flag to control whether output is enabled
+        self._output_enabled = True
+
+    def set_output_enabled(self, enabled: bool) -> None:
+        """
+        Enable or disable output for this universe.
+
+        Args:
+            enabled: True to enable output, False to disable
+        """
+        self._output_enabled = enabled
+
+    def is_output_enabled(self) -> bool:
+        """
+        Check if output is currently enabled for this universe.
+
+        Returns:
+            True if output is enabled, False otherwise
+        """
+        return self._output_enabled
+
     def set_constant_value(self, channels: List[int], value: int) -> None:
         """
         Set a constant value for one or more channels. These values will be maintained
@@ -142,7 +163,12 @@ class DmxUniverse:
         If use_partial_universe is enabled, only send up to the highest
         changed channel since last transmission (rounded up to a multiple of 2).
         Before sending, apply constant values to their respective channels.
+
+        Only sends data if output is enabled.
         """
+        if not self._output_enabled:
+            return
+
         for channel, constant_value in self._constant_values.items():
             if self._channel_values.get(channel) != constant_value:
                 self._channel_values[channel] = constant_value
