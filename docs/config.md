@@ -81,9 +81,9 @@ Universe definitions. Each universe can be specified as:
 - **`entity_id_prefix`** *(optional)*  
   Allows one to configure the entity ID of the created entities, this will then also be used for unique_id instead of universe/channel.
   Thus, when this option is used, this fixture can be moved freely without creating duplicate entities.
-  - Number entities: `nubmer.{entity_id_prefix}_{channel_name}` or `nubmer.{entity_id_prefix}_{channel_name}_{capability_name}`
-  - Select entities: `select.{entity_id_prefix}_{channel_name}`
-  - Light entities: `light.{entity_id_prefix}`
+- - Number entities: `number.{entity_id_prefix}_{channel_name}` or `nubmer.{entity_id_prefix}_{channel_name}_{capability_name}`
+- - Select entities: `select.{entity_id_prefix}_{channel_name}`
+- - Light entities: `light.{entity_id_prefix}`
   
 
 #### Compatibility Options
@@ -94,8 +94,8 @@ Universe definitions. Each universe can be specified as:
   Art-Net supports auto-discovery of Art-Net nodes, this works through broadcasting on the network.
   If nodes are not discovered automatically, they may be added manually,
   so that updates for this universe are always sent to this address as well. 
-  - **`host`** *(mandatory)*: IP address
-  - **`port`** *(optional, default: `6454`)*: Art-Net port
+- - **`host`** *(mandatory)*: IP address
+- - **`port`** *(optional, default: `6454`)*: Art-Net port
 
 ## Step 3: Restart and Verify
 
