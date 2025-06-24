@@ -703,6 +703,7 @@
 <span class="w">                </span><span class="nt">start_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">11</span>
 <span class="w">                </span><span class="nt">fixture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CLHB300RGBW</span>
 <span class="w">                </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42ch</span>
+<span class="w">                </span><span class="nt">entity_id_prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_first_entity_id</span>
 
 <span class="w">          </span><span class="nt">compatibility</span><span class="p">:</span>
 <span class="w">            </span><span class="nt">send_partial_universe</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
@@ -751,6 +752,12 @@
 <li><strong><code>mode</code></strong> <em>(optional)</em><br />
   Matches the <code>name</code> of the desired mode in the <code>modes</code> section of the fixture JSON.
   If there is only one mode, this option config option is optional.</li>
+<li><strong><code>entity_id_prefix</code></strong> <em>(optional)</em><br />
+  Allows one to configure the entity ID of the created entities, this will then also be used for unique_id instead of universe/channel.
+  Thus, when this option is used, this fixture can be moved freely without creating duplicate entities.</li>
+<li>Number entities: <code>nubmer.{entity_id_prefix}_{channel_name}</code> or <code>nubmer.{entity_id_prefix}_{channel_name}_{capability_name}</code></li>
+<li>Select entities: <code>select.{entity_id_prefix}_{channel_name}</code></li>
+<li>Light entities: <code>light.{entity_id_prefix}</code></li>
 </ul>
 <h4 id="compatibility-options">Compatibility Options<a class="headerlink" href="#compatibility-options" title="Permanent link">&para;</a></h4>
 <ul>
