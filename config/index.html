@@ -755,9 +755,21 @@
 <li><strong><code>entity_id_prefix</code></strong> <em>(optional)</em><br />
   Allows one to configure the entity ID of the created entities, this will then also be used for unique_id instead of universe/channel.
   Thus, when this option is used, this fixture can be moved freely without creating duplicate entities.</li>
-<li>Number entities: <code>nubmer.{entity_id_prefix}_{channel_name}</code> or <code>nubmer.{entity_id_prefix}_{channel_name}_{capability_name}</code></li>
+<li>
+<ul>
+<li>Number entities: <code>number.{entity_id_prefix}_{channel_name}</code> or <code>nubmer.{entity_id_prefix}_{channel_name}_{capability_name}</code></li>
+</ul>
+</li>
+<li>
+<ul>
 <li>Select entities: <code>select.{entity_id_prefix}_{channel_name}</code></li>
+</ul>
+</li>
+<li>
+<ul>
 <li>Light entities: <code>light.{entity_id_prefix}</code></li>
+</ul>
+</li>
 </ul>
 <h4 id="compatibility-options">Compatibility Options<a class="headerlink" href="#compatibility-options" title="Permanent link">&para;</a></h4>
 <ul>
@@ -768,8 +780,16 @@
   Art-Net supports auto-discovery of Art-Net nodes, this works through broadcasting on the network.
   If nodes are not discovered automatically, they may be added manually,
   so that updates for this universe are always sent to this address as well. </li>
+<li>
+<ul>
 <li><strong><code>host</code></strong> <em>(mandatory)</em>: IP address</li>
+</ul>
+</li>
+<li>
+<ul>
 <li><strong><code>port</code></strong> <em>(optional, default: <code>6454</code>)</em>: Art-Net port</li>
+</ul>
+</li>
 </ul>
 <h2 id="step-3-restart-and-verify">Step 3: Restart and Verify<a class="headerlink" href="#step-3-restart-and-verify" title="Permanent link">&para;</a></h2>
 <ol>
