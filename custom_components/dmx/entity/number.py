@@ -14,19 +14,21 @@ log = logging.getLogger(__name__)
 
 
 class DmxNumberEntity(RestoreNumber):
-    def __init__(self, name: str, capability: Capability,
-                 universe: DmxUniverse, dmx_indexes: List[int],
-                 device: DeviceInfo,
-                 available: bool = True,
-                 ) -> None:
+    def __init__(self, fixture_name: str, channel_name: str, entity_id_prefix: str | None,
+                 capability: Capability, universe: DmxUniverse, dmx_indexes: List[int], device: DeviceInfo, available: bool = True) -> None:
         super().__init__()
 
         assert capability.dynamic_entities \
                and len(capability.dynamic_entities) == 1
 
-        self._attr_name = name
+        self._attr_name = f"{fixture_name} {channel_name}"
         self._attr_device_info = device
-        self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{'-'.join(map(str, dmx_indexes))}_{name}"
+
+        if entity_id_prefix:
+            self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}"
+            self.entity_id = f"number.{self._attr_unique_id}"
+        else:
+            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{'-'.join(map(str, dmx_indexes))}_{fixture_name.lower()}_{channel_name.lower()}"
 
         self._attr_icon = capability.icon()
         self._attr_extra_state_attributes = capability.extra_attributes()

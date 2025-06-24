@@ -31,6 +31,7 @@ dmx:
                 start_address: 11
                 fixture: CLHB300RGBW
                 mode: 42ch
+                entity_id_prefix: my_first_entity_id
 
           compatibility:
             send_partial_universe: False
@@ -77,6 +78,13 @@ Universe definitions. Each universe can be specified as:
 - **`mode`** *(optional)*  
   Matches the `name` of the desired mode in the `modes` section of the fixture JSON.
   If there is only one mode, this option config option is optional.
+- **`entity_id_prefix`** *(optional)*  
+  Allows one to configure the entity ID of the created entities, this will then also be used for unique_id instead of universe/channel.
+  Thus, when this option is used, this fixture can be moved freely without creating duplicate entities.
+  - Number entities: `nubmer.{entity_id_prefix}_{channel_name}` or `nubmer.{entity_id_prefix}_{channel_name}_{capability_name}`
+  - Select entities: `select.{entity_id_prefix}_{channel_name}`
+  - Light entities: `light.{entity_id_prefix}`
+  
 
 #### Compatibility Options
 - **`send_partial_universe`** *(optional, default: true)*  

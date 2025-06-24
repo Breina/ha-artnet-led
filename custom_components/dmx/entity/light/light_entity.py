@@ -21,7 +21,8 @@ log = logging.getLogger(__name__)
 class DmxLightEntity(LightEntity, RestoreEntity):
     def __init__(
             self,
-            name: str,
+            fixture_name: str,
+            entity_id_prefix: str | None,
             matrix_key: Optional[str],
             color_mode: ColorMode,
             channels: List[ChannelMapping],
@@ -32,10 +33,14 @@ class DmxLightEntity(LightEntity, RestoreEntity):
             max_kelvin: int = 6500,
     ):
         self._matrix_key = matrix_key
-        self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{'/'.join(['-'.join(map(str, cm.dmx_indexes)) for cm in channels])}_{name}"
-        self._attr_name = f"{name} Light {matrix_key}" if matrix_key else f"{name} Light"
+        self._attr_name = f"{fixture_name} Light {matrix_key}" if matrix_key else f"{fixture_name} Light"
+        if entity_id_prefix:
+            self._attr_unique_id = entity_id_prefix if not matrix_key else f"{entity_id_prefix}_{matrix_key}"
+            self.entity_id = f"light.{self._attr_unique_id}"
+        else:
+            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{'/'.join(['-'.join(map(str, cm.dmx_indexes)) for cm in channels])}_{fixture_name}"
+
         self._attr_device_info = device
-        self._attr_unique_id = f"{DOMAIN}_light_{name}_{matrix_key}"
         self._attr_color_mode = color_mode
         self._attr_supported_color_modes = {color_mode}
 

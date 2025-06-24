@@ -48,7 +48,7 @@ def __accumulate_light_entities(accumulator: dict[str, list[ChannelMapping]], dm
             light_channel = ChannelType.BLUE
         elif capability.color == SingleColor.ColdWhite:
             light_channel = ChannelType.COLD_WHITE
-        elif capability.color == SingleColor.WarmWhite or capability.color == SingleColor.White: # Treat normal white as Warm white so make logic simpler
+        elif capability.color == SingleColor.WarmWhite or capability.color == SingleColor.White:  # Treat normal white as Warm white so make logic simpler
             light_channel = ChannelType.WARM_WHITE
         else:
             return
@@ -72,7 +72,7 @@ def __accumulate_light_entities(accumulator: dict[str, list[ChannelMapping]], dm
         accumulator[channel.matrix_key] = [accumulated_light_channel]
 
 
-def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping]], device: DeviceInfo, universe: DmxUniverse) -> list[Entity]:
+def __build_light_entities(name: str, entity_id_prefix: str | None, accumulator: dict[str, list[ChannelMapping]], device: DeviceInfo, universe: DmxUniverse) -> list[Entity]:
     entities = []
 
     for matrix_key, accumulated_channels in accumulator.items():
@@ -191,7 +191,8 @@ def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping
             continue
 
         entities.append(DmxLightEntity(
-            name=name,
+            fixture_name=name,
+            entity_id_prefix=entity_id_prefix,
             matrix_key=matrix_key,
             color_mode=color_mode,
             channels=channels_data,
@@ -205,13 +206,7 @@ def __build_light_entities(name: str, accumulator: dict[str, list[ChannelMapping
     return entities
 
 
-def create_entities(
-        name: str,
-        dmx_start: int,
-        channels: list[None | ChannelOffset | SwitchingChannel],
-        device: DeviceInfo,
-        universe: DmxUniverse
-) -> list[Entity]:
+def create_entities(name: str, dmx_start: int, channels: list[None | ChannelOffset | SwitchingChannel], device: DeviceInfo, universe: DmxUniverse, entity_id_prefix: str | None = None) -> list[Entity]:
     entities = []
     lights_accumulator: dict[str, list[ChannelMapping]] = {}
 
@@ -226,7 +221,7 @@ def create_entities(
         if not channel.has_multiple_capabilities():
             entities.append(
                 DmxNumberEntity(
-                    f"{name} {channel.name}", channel.capabilities[0], universe,
+                    name, channel.name, entity_id_prefix, channel.capabilities[0], universe,
                     dmx_indexes, device
                 )
             )
@@ -236,7 +231,7 @@ def create_entities(
             assert len(dmx_indexes) == 1
             number_entities = {
                 str(capability): DmxNumberEntity(
-                    f"{name} {channel.name} {str(capability)}", capability,
+                    name, f"{channel.name} {str(capability)}", entity_id_prefix, capability,
                     universe, dmx_indexes, device,
                     available=False
                 )
@@ -245,7 +240,7 @@ def create_entities(
             }
 
             select_entity = DmxSelectEntity(
-                f"{name} {channel.name}", channel, number_entities, universe, dmx_indexes[0], device
+                name, channel.name, entity_id_prefix, channel, number_entities, universe, dmx_indexes[0], device
             )
 
             entities.append(select_entity)
@@ -255,6 +250,6 @@ def create_entities(
         if isinstance(entity, DmxSelectEntity):
             entity.link_switching_entities(entities)
 
-    entities.extend(__build_light_entities(name, lights_accumulator, device, universe))
+    entities.extend(__build_light_entities(name, entity_id_prefix, lights_accumulator, device, universe))
 
     return entities

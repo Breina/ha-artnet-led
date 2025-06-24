@@ -31,6 +31,7 @@ dmx:
                 fixture: CW/WW Fader
                 start_address: 0
                 mode: 16bit-cw
+                entity_id_prefix: lol_this_is_prefix
             - Bureau LED strip:
                 fixture: CW/WW Fader
                 start_address: 247

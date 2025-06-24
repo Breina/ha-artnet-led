@@ -64,6 +64,7 @@ CONF_FIXTURE = 'fixture'
 CONF_FIXTURES = 'fixtures'
 CONF_FOLDER = 'folder'
 CONF_FOLDER_DEFAULT = 'fixtures'
+CONF_ENTITY_ID_PREFIX = 'entity_id_prefix'
 
 PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT]
 
@@ -313,6 +314,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                 start_address = device_yaml[CONF_START_ADDRESS]
                 fixture_name = device_yaml[CONF_FIXTURE]
                 mode = device_yaml.get(CONF_MODE)
+                entity_id_prefix = device_yaml.get(CONF_ENTITY_ID_PREFIX)
 
                 if fixture_name not in processed_fixtures:
                     log.warning("Could not find fixture '%s'. Ignoring device %s", fixture_name, device_name)
@@ -325,14 +327,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
                 channels = fixture.select_mode(mode)
 
+                identifiers = {(DOMAIN, device_name)}
+                if entity_id_prefix is not None:
+                    identifiers.add((DOMAIN, f"{entity_id_prefix}_{device_name}"))
+
                 device = DeviceInfo(
                     configuration_url=fixture.config_url,
                     model=fixture.name,
-                    identifiers={(DOMAIN, device_name)},
+                    identifiers=identifiers,
                     name=device_name,
                 )
 
-                entities.extend(create_entities(device_name, start_address, channels, device, universe))
+                entities.extend(create_entities(device_name, start_address, channels, device, universe, entity_id_prefix))
 
         controller.start_server()
 
@@ -363,7 +369,8 @@ DEVICE_CONFIG = \
         {
             vol.Required(CONF_START_ADDRESS): vol.All(vol.Coerce(int), vol.Range(min=0, max=511)),
             vol.Required(CONF_FIXTURE): cv.string,
-            vol.Optional(CONF_MODE): vol.Any(None, cv.string)
+            vol.Optional(CONF_MODE): vol.Any(None, cv.string),
+            vol.Optional(CONF_ENTITY_ID_PREFIX): vol.Any(None, cv.string)
         }
     )
 

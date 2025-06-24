@@ -16,7 +16,9 @@ log = logging.getLogger(__name__)
 
 class DmxSelectEntity(SelectEntity):
     def __init__(self,
-                 name: str,
+                 fixture_name: str,
+                 channel_name: str,
+                 entity_id_prefix: str,
                  channel: Channel,
                  capability_entities: dict[str, DmxNumberEntity],
                  universe: DmxUniverse,
@@ -25,9 +27,13 @@ class DmxSelectEntity(SelectEntity):
                  ) -> None:
         super().__init__()
 
-        self._attr_name = name
+        self._attr_name = f"{fixture_name} {channel_name}"
         self._attr_device_info = device
-        self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{str(dmx_index)}_{name}"
+        if entity_id_prefix:
+            self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}"
+            self.entity_id = f"select.{self._attr_unique_id}"
+        else:
+            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{str(dmx_index)}_{fixture_name.lower()}_{channel_name.lower()}"
 
         self._attr_icon = determine_icon(channel)
 
