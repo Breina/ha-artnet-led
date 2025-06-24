@@ -7,6 +7,8 @@ This means we now support moving heads, strobes, and much more. Since this stand
 
 Since the DOMAIN has been renamed from `artnet_led` to `dmx`, HACS might get angry, so for now it will require a manual installation by copying `custom_components/dmx` into your `custom_components` folder on HomeAssistant, then restarting.
 
+For migrating your old fixtures into the new format, I've written up [a migration guide](migration.md).
+
 Part of the beta is to test if my documentation suffices. So head over to [the index](index.md) and see if you can figure out how to use it.
 
 ## What's in the box?
