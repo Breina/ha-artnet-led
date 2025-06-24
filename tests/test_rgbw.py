@@ -14,7 +14,6 @@ from tests.dmx_test_framework import MockDmxUniverse, get_entity_by_name, MockHo
 device_info_mock = MagicMock()
 homeassistant.helpers.device_registry.DeviceInfo = device_info_mock
 
-
 class TestRgbwFixture(unittest.TestCase):
 
     def setUp(self):

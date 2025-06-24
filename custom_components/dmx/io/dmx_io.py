@@ -6,6 +6,8 @@ from custom_components.dmx.server.artnet_server import ArtNetServer
 
 
 class DmxUniverse:
+    # TODO #74 add switch to toggle sending output
+
     def __init__(self, port_address: PortAddress, controller: ArtNetServer, use_partial_universe: bool = True):
         self.port_address = port_address
         self.controller = controller

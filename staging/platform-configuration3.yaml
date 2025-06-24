@@ -25,7 +25,7 @@ dmx:
             - DJ led:
                 start_address: 0
                 fixture: DJ Scan LED
-      - 0/0/0:
+      - 0/0/20:
           devices:
             - Bureau NO:
                 fixture: CW/WW Fader

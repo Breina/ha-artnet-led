@@ -343,6 +343,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
+# TODO include option to set unique_id #75
 
 COMPATIBILITY_SCHEMA = \
     vol.Schema(
