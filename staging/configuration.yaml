@@ -27,7 +27,7 @@ light:
           type: rgbw
         - channel: 20
           name: xy_light
-          type: dxy
+          type: xy
           channel_size: 16bit
           byte_order: big
           

@@ -843,7 +843,7 @@ class DmxRGBWW(DmxBaseLight):
         self._channel_width = len(self._channel_setup)
 
     def _update_values(self, values: array[int]):
-        self._state, self._attr_brightness, red, green, blue, cold_white, warm_white, color_temp, _, _, _, _ = \
+        self._state, self._attr_brightness, red, green, blue, cold_white, warm_white, color_temp, _, _ = \
             from_values(self._channel_setup, self.channel_size[1], values)
 
         self._vals = (red, green, blue, cold_white, warm_white, color_temp)
