@@ -1,8 +1,10 @@
+import asyncio
 import os
 import sys
-from typing import List, Dict
+from typing import List, Dict, Set
 from unittest.mock import MagicMock
 
+import pytest
 from homeassistant.helpers.entity import Entity
 
 from custom_components.dmx.entity.number import DmxNumberEntity
@@ -100,9 +102,42 @@ class MockHomeAssistant(MagicMock):
         self.bus.async_fire = MagicMock()
         self.bus.async_listen = MagicMock()
         self.bus.async_listen_once = MagicMock()
+        self._tasks: Set[asyncio.Task] = set()
+        self._task_results = []
 
     async def async_add_executor_job(self, func, *args, **kwargs):
         return func(*args, **kwargs)
+
+    def async_create_task(self, coro):
+        """Create and track async tasks"""
+        task = asyncio.create_task(coro)
+        self._tasks.add(task)
+
+        # Clean up completed tasks
+        def cleanup_task(t):
+            self._tasks.discard(t)
+
+        task.add_done_callback(cleanup_task)
+        return task
+
+    async def wait_for_all_tasks(self, timeout=5.0):
+        """Wait for all created tasks to complete"""
+        if self._tasks:
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*self._tasks, return_exceptions=True),
+                    timeout=timeout
+                )
+            except asyncio.TimeoutError:
+                # Cancel remaining tasks
+                for task in self._tasks:
+                    if not task.done():
+                        task.cancel()
+                raise
+
+    def get_active_task_count(self) -> int:
+        """Get number of active tasks"""
+        return len([t for t in self._tasks if not t.done()])
 
 
 def assert_dmx(universe: MockDmxUniverse, channel: int, value: int):
