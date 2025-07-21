@@ -299,14 +299,6 @@ class Capability:
         """
         return self.dmx_range_start <= dmx_value <= self.dmx_range_end
 
-    def _define_from_range(self, start: float, end: float):
-        self.dynamic_entities.append(
-            DynamicMapping(
-                start, end,
-                self.dmx_range_start, self.dmx_range_end
-            )
-        )
-
     def _define_from_entity(self, entities: list[Entity] | None):
         if not entities:
             return
@@ -1498,6 +1490,7 @@ class Generic(Capability):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._define_from_entity([Percent(0, '%'), Percent(100, '%')])
 
     def icon(self) -> str:
         return "mdi:dots-horizontal-circle-outline"

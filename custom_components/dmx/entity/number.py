@@ -18,8 +18,7 @@ class DmxNumberEntity(RestoreNumber):
                  capability: Capability, universe: DmxUniverse, dmx_indexes: List[int], device: DeviceInfo, available: bool = True) -> None:
         super().__init__()
 
-        assert capability.dynamic_entities \
-               and len(capability.dynamic_entities) == 1
+        assert capability.dynamic_entities and len(capability.dynamic_entities) == 1
 
         self._attr_name = f"{fixture_name} {channel_name}"
         self._attr_device_info = device
