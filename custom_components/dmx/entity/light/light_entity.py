@@ -12,7 +12,7 @@ from custom_components.dmx.const import DOMAIN
 from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from custom_components.dmx.entity.light.color_converter import ColorConverter
 from custom_components.dmx.entity.light.light_controller import LightController
-from custom_components.dmx.entity.light.light_state import LightState
+from custom_components.dmx.entity.light.light_state import LuvLightState
 from custom_components.dmx.io.dmx_io import DmxUniverse
 
 log = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         converter = ColorConverter(min_kelvin, max_kelvin)
 
         self.channel_map = {ch.channel_type: ch for ch in channels}
-        self._state = LightState(color_mode, converter, self.channel_map)
+        self._state = LuvLightState(color_mode, converter, self.channel_map)
         self._controller = LightController(self._state, universe)
 
         self._has_separate_dimmer = has_separate_dimmer
@@ -144,17 +144,19 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         if "brightness" in attrs:
             brightness = attrs["brightness"]
-            self._state.brightness = brightness
+            # Treat restored brightness as L* value
+            self._state.update_brightness(brightness)
             self._state.last_brightness = brightness
 
         if "rgb_color" in attrs:
             rgb = attrs["rgb_color"]
-            self._state.rgb = rgb
+            # Update L*u*v* state from restored RGB
+            self._state.update_rgb(*rgb)
             self._state.last_rgb = rgb
 
         if "color_temp" in attrs:
             color_temp = attrs["color_temp"]
-            self._state.color_temp_kelvin = color_temp
+            self._state.update_color_temp_kelvin(color_temp)
             self._state.last_color_temp_kelvin = color_temp
 
         # For color temp mode without dimmer, restore CW/WW values if available
@@ -165,7 +167,6 @@ class DmxLightEntity(LightEntity, RestoreEntity):
             brightness = attrs["brightness"] or 100
             color_temp = attrs["color_temp"] or (self.min_color_temp_kelvin + self.max_color_temp_kelvin) / 2
             cold, warm = self._state.converter.temp_to_cw_ww(color_temp, brightness)
-            self._state.cold_white = cold
-            self._state.warm_white = warm
+            self._state.update_whites(cold, warm)
             self._state.last_cold_white = cold
             self._state.last_warm_white = warm

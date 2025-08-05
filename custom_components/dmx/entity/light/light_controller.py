@@ -1,12 +1,12 @@
 from typing import Dict, Any
 
 from custom_components.dmx.entity.light import ChannelType
-from custom_components.dmx.entity.light.light_state import LightState
+from custom_components.dmx.entity.light.light_state import LuvLightState
 from custom_components.dmx.io.dmx_io import DmxUniverse
 
 
 class LightController:
-    def __init__(self, state: LightState, universe: DmxUniverse):
+    def __init__(self, state: LuvLightState, universe: DmxUniverse):
         self.state = state
         self.universe = universe
         self.is_updating = False
@@ -44,21 +44,23 @@ class LightController:
     def _collect_updates_from_kwargs(self, kwargs: Dict[str, Any]) -> Dict[ChannelType, int]:
         updates = {}
 
-        if "brightness" in kwargs:
-            brightness = kwargs["brightness"]
-            updates.update(self.state.get_scaled_brightness_updates(brightness))
-
         if "rgb_color" in kwargs and self.state.has_rgb():
             r, g, b = kwargs["rgb_color"]
+            # Update the internal L*u*v* state
+            self.state.update_rgb(r, g, b)
             updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b})
 
         if "rgbw_color" in kwargs:
             r, g, b, w = kwargs["rgbw_color"]
+            # Update the internal L*u*v* state
+            self.state.update_rgbw(r, g, b, w)
             updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b, ChannelType.WARM_WHITE: w})
 
         if "rgbww_color" in kwargs:
             r, g, b, cw, ww = kwargs["rgbww_color"]
-            updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b,ChannelType.COLD_WHITE: cw, ChannelType.WARM_WHITE: ww})
+            # Update the internal L*u*v* state
+            self.state.update_rgbww(r, g, b, cw, ww)
+            updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b, ChannelType.COLD_WHITE: cw, ChannelType.WARM_WHITE: ww})
 
         if "color_temp_kelvin" in kwargs:
             kelvin = kwargs["color_temp_kelvin"]
@@ -70,6 +72,12 @@ class LightController:
             elif self.state.has_cw_ww():
                 cw, ww = self.state.converter.temp_to_cw_ww(kelvin, brightness)
                 updates.update({ChannelType.COLD_WHITE: cw, ChannelType.WARM_WHITE: ww})
+
+        if "brightness" in kwargs:
+            brightness = kwargs["brightness"]
+            # Treat brightness as L* value and update accordingly
+            self.state.update_brightness(brightness)
+            updates.update(self.state.get_scaled_brightness_updates(brightness))
 
         return updates
 
@@ -94,7 +102,7 @@ class LightController:
     def _capture_current_state(self) -> dict:
         return {
             'brightness': self.state.brightness,
-            'rgb': self.state.rgb,
+            'luv_color': self.state.luv_color,
             'cold_white': self.state.cold_white,
             'warm_white': self.state.warm_white,
             'color_temp_kelvin': self.state.color_temp_kelvin,
@@ -103,7 +111,7 @@ class LightController:
 
     def _save_last_state(self, s: dict):
         self.state.last_brightness = s['brightness']
-        self.state.last_rgb = s['rgb']
+        self.state.set_last_luv_color(s['luv_color'])
         self.state.last_cold_white = s['cold_white']
         self.state.last_warm_white = s['warm_white']
         self.state.last_color_temp_kelvin = s['color_temp_kelvin']
