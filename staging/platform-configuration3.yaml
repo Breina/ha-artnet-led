@@ -2,47 +2,54 @@ dmx:
   fixtures:
     folder: fixtures
 
-  artnet:
-    max_fps: 43 # Optional
-    refresh_every: 1.2 # Optional
-
+#  artnet:
+#    max_fps: 43 # Optional
+#    refresh_every: 1.2 # Optional
+#
+#    universes:
+#      - 1/2/0: # Net = 1 / Sub-net = 2 / Universe = 0
+#          devices:
+#            - Epic triple lights:
+#                start_address: 11
+#                fixture: CLHB300RGBW
+#                mode: 42ch
+#
+#          compatibility:
+#            send_partial_universe: False
+#            manual_nodes:
+#              - { host: 192.168.1.11, port: 6454 }
+#              - { host: 192.168.1.12 }
+#
+#      - 3: # Net and Sub-net default to 0, universe = 3
+#          devices:
+#            - DJ led:
+#                start_address: 0
+#                fixture: DJ Scan LED
+#      - 0/0/20:
+#          devices:
+#            - Bureau NO:
+#                fixture: CW/WW Fader
+#                start_address: 0
+#                mode: 16bit-cw
+#                entity_id_prefix: lol_this_is_prefix
+#            - Bureau LED strip:
+#                fixture: CW/WW Fader
+#                start_address: 247
+#                mode: 8bit-wc
+  sacn:
+    source_name: "Test SACN source LOL!!"
+    priority: 123
+    enable_preview_data: true
     universes:
-      - 1/2/0: # Net = 1 / Sub-net = 2 / Universe = 0
+      - 1:
           devices:
-            - Epic triple lights:
-                start_address: 11
-                fixture: CLHB300RGBW
-                mode: 42ch
-
-          compatibility:
-            send_partial_universe: False
-            manual_nodes:
-              - { host: 192.168.1.11, port: 6454 }
-              - { host: 192.168.1.12 }
-
-      - 3: # Net and Sub-net default to 0, universe = 3
-          devices:
-            - DJ led:
-                start_address: 0
-                fixture: DJ Scan LED
-      - 0/0/20:
-          devices:
-            - Bureau NO:
-                fixture: CW/WW Fader
-                start_address: 0
-                mode: 16bit-cw
-                entity_id_prefix: lol_this_is_prefix
-            - Bureau LED strip:
-                fixture: CW/WW Fader
-                start_address: 247
-                mode: 8bit-wc
             - Test RGBWW fixture:
                 fixture: RGBWW
-                start_address: 100
+                start_address: 1
                 mode: 8bit
           compatibility:
-            manual_nodes:
-              - { host: 192.168.1.12 }
+            unicast_addresses:
+              - { host: 192.168.1.15 }
 
 
 
@@ -63,22 +70,6 @@ dmx:
 #
 #      text: # Receive ASCII from external
 #        name: SuperTextInput # Inputs ASCII text into HA
-
-  sacn:
-    host: 192.168.1.11 # Required
-    port: 6454 # Optional
-    max-fps: # Optional
-    refresh_every: # Optional
-    universes:
-    # Same as ArtNet
-
-  kinet:
-    host: 192.168.1.11 # Required
-    port: 6454 # Optional
-    max-fps: # Optional
-    refresh_every: # Optional
-    universes:
-    # Same as ArtNet
 
 homeassistant:
   auth_providers:
@@ -103,6 +94,7 @@ logger:
     custom_components.dmx.entity.node_handler: info
     custom_components.dmx.util: debug
     custom_components.dmx.bridge: debug
+    custom_components.dmx.server: debug
 
 #automation: !include automations.yaml
 #script: !include scripts.yaml

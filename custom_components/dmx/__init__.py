@@ -23,11 +23,13 @@ from custom_components.dmx.fixture.parser import parse
 from custom_components.dmx.io.dmx_io import DmxUniverse
 from custom_components.dmx.server import PortAddress, ArtPollReply
 from custom_components.dmx.server.artnet_server import ArtNetServer, Node, ManualNode
+from custom_components.dmx.server.sacn_server import SacnServer, SacnServerConfig
 from custom_components.dmx.util.rate_limiter import RateLimiter
 
 log = logging.getLogger(__name__)
 
 CONF_NODE_TYPE_ARTNET = "artnet"
+CONF_NODE_TYPE_SACN = "sacn"
 CONF_MAX_FPS = "max_fps"
 CONF_MAX_FPS_DEFAULT = 30
 CONF_RATE_LIMIT = "rate_limit"
@@ -35,6 +37,15 @@ CONF_RATE_LIMIT_DEFAULT = 0.5
 CONF_REFRESH_EVERY = "refresh_every"
 CONF_REFRESH_EVERY_DEFAULT = 0.8
 CONF_UNIVERSES = "universes"
+CONF_SOURCE_NAME = "source_name"
+CONF_SOURCE_NAME_DEFAULT = "HA sACN Controller"
+CONF_PRIORITY = "priority"
+CONF_PRIORITY_DEFAULT = 100
+CONF_MULTICAST_TTL = "multicast_ttl"
+CONF_MULTICAST_TTL_DEFAULT = 64
+CONF_SYNC_ADDRESS = "sync_address"
+CONF_ENABLE_PREVIEW_DATA = "enable_preview_data"
+CONF_UNICAST_ADDRESSES = "unicast_addresses"
 CONF_COMPATIBILITY = "compatibility"
 CONF_SEND_PARTIAL_UNIVERSE = "send_partial_universe"
 CONF_MANUAL_NODES = "manual_nodes"
@@ -210,6 +221,79 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     entities: list[Entity] = []
     universes: dict[PortAddress, DmxUniverse] = {}
+    sacn_server = None
+
+    # Initialize sACN server if configured
+    if (sacn_yaml := dmx_yaml.get(CONF_NODE_TYPE_SACN)) is not None:
+        sacn_config = SacnServerConfig(
+            source_name=sacn_yaml.get(CONF_SOURCE_NAME, CONF_SOURCE_NAME_DEFAULT),
+            priority=sacn_yaml.get(CONF_PRIORITY, CONF_PRIORITY_DEFAULT),
+            sync_address=sacn_yaml.get(CONF_SYNC_ADDRESS, 0),
+            multicast_ttl=sacn_yaml.get(CONF_MULTICAST_TTL, CONF_MULTICAST_TTL_DEFAULT),
+            enable_preview_data=sacn_yaml.get(CONF_ENABLE_PREVIEW_DATA, False)
+        )
+        
+        sacn_server = SacnServer(hass, sacn_config)
+        sacn_server.start_server()
+        log.info(f"sACN server started with source name: {sacn_config.source_name}")
+
+        # Process sACN universes and devices
+        for universe_dict in sacn_yaml[CONF_UNIVERSES]:
+            (universe_value, universe_yaml), = universe_dict.items()
+            universe_id = int(universe_value)
+            
+            # Handle unicast addresses if configured
+            unicast_addresses = []
+            if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
+                if (unicast_yaml := compatibility_yaml.get(CONF_UNICAST_ADDRESSES)) is not None:
+                    for unicast_yaml_item in unicast_yaml:
+                        unicast_addresses.append({
+                            'host': unicast_yaml_item[CONF_HOST],
+                            'port': unicast_yaml_item.get(CONF_PORT, 5568)
+                        })
+            
+            port_address = PortAddress(0, 0, universe_id if universe_id <= 511 else universe_id % 512)
+            
+            # Add universe to sACN server with unicast addresses
+            sacn_server.add_universe(universe_id, unicast_addresses)
+            
+            # Create universe with sACN support, passing the actual sACN universe ID
+            universe = DmxUniverse(port_address, None, True, sacn_server, universe_id)
+            universes[port_address] = universe
+            
+            # Process devices for this sACN universe
+            devices_yaml = universe_yaml[CONF_DEVICES]
+            for device_dict in devices_yaml:
+                (device_name, device_yaml), = device_dict.items()
+
+                start_address = device_yaml[CONF_START_ADDRESS]
+                fixture_name = device_yaml[CONF_FIXTURE]
+                mode = device_yaml.get(CONF_MODE)
+                entity_id_prefix = device_yaml.get(CONF_ENTITY_ID_PREFIX)
+
+                if fixture_name not in processed_fixtures:
+                    log.warning("Could not find fixture '%s'. Ignoring device %s", fixture_name, device_name)
+                    continue
+
+                fixture = processed_fixtures[fixture_name]
+                if not mode:
+                    assert len(fixture.modes) > 0
+                    mode = next(iter(fixture.modes.keys()))
+
+                channels = fixture.select_mode(mode)
+
+                identifiers = {(DOMAIN, device_name)}
+                if entity_id_prefix is not None:
+                    identifiers.add((DOMAIN, f"{entity_id_prefix}_{device_name}"))
+
+                device = DeviceInfo(
+                    configuration_url=fixture.config_url,
+                    model=fixture.name,
+                    identifiers=identifiers,
+                    name=device_name,
+                )
+
+                entities.extend(create_entities(device_name, start_address, channels, device, universe, entity_id_prefix))
 
     if (artnet_yaml := dmx_yaml.get(CONF_NODE_TYPE_ARTNET)) is not None:
 
@@ -221,13 +305,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         # Function to process universe updates with rate limiting
         def state_callback(port_address: PortAddress, data: bytearray, source: str | None = None):
-            """
-            Callback for incoming ArtNet DMX data with rate limiting.
-
-            Args:
-                port_address: The port address (universe) the data is for
-                data: The DMX data (512 bytes)
-            """
             callback_universe: DmxUniverse = universes.get(port_address)
             if callback_universe is None:
                 log.warning(f"Received DMX data for unknown universe: {port_address}")
@@ -302,7 +379,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             else:
                 send_partial_universe = True
 
-            universe = DmxUniverse(port_address, controller, send_partial_universe)
+            universe = DmxUniverse(port_address, controller, send_partial_universe, sacn_server)
             universes[port_address] = universe
 
             controller.add_port(port_address)
@@ -351,7 +428,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     return True
 
 
-COMPATIBILITY_SCHEMA = \
+ARTNET_COMPATIBILITY_SCHEMA = \
     vol.Schema(
         {
             vol.Optional(CONF_SEND_PARTIAL_UNIVERSE, default=True): cv.boolean,
@@ -359,6 +436,18 @@ COMPATIBILITY_SCHEMA = \
                 [{
                     vol.Required(CONF_HOST): cv.string,
                     vol.Optional(CONF_PORT, default=6454): cv.port
+                }]
+            )
+        }
+    )
+
+SACN_COMPATIBILITY_SCHEMA = \
+    vol.Schema(
+        {
+            vol.Optional(CONF_UNICAST_ADDRESSES): vol.Schema(
+                [{
+                    vol.Required(CONF_HOST): cv.string,
+                    vol.Optional(CONF_PORT, default=5568): cv.port
                 }]
             )
         }
@@ -383,6 +472,7 @@ CONFIG_SCHEMA = vol.Schema(
                         vol.Optional(CONF_FOLDER, default=CONF_FOLDER_DEFAULT): cv.string
                     }
                 ),
+                # TODO add ArtNet server name configuration
                 vol.Optional(CONF_NODE_TYPE_ARTNET): vol.Schema(
                     {
                         vol.Optional(CONF_MAX_FPS, default=CONF_MAX_FPS_DEFAULT): vol.All(vol.Coerce(int), vol.Range(min=0, max=43)),
@@ -393,7 +483,31 @@ CONFIG_SCHEMA = vol.Schema(
                             [{
                                 port_address_config: vol.Schema(
                                     {
-                                        vol.Optional(CONF_COMPATIBILITY): COMPATIBILITY_SCHEMA,
+                                        vol.Optional(CONF_COMPATIBILITY): ARTNET_COMPATIBILITY_SCHEMA,
+                                        vol.Required(CONF_DEVICES): vol.Schema(
+                                            [{
+                                                cv.string: DEVICE_CONFIG
+                                            }]
+                                        )
+                                    }
+                                )
+                            }]
+                        )
+                    }
+                ),
+                vol.Optional(CONF_NODE_TYPE_SACN): vol.Schema(
+                    {
+                        vol.Optional(CONF_SOURCE_NAME, default=CONF_SOURCE_NAME_DEFAULT): cv.string,
+                        vol.Optional(CONF_PRIORITY, default=CONF_PRIORITY_DEFAULT): vol.All(vol.Coerce(int), vol.Range(min=0, max=200)),
+                        vol.Optional(CONF_SYNC_ADDRESS, default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=63999)),
+                        vol.Optional(CONF_MULTICAST_TTL, default=CONF_MULTICAST_TTL_DEFAULT): vol.All(vol.Coerce(int), vol.Range(min=1, max=255)),
+                        vol.Optional(CONF_ENABLE_PREVIEW_DATA, default=False): cv.boolean,
+
+                        vol.Required(CONF_UNIVERSES): vol.Schema(
+                            [{
+                                vol.All(vol.Coerce(int), vol.Range(min=1, max=63999)): vol.Schema(
+                                    {
+                                        vol.Optional(CONF_COMPATIBILITY): SACN_COMPATIBILITY_SCHEMA,
                                         vol.Required(CONF_DEVICES): vol.Schema(
                                             [{
                                                 cv.string: DEVICE_CONFIG

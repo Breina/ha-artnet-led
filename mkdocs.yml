@@ -1,4 +1,4 @@
-site_name: Art-net LED Lighting for DMX
+site_name: Art-Net & sACN LED Lighting for DMX
 theme:
   name: material
   palette:
@@ -10,6 +10,8 @@ nav:
   - Overview: index.md
   - Configuration: config.md
   - External Art-Net controller: artnet-controller-communication.md
+  - External sACN controller: sacn-communication.md
+  - Art-Net vs sACN: artnet-vs-sacn.md
   - Beta information: beta.md
   - Migration: migration.md
 

@@ -1,10 +1,10 @@
-# Art-net LED Lighting for DMX
+# Art-Net & sACN LED Lighting for DMX
 
-A comprehensive Home Assistant integration that transforms your smart home into a professional lighting control system using Art-Net and DMX protocols.
+A comprehensive Home Assistant integration that transforms your smart home into a professional lighting control system using both Art-Net and sACN (E1.31) protocols.
 
 ## What is this integration?
 
-This integration creates a software-based Art-Net controller within Home Assistant, allowing you to control professional lighting fixtures, LED strips, and stage equipment directly from your smart home platform. Whether you're setting up architectural lighting, home theater ambiance, or stage lighting effects, this integration bridges the gap between consumer smart home technology and professional lighting control.
+This integration creates software-based Art-Net and sACN controllers within Home Assistant, allowing you to control professional lighting fixtures, LED strips, and stage equipment directly from your smart home platform. Whether you're setting up residential lighting, home theater ambiance, nightclub installations, or professional stage lighting, this integration bridges the gap between consumer smart home technology and professional lighting control protocols.
 
 ## What You Get
 
@@ -15,11 +15,12 @@ Once configured, the integration creates Home Assistant entities for each fixtur
 
 ## Key Features
 
-### Art-Net Controller
-- **Software-based Art-Net controller** - Turn your Home Assistant instance into a functional Art-Net controller
-- **Universe management** - Control multiple Art-Net universes with flexible addressing
-- **Bi-directional communication** - Send commands to other Art-Net devices and receive universe updates from other controllers
-- **Auto-discovery** - Announces itself to other Art-Net devices on your network
+### Dual Protocol Support
+- **Art-Net Controller** - Software-based Art-Net controller with bi-directional communication and auto-discovery
+- **sACN (E1.31) Streaming** - ANSI E1.31-2016 compliant sACN implementation with multicast and unicast support
+- **Universe Management** - Control multiple universes across both protocols with flexible addressing
+- **Priority System** - sACN priority handling for professional multi-controller setups
+- **Network Efficiency** - Art-Net broadcast for simplicity, sACN multicast for large installations
 
 ```mermaid
 graph TB
@@ -30,45 +31,54 @@ graph TB
             AUTO[Automations<br/>Scripts<br/>Scenes]
         end
         
-        subgraph "Art-Net Integration"
-            ARTNET[Art-Net LED Integration]
-            CONTROLLER[Software Art-Net Controller]
+        subgraph "DMX Integration"
+            DMX_INT[DMX LED Integration]
+            ARTNET_CTRL[Software Art-Net Controller]
+            SACN_CTRL[Software sACN Controller]
             FIXTURE_MGR[OpenFixtureLibrary]
         end
     end
     
     subgraph "Network Infrastructure"
-        NETWORK[Ethernet/WiFi Network<br/>Art-Net Protocol]
+        NETWORK[Ethernet/WiFi Network<br/>Art-Net & sACN Protocols]
     end
     
-    subgraph "Art-Net Node Hardware"
-        NODE[Art-Net Node]
+    subgraph "DMX Hardware"
+        ARTNET_NODE[Art-Net Node]
+        SACN_NODE[sACN Node]
         DMX_OUT[DMX Output]
         FIXTURES[LED Fixtures<br/>Moving Lights<br/>Dimmers]
     end
     
-    subgraph "Art-Net Controller Hardware"
-        EXT_CTRL[External Art-Net Controller<br/>Lighting Console]
+    subgraph "External Controllers"
+        EXT_ARTNET[Art-Net Controller<br/>Lighting Console]
+        EXT_SACN[sACN Controller<br/>Professional Console]
         FADERS[Physical Faders<br/>Buttons<br/>Encoders]
     end
     
     %% Bidirectional communication within HA
-    ARTNET -->|Events| HA 
-    ARTNET <--> ENTITIES
+    DMX_INT -->|Events| HA 
+    DMX_INT <--> ENTITIES
     HA <--> AUTO
     AUTO <--> ENTITIES
-    FIXTURE_MGR -.->|Fixture definitions| ARTNET
+    FIXTURE_MGR -.->|Fixture definitions| DMX_INT
     
-    %% Art-Net network communication
-    NETWORK --> NODE
-    EXT_CTRL <--> NETWORK
-    NETWORK <--> CONTROLLER
-    CONTROLLER <--> ARTNET
+    %% Network communication
+    NETWORK <--> ARTNET_NODE
+    NETWORK <--> SACN_NODE
+    EXT_ARTNET <--> NETWORK
+    EXT_SACN <--> NETWORK
+    NETWORK <--> ARTNET_CTRL
+    NETWORK <--> SACN_CTRL
+    ARTNET_CTRL <--> DMX_INT
+    SACN_CTRL <--> DMX_INT
     
     %% Hardware connections
-    NODE --> DMX_OUT
+    ARTNET_NODE --> DMX_OUT
+    SACN_NODE --> DMX_OUT
     DMX_OUT --> FIXTURES
-    FADERS --> EXT_CTRL
+    FADERS --> EXT_ARTNET
+    FADERS --> EXT_SACN
     
     %% Data flow labels
     
@@ -78,8 +88,8 @@ graph TB
     classDef network fill:#9C27B0,stroke:#6A1B9A,color:#fff
     
     class HA,ENTITIES,AUTO haCore
-    class ARTNET,CONTROLLER,FIXTURE_MGR integration
-    class NODE,EXT_CTRL,FADERS,DMX_OUT,FIXTURES hardware
+    class DMX_INT,ARTNET_CTRL,SACN_CTRL,FIXTURE_MGR integration
+    class ARTNET_NODE,SACN_NODE,EXT_ARTNET,EXT_SACN,FADERS,DMX_OUT,FIXTURES hardware
     class NETWORK network
 ```
 
@@ -90,8 +100,8 @@ graph TB
 - **Multiple fixture types** - From simple LED strips to complex moving lights
 
 ### Network Protocols
-- **Art-Net** - Primary protocol support with full universe control
-- **sACN (E1.31)** - Streaming ACN support for modern lighting networks *(coming soon)*
+- **Art-Net** - Primary protocol support with full universe control and bidirectional communication
+- **sACN (E1.31)** - ANSI E1.31-2016 compliant Streaming ACN support with multicast and unicast transmission
 
 ## How it works
 
@@ -111,7 +121,11 @@ graph TB
 
 ## Getting Started
 
-Ready to transform your lighting setup? Head over to the [Configuration](config.md) section to learn how to set up your first Art-Net universe and fixtures.
+Ready to transform your lighting setup? 
+
+1. **Choose Your Protocol** - Read our [Art-Net vs sACN](artnet-vs-sacn.md) guide to decide which protocol suits your needs
+2. **Configure Your Setup** - Follow the [Configuration](config.md) guide to set up your universes and fixtures
+3. **Learn Advanced Features** - Explore [Art-Net Communication](artnet-controller-communication.md) and [External sACN Controller](sacn-communication.md) for professional setups
 
 ---
 

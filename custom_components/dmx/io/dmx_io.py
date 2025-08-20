@@ -1,77 +1,44 @@
 import asyncio
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Optional
 
 from custom_components.dmx.server import PortAddress
 from custom_components.dmx.server.artnet_server import ArtNetServer
+from custom_components.dmx.server.sacn_server import SacnServer
 
 
 class DmxUniverse:
 
-    def __init__(self, port_address: PortAddress, controller: ArtNetServer, use_partial_universe: bool = True):
+    def __init__(self, port_address: PortAddress, controller: ArtNetServer, use_partial_universe: bool = True, sacn_server: Optional[SacnServer] = None, sacn_universe: Optional[int] = None):
         self.port_address = port_address
         self.controller = controller
+        self.sacn_server = sacn_server
+        self.sacn_universe = sacn_universe
         self.use_partial_universe = use_partial_universe
 
-        # Dictionary to store channel value: {channel_number: current_value}
         self._channel_values = {}
-
-        # Dictionary to store constant values: {channel_number: constant_value}
         self._constant_values = {}
-
-        # Dictionary to store callbacks: {channel_number: [callback1, callback2, ...]}
         self._channel_callbacks = {}
-
-        # Set to track channels changed since last send
         self._changed_channels = set()
-
-        # Flag to track if this is the first send (to send full universe initially)
         self._first_send = True
-
-        # Flag to control whether output is enabled
         self._output_enabled = True
+        
+        if self.sacn_server and self.sacn_universe:
+            self.sacn_server.add_universe(self.sacn_universe)
 
     def set_output_enabled(self, enabled: bool) -> None:
-        """
-        Enable or disable output for this universe.
-
-        Args:
-            enabled: True to enable output, False to disable
-        """
         self._output_enabled = enabled
 
     def is_output_enabled(self) -> bool:
-        """
-        Check if output is currently enabled for this universe.
-
-        Returns:
-            True if output is enabled, False otherwise
-        """
         return self._output_enabled
 
     def set_constant_value(self, channels: List[int], value: int) -> None:
-        """
-        Set a constant value for one or more channels. These values will be maintained
-        during internal updates but can be overridden by external sources.
-
-        Args:
-            channel: List of channel numbers
-            value: Constant value to maintain for the channel(s)
-        """
 
         for ch in channels:
             self._constant_values[ch] = value
-            # Apply the constant value immediately
             self._channel_values[ch] = value
             self._changed_channels.add(ch)
 
     def register_channel_listener(self, channels: int | List[int], callback: Callable[[str | None], None]) -> None:
-        """
-        Register a callback to be called when a channel value changes.
-
-        Args:
-            channels: Single channel number or list of channel numbers
-            callback: Function to call with channel number and new value
-        """
         if isinstance(channels, int):
             channels = [channels]
 
@@ -83,15 +50,6 @@ class DmxUniverse:
                 self._channel_callbacks[channel].append(callback)
 
     async def update_value(self, channel: int | List[int], value: int, send_immediately: bool = False, source: str | None = None) -> set[Callable[[str | None], None]]:
-        """
-        Update the value of one or more channels and notify all listeners.
-
-        Args:
-            channel: Single channel number or list of channel numbers
-            value: New value for the channel(s)
-            send_immediately: Whether to send the universe data immediately after update
-            source: From where the update came from
-        """
         if isinstance(channel, int):
             channels = [channel]
         else:
@@ -126,14 +84,6 @@ class DmxUniverse:
         return callbacks_to_call
 
     async def update_multiple_values(self, updates: Dict[int, int], source: str | None = None, send_update: bool = True) -> None:
-        """
-        Update multiple channel values in a batch and send once at the end.
-
-        Args:
-            updates: Dictionary mapping channel numbers to values
-            source: From where the update came from
-            send_update: Whether to send the universe data after updates
-        """
         callbacks_to_call = set()
         for channel, value in updates.items():
             callbacks_to_call.update(await self.update_value(channel, value, send_immediately=False, source=source))
@@ -146,25 +96,15 @@ class DmxUniverse:
 
     @staticmethod
     async def _call_callback(callback, source: str | None = None):
-        """Helper method to call callbacks that might be async or regular functions."""
         if asyncio.iscoroutinefunction(callback):
             await callback(source)
         else:
             callback(source)
 
     def get_channel_value(self, channel: int) -> int:
-        """Get the current value of a channel."""
         return self._channel_values.get(channel, 0)
 
     def send_universe_data(self) -> None:
-        """
-        Gather all channel values into a bytearray and send it via ArtNet.
-        If use_partial_universe is enabled, only send up to the highest
-        changed channel since last transmission (rounded up to a multiple of 2).
-        Before sending, apply constant values to their respective channels.
-
-        Only sends data if output is enabled.
-        """
         if not self._output_enabled:
             return
 
@@ -174,21 +114,25 @@ class DmxUniverse:
                 self._changed_channels.add(channel)
 
         if not self._channel_values:
-            # If no channels have been set, send a minimum-sized packet
             data = bytearray(2)  # Minimum size is 2 bytes
-            self.controller.send_dmx(self.port_address, data)
+            
+            if self.controller:
+                self.controller.send_dmx(self.port_address, data)
+            
+            # Send via sACN if available
+            if self.sacn_server and self.sacn_universe:
+                sacn_data = bytearray([0] + [0] * 24)
+                self.sacn_server.send_dmx_data(self.sacn_universe, sacn_data)
+            
             self._changed_channels.clear()
             self._first_send = False
             return
 
         if self.use_partial_universe and not self._first_send and self._changed_channels:
-            # Find the highest channel number that has changed since last send
             max_changed_channel = max(self._changed_channels)
 
-            # Round up to the next multiple of 2
             data_length = (max_changed_channel + (2 - (max_changed_channel % 2))) if max_changed_channel % 2 else max_changed_channel
 
-            # Ensure data_length is at least 2 bytes
             data_length = max(2, data_length)
 
             data = bytearray(data_length)
@@ -199,7 +143,16 @@ class DmxUniverse:
             if 1 <= channel <= len(data):
                 data[channel - 1] = value
 
-        self.controller.send_dmx(self.port_address, data)
+        if self.controller:
+            self.controller.send_dmx(self.port_address, data)
+        
+        # Send via sACN if available  
+        if self.sacn_server and self.sacn_universe:
+            # sACN requires start code + channel data (minimum 25 bytes total)
+            sacn_data = bytearray([0] + list(data))  # Add start code
+            if len(sacn_data) < 25:
+                sacn_data.extend([0] * (25 - len(sacn_data)))
+            self.sacn_server.send_dmx_data(self.sacn_universe, sacn_data)
 
         self._changed_channels.clear()
         self._first_send = False

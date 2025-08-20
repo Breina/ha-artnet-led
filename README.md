@@ -6,18 +6,21 @@
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Breina/ha-artnet-led/python.yml)
 [![Documentation](https://img.shields.io/badge/docs-github%20pages-blue)](https://breina.github.io/ha-artnet-led/)
 
-A Home Assistant integration that transforms your instance into a professional Art-Net lighting controller. Control DMX fixtures, LED strips, and stage lighting directly from Home Assistant with full bidirectional Art-Net communication.
+A Home Assistant integration that transforms your instance into a professional Art-Net and sACN lighting controller. Control DMX fixtures, LED strips, and stage lighting directly from Home Assistant with full bidirectional communication using both Art-Net and sACN (E1.31) protocols.
 
 ![Integration Entities](docs/Entities.png)
 
 ## Features
 
+- **Dual Protocol Support** - Both Art-Net and sACN (E1.31) protocols supported
 - **Software Art-Net Controller** - Turn Home Assistant into a fully functional Art-Net node
+- **Professional sACN Streaming** - ANSI E1.31-2016 compliant sACN implementation
 - **OpenFixtureLibrary Integration** - Use industry-standard fixture definitions
-- **Bidirectional Communication** - Send commands and receive updates from other Art-Net controllers
-- **Multiple Universe Support** - Control multiple Art-Net universes with flexible addressing
+- **Bidirectional Communication** - Send commands and receive updates from controllers
+- **Multiple Universe Support** - Control multiple universes with flexible addressing
 - **Professional Fixture Support** - RGB, RGBW, moving lights, dimmers, and more
 - **Network Auto-Discovery** - Automatic Art-Net node discovery via ArtPoll/ArtPollReply
+- **Unicast/Multicast Support** - sACN multicast with optional unicast fallback
 
 ## Quick Start
 
@@ -36,14 +39,32 @@ A Home Assistant integration that transforms your instance into a professional A
 
 ```yaml
 dmx:
+  fixtures:
+    folder: fixtures
+    
+  # Use both protocols simultaneously
   artnet:
     universes:
       - 0:
           devices:
             - Living Room Strip:
                 start_address: 1
-                fixture: Generic RGB
+                fixture: generic-rgb
                 mode: 3ch
+
+  sacn:
+    source_name: "Home Assistant sACN"
+    priority: 100
+    universes:
+      - 1:
+          devices:
+            - RGB Strip sACN:
+                start_address: 1
+                fixture: generic-rgb
+                mode: 3ch
+          compatibility:
+            unicast_addresses:
+              - { host: 192.168.1.20 }
 ```
 
 ## Documentation
@@ -62,11 +83,17 @@ dmx:
 
 ```mermaid
 graph LR
-    HA[Home Assistant] <--> ARTNET[DMX Integration]
-    ARTNET <--> NETWORK[Art-Net Network]
-    NETWORK --> NODE[Art-Net Node]
-    NODE --> FIXTURES[DMX Fixtures]
-    CONTROLLER[Art-Net Controller] <--> NETWORK
+    HA[Home Assistant] <--> DMX[DMX Integration]
+    DMX <--> ARTNET[Art-Net Server]
+    DMX <--> SACN[sACN Server]
+    ARTNET <--> ARTNETWORK[Art-Net Network]
+    SACN <--> SACNETWORK[sACN Network]
+    ARTNETWORK --> ARTNODE[Art-Net Nodes]
+    SACNETWORK --> SACNODE[sACN Receivers]
+    ARTNODE --> FIXTURES1[DMX Fixtures]
+    SACNODE --> FIXTURES2[DMX Fixtures]
+    CONTROLLER[External Controllers] <--> ARTNETWORK
+    CONTROLLER2[sACN Controllers] <--> SACNETWORK
 ```
 
 ## Support

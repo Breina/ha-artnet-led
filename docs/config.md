@@ -44,6 +44,32 @@ dmx:
             - DJ led:
                 start_address: 0
                 fixture: DJ Scan LED
+
+  sacn:
+    source_name: "Home Assistant sACN"
+    priority: 100
+    multicast_ttl: 64
+    enable_preview_data: false
+
+    universes:
+      - 1:
+          devices:
+            - RGB Strip:
+                start_address: 1
+                fixture: generic-rgb
+                mode: 3ch
+
+          compatibility:
+            unicast_addresses:
+              - { host: 192.168.1.20, port: 5568 }
+              - { host: 192.168.1.21 }
+
+      - 2:
+          devices:
+            - Moving Head:
+                start_address: 10
+                fixture: moving-head-spot
+                mode: extended
 ```
 
 ### Configuration Options
@@ -96,6 +122,30 @@ Universe definitions. Each universe can be specified as:
   so that updates for this universe are always sent to this address as well. 
 - - **`host`** *(mandatory)*: IP address
 - - **`port`** *(optional, default: `6454`)*: Art-Net port
+
+#### `dmx.sacn`
+- **`source_name`** *(optional, default: `HA sACN Controller`)*  
+  Source name transmitted in sACN packets (max 63 characters)
+- **`priority`** *(optional, default: `100`)*  
+  sACN data priority [0-200]. Higher values take precedence over lower priority sources.
+- **`multicast_ttl`** *(optional, default: `64`)*  
+  Time-to-live for multicast packets [1-255]
+- **`enable_preview_data`** *(optional, default: `false`)*  
+  Mark transmitted data as preview data (non-live)
+
+#### `dmx.sacn.universes`
+Universe definitions for sACN. Each universe number [1-63999] maps to multicast address `239.255.X.Y` where X.Y represents the universe number.
+
+#### sACN Universe Configuration
+- **`devices`** *(mandatory)*  
+  List of fixtures in this universe (same format as Art-Net)
+
+#### sACN Compatibility Options
+- **`unicast_addresses`** *(optional)*  
+  Send sACN data to specific IP addresses via unicast in addition to multicast.
+  Useful for devices that don't support multicast or are on different network segments.
+- - **`host`** *(mandatory)*: IP address
+- - **`port`** *(optional, default: `5568`)*: sACN port
 
 ## Step 3: Restart and Verify
 
