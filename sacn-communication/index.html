@@ -1,0 +1,1196 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../artnet-controller-communication/">
+      
+      
+        <link rel="next" href="../artnet-vs-sacn/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>External sACN controller - Art-Net & sACN LED Lighting for DMX</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="lime">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#external-sacn-controller-communication" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Art-Net &amp; sACN LED Lighting for DMX" class="md-header__button md-logo" aria-label="Art-Net & sACN LED Lighting for DMX" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Art-Net & sACN LED Lighting for DMX
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              External sACN controller
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="lime"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Art-Net &amp; sACN LED Lighting for DMX" class="md-nav__button md-logo" aria-label="Art-Net & sACN LED Lighting for DMX" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Art-Net & sACN LED Lighting for DMX
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artnet-controller-communication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    External Art-Net controller
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    External sACN controller
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    External sACN controller
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#receiving-data-from-external-sacn-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Receiving Data from External sACN Sources
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Receiving Data from External sACN Sources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automatic-controller-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automatic Controller Discovery
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dmx-data-reception" class="md-nav__link">
+    <span class="md-ellipsis">
+      DMX Data Reception
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#priority-system-in-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      Priority System in Action
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-requirements-for-receiving-sacn" class="md-nav__link">
+    <span class="md-ellipsis">
+      Network Requirements for Receiving sACN
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Network Requirements for Receiving sACN">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multicast-networking" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multicast Networking
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-infrastructure-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Network Infrastructure Requirements
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-multicast-reception" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing Multicast Reception
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unicast-reception" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unicast Reception
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understanding-sacn-data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understanding sACN Data Flow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understanding sACN Data Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-external-data-reaches-home-assistant" class="md-nav__link">
+    <span class="md-ellipsis">
+      How External Data Reaches Home Assistant
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#priority-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Priority System
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#universe-synchronization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Universe Synchronization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-termination" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Termination
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-for-receiving-external-sacn" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration for Receiving External sACN
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration for Receiving External sACN">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-reception-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basic Reception Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#professional-multi-controller-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Professional Multi-Controller Setup
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting-external-sacn-reception" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting External sACN Reception
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting External sACN Reception">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Issues
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Debug Logging
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-external-sacn-controllers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing External sACN Controllers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artnet-vs-sacn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Art-Net vs sACN
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beta/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Beta information
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Migration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#receiving-data-from-external-sacn-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Receiving Data from External sACN Sources
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Receiving Data from External sACN Sources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automatic-controller-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automatic Controller Discovery
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dmx-data-reception" class="md-nav__link">
+    <span class="md-ellipsis">
+      DMX Data Reception
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#priority-system-in-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      Priority System in Action
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-requirements-for-receiving-sacn" class="md-nav__link">
+    <span class="md-ellipsis">
+      Network Requirements for Receiving sACN
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Network Requirements for Receiving sACN">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multicast-networking" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multicast Networking
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-infrastructure-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Network Infrastructure Requirements
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-multicast-reception" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing Multicast Reception
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unicast-reception" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unicast Reception
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understanding-sacn-data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understanding sACN Data Flow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understanding sACN Data Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-external-data-reaches-home-assistant" class="md-nav__link">
+    <span class="md-ellipsis">
+      How External Data Reaches Home Assistant
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#priority-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Priority System
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#universe-synchronization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Universe Synchronization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-termination" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Termination
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-for-receiving-external-sacn" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration for Receiving External sACN
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration for Receiving External sACN">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-reception-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basic Reception Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#professional-multi-controller-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Professional Multi-Controller Setup
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting-external-sacn-reception" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting External sACN Reception
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting External sACN Reception">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Issues
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Debug Logging
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-external-sacn-controllers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing External sACN Controllers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="external-sacn-controller-communication">External sACN Controller Communication<a class="headerlink" href="#external-sacn-controller-communication" title="Permanent link">&para;</a></h1>
+<p>This documentation covers how your Home Assistant sACN integration receives and processes data from external sACN controllers and lighting consoles.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The sACN integration in Home Assistant implements a professional ANSI E1.31-2016 compliant sACN receiver. When configured, Home Assistant can receive sACN (Streaming ACN) data from external lighting controllers, professional consoles, and other sACN sources on your network.</p>
+<p>Unlike Art-Net which uses broadcast communication, sACN uses <strong>IP multicast</strong> for efficient network distribution, allowing multiple controllers to coexist with automatic priority-based switching.</p>
+<h2 id="receiving-data-from-external-sacn-sources">Receiving Data from External sACN Sources<a class="headerlink" href="#receiving-data-from-external-sacn-sources" title="Permanent link">&para;</a></h2>
+<h3 id="automatic-controller-discovery">Automatic Controller Discovery<a class="headerlink" href="#automatic-controller-discovery" title="Permanent link">&para;</a></h3>
+<p>Unlike Art-Net's polling mechanism, sACN uses a <strong>priority-based system</strong> for controller coordination:</p>
+<ol>
+<li><strong>Multiple Sources</strong>: Multiple sACN controllers can send data to the same universe</li>
+<li><strong>Priority Switching</strong>: Higher priority sources (0-200, higher wins) automatically take control</li>
+<li><strong>Automatic Failover</strong>: When a higher-priority source stops transmitting, receivers fall back to the next highest priority</li>
+<li><strong>Seamless Switching</strong>: No manual intervention required for controller changes</li>
+</ol>
+<h3 id="dmx-data-reception">DMX Data Reception<a class="headerlink" href="#dmx-data-reception" title="Permanent link">&para;</a></h3>
+<p>When Home Assistant receives sACN data from external controllers:</p>
+<ul>
+<li><strong>Entity Updates</strong>: The integration updates corresponding entity values in real-time</li>
+<li><strong>Rate Limiting</strong>: Updates are limited to prevent flooding Home Assistant with rapid changes</li>
+<li><strong>Priority Handling</strong>: Higher-priority sources override lower-priority ones automatically</li>
+<li><strong>Stream Monitoring</strong>: Integration tracks active streams and handles timeouts (2.5 seconds)</li>
+</ul>
+<h3 id="priority-system-in-action">Priority System in Action<a class="headerlink" href="#priority-system-in-action" title="Permanent link">&para;</a></h3>
+<p><strong>Example Setup:</strong>
+- <strong>Main Lighting Console</strong>: Priority 100 (normal operation)
+- <strong>Home Assistant</strong>: Priority 90 (backup/automated scenes)
+- <strong>Emergency Override</strong>: Priority 200 (safety/manual takeover)</p>
+<p>When the main console is active, it controls all fixtures. If it goes offline, Home Assistant automatically takes control. Emergency override always wins regardless of other sources.</p>
+<h2 id="network-requirements-for-receiving-sacn">Network Requirements for Receiving sACN<a class="headerlink" href="#network-requirements-for-receiving-sacn" title="Permanent link">&para;</a></h2>
+<h3 id="multicast-networking">Multicast Networking<a class="headerlink" href="#multicast-networking" title="Permanent link">&para;</a></h3>
+<p>sACN uses IP multicast addresses for efficient data distribution:</p>
+<ul>
+<li><strong>Universe 1</strong>: <code>239.255.0.1:5568</code></li>
+<li><strong>Universe 2</strong>: <code>239.255.0.2:5568</code></li>
+<li><strong>Universe N</strong>: <code>239.255.((N-1) &gt;&gt; 8).((N-1) &amp; 0xFF):5568</code></li>
+</ul>
+<h3 id="network-infrastructure-requirements">Network Infrastructure Requirements<a class="headerlink" href="#network-infrastructure-requirements" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Network Configuration Critical</p>
+<p>Your network infrastructure must support <strong>IP multicast</strong> for sACN to work properly. Many home routers and managed switches disable multicast by default.</p>
+</div>
+<p><strong>Essential Network Settings:</strong></p>
+<ol>
+<li><strong>IGMP Snooping</strong> - Enable on managed switches to prevent multicast flooding</li>
+<li><strong>Multicast routing</strong> - Ensure routers forward multicast traffic between VLANs  </li>
+<li><strong>Firewall rules</strong> - Allow UDP traffic on port 5568 and multicast addresses</li>
+<li><strong>WiFi multicast</strong> - Enable multicast forwarding on wireless networks (often disabled for power saving)</li>
+</ol>
+<h3 id="testing-multicast-reception">Testing Multicast Reception<a class="headerlink" href="#testing-multicast-reception" title="Permanent link">&para;</a></h3>
+<p><strong>Test from Home Assistant host machine:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># Test multicast reception (run on HA host)</span>
+socat<span class="w"> </span>UDP4-RECV:5568,ip-add-membership<span class="o">=</span><span class="m">239</span>.255.0.1:0.0.0.0<span class="w"> </span>-
+</code></pre></div></p>
+<p><strong>Test from lighting console/controller:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># Send test data to Home Assistant (run on lighting console)</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Test sACN data&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>socat<span class="w"> </span>-<span class="w"> </span>UDP4-DATAGRAM:239.255.0.1:5568
+</code></pre></div></p>
+<p><strong>Test from network switch (if manageable):</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># Check multicast group membership (run on managed switch CLI)</span>
+show<span class="w"> </span>ip<span class="w"> </span>igmp<span class="w"> </span>groups
+show<span class="w"> </span>multicast<span class="w"> </span>route<span class="w"> </span><span class="m">239</span>.255.0.1
+</code></pre></div></p>
+<p>If multicast fails, configure <strong>unicast addresses</strong> for direct communication.</p>
+<h3 id="unicast-reception">Unicast Reception<a class="headerlink" href="#unicast-reception" title="Permanent link">&para;</a></h3>
+<p>For networks that don't support multicast, configure external controllers to send unicast directly to Home Assistant:</p>
+<p><strong>Home Assistant Configuration:</strong>
+<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">1</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">My Fixture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">          </span><span class="c1"># No unicast_addresses needed for receiving</span>
+</code></pre></div></p>
+<p><strong>External Controller Setup:</strong>
+- Configure lighting console to send unicast sACN to Home Assistant's IP address
+- Use port 5568 (standard sACN port)
+- Set appropriate priority (lower than HA's priority to let HA control, higher to override)</p>
+<h2 id="understanding-sacn-data-flow">Understanding sACN Data Flow<a class="headerlink" href="#understanding-sacn-data-flow" title="Permanent link">&para;</a></h2>
+<h3 id="how-external-data-reaches-home-assistant">How External Data Reaches Home Assistant<a class="headerlink" href="#how-external-data-reaches-home-assistant" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>External Controller Transmission</strong>:</li>
+<li>Lighting console sends sACN data to multicast address <code>239.255.X.Y:5568</code></li>
+<li>
+<p>Or sends unicast directly to Home Assistant IP address</p>
+</li>
+<li>
+<p><strong>Network Delivery</strong>:</p>
+</li>
+<li>Managed switches use IGMP snooping to deliver multicast efficiently</li>
+<li>
+<p>Only devices subscribed to the multicast group receive the data</p>
+</li>
+<li>
+<p><strong>Home Assistant Reception</strong>:</p>
+</li>
+<li>Integration joins appropriate multicast groups for configured universes</li>
+<li>Processes incoming sACN packets according to ANSI E1.31-2016 specification</li>
+<li>Updates entity values based on received DMX channel data</li>
+</ol>
+<h3 id="priority-system">Priority System<a class="headerlink" href="#priority-system" title="Permanent link">&para;</a></h3>
+<p>sACN's priority system (0-200, higher wins) enables professional controller coordination:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">90</span><span class="w">  </span><span class="c1"># Lower than external console, higher than backup systems</span>
+</code></pre></div>
+<p><strong>Typical Priority Hierarchy:</strong></p>
+<ul>
+<li><strong>Manual Override Console</strong>: 200 (always wins)</li>
+<li><strong>Main Lighting Console</strong>: 100 (normal operation)</li>
+<li><strong>Home Assistant</strong>: 90 (backup/automated control)</li>
+<li><strong>Backup Systems</strong>: 80 (last resort)</li>
+</ul>
+<h3 id="universe-synchronization">Universe Synchronization<a class="headerlink" href="#universe-synchronization" title="Permanent link">&para;</a></h3>
+<p>For complex lighting effects requiring perfect timing, sACN supports universe synchronization:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">sync_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7000</span><span class="w">  </span><span class="c1"># Sync universe (optional)</span>
+</code></pre></div>
+<p>When sync is enabled:</p>
+<ol>
+<li>External controllers send DMX data to multiple universes without applying it</li>
+<li>Controllers send a sync packet to the sync address</li>
+<li>Home Assistant and other receivers apply all DMX data simultaneously</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Professional Timing</p>
+<p>Universe synchronization is critical for pixel mapping, video content, and any effects spanning multiple universes. Without sync, universes update independently causing visible timing differences.</p>
+</div>
+<h3 id="data-termination">Data Termination<a class="headerlink" href="#data-termination" title="Permanent link">&para;</a></h3>
+<p>sACN receivers expect regular data updates. The integration automatically:</p>
+<ul>
+<li>Sends data packets at minimum 1Hz when channels change</li>
+<li>Sends <strong>stream termination packets</strong> when universes are disabled</li>
+<li>Handles receiver timeout detection (2.5 seconds without data)</li>
+</ul>
+<h2 id="configuration-for-receiving-external-sacn">Configuration for Receiving External sACN<a class="headerlink" href="#configuration-for-receiving-external-sacn" title="Permanent link">&para;</a></h2>
+<h3 id="basic-reception-setup">Basic Reception Setup<a class="headerlink" href="#basic-reception-setup" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">fixtures</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">folder</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fixtures</span>
+
+<span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">source_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Home</span><span class="nv"> </span><span class="s">Assistant</span><span class="nv"> </span><span class="s">Receiver&quot;</span>
+<span class="w">    </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">90</span><span class="w">                     </span><span class="c1"># Lower than external consoles</span>
+<span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">1</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Main LED Strip</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">fixture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generic-rgbw</span>
+<span class="w">                </span><span class="nt">start_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">                </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8bit</span>
+</code></pre></div>
+<h3 id="professional-multi-controller-setup">Professional Multi-Controller Setup<a class="headerlink" href="#professional-multi-controller-setup" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">source_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;HA</span><span class="nv"> </span><span class="s">Backup</span><span class="nv"> </span><span class="s">Controller&quot;</span>
+<span class="w">    </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">85</span><span class="w">                     </span><span class="c1"># Lower than main console (100)</span>
+<span class="w">    </span><span class="nt">sync_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7000</span><span class="w">              </span><span class="c1"># Receive universe sync from external controllers</span>
+
+<span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">1</span><span class="p">:</span><span class="w">  </span><span class="c1"># Receives from external lighting console</span>
+<span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Moving Head Bank</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">fixture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generic-moving-head</span>
+<span class="w">                </span><span class="nt">start_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">                </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extended</span>
+
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">2</span><span class="p">:</span><span class="w">  </span><span class="c1"># Receives from pixel mapping controller  </span>
+<span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">LED Video Wall</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">fixture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pixel-strip</span>
+<span class="w">                </span><span class="nt">start_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">                </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rgb</span>
+</code></pre></div>
+<h2 id="troubleshooting-external-sacn-reception">Troubleshooting External sACN Reception<a class="headerlink" href="#troubleshooting-external-sacn-reception" title="Permanent link">&para;</a></h2>
+<h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<p><strong>Home Assistant not receiving sACN data:</strong></p>
+<ol>
+<li>
+<p><strong>Check multicast groups (run on HA host machine)</strong>:
+   <div class="highlight"><pre><span></span><code>netstat<span class="w"> </span>-gn<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="m">239</span>.255<span class="w">  </span><span class="c1"># Linux: Check if HA joined multicast groups</span>
+netsh<span class="w"> </span>interface<span class="w"> </span>ip<span class="w"> </span>show<span class="w"> </span>joins<span class="w">  </span><span class="c1"># Windows: Show multicast memberships</span>
+</code></pre></div>
+   <strong>Expected output</strong>: Lines showing <code>239.255.0.1</code> and other universe multicast addresses</p>
+</li>
+<li>
+<p><strong>Test multicast reception (run on HA host machine)</strong>:
+   <div class="highlight"><pre><span></span><code><span class="c1"># Listen for sACN traffic on universe 1</span>
+socat<span class="w"> </span>UDP4-RECV:5568,ip-add-membership<span class="o">=</span><span class="m">239</span>.255.0.1:0.0.0.0<span class="w"> </span>-
+</code></pre></div>
+   <strong>Expected output</strong>: Raw sACN packet data when external controller transmits</p>
+</li>
+<li>
+<p><strong>Check firewall (run on HA host machine)</strong>:
+   <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">5568</span>/udp<span class="w">               </span><span class="c1"># UFW (Linux)</span>
+sudo<span class="w"> </span>firewall-cmd<span class="w"> </span>--add-port<span class="o">=</span><span class="m">5568</span>/udp<span class="w"> </span><span class="c1"># firewalld (Linux)</span>
+netsh<span class="w"> </span>advfirewall<span class="w"> </span>firewall<span class="w"> </span>add<span class="w"> </span>rule<span class="w"> </span><span class="nv">name</span><span class="o">=</span><span class="s2">&quot;sACN&quot;</span><span class="w"> </span><span class="nv">dir</span><span class="o">=</span><span class="k">in</span><span class="w"> </span><span class="nv">action</span><span class="o">=</span>allow<span class="w"> </span><span class="nv">protocol</span><span class="o">=</span>UDP<span class="w"> </span><span class="nv">localport</span><span class="o">=</span><span class="m">5568</span><span class="w">  </span><span class="c1"># Windows</span>
+</code></pre></div>
+   <strong>Expected output</strong>: Firewall rule added successfully</p>
+</li>
+</ol>
+<p><strong>External controller not taking control:</strong></p>
+<ul>
+<li><strong>Check priority settings</strong>: External controller priority must be higher than Home Assistant's priority</li>
+<li><strong>Verify source names</strong>: Check logs for multiple source identification</li>
+<li><strong>Monitor stream status</strong>: Look for timeout/recovery messages in logs</li>
+</ul>
+<p><strong>Priority conflicts between multiple controllers:</strong></p>
+<ul>
+<li>Review priority hierarchy in all controllers</li>
+<li>Use unique source names for identification</li>
+<li>Monitor equipment displays for active source indication</li>
+</ul>
+<h3 id="debug-logging">Debug Logging<a class="headerlink" href="#debug-logging" title="Permanent link">&para;</a></h3>
+<p>Enable detailed sACN logging to monitor external data reception:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">logger</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">logs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">custom_components.dmx.server.sacn_server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
+<span class="w">    </span><span class="nt">custom_components.dmx.server.sacn_packet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
+<span class="w">    </span><span class="nt">custom_components.dmx.io.dmx_io</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
+</code></pre></div>
+<p><strong>Useful log patterns for external data:</strong></p>
+<ul>
+<li><code>Received sACN data from [source] on universe X</code> - External controller sending data</li>
+<li><code>Priority switch: [old_source] -&gt; [new_source]</code> - Controller takeover</li>
+<li><code>sACN stream timeout from [source] on universe X</code> - External controller disconnected</li>
+<li><code>Joined multicast group 239.255.X.Y</code> - Successfully listening for external data</li>
+<li><code>Rate limiting updates from external sACN source</code> - High-frequency external data</li>
+</ul>
+<h3 id="testing-external-sacn-controllers">Testing External sACN Controllers<a class="headerlink" href="#testing-external-sacn-controllers" title="Permanent link">&para;</a></h3>
+<p><strong>Software Testing Tools:</strong></p>
+<p>Use <strong><a href="http://www.sacnview.org/">sACN View</a></strong> (free sACN monitoring and transmission tool) to test external controller reception.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>

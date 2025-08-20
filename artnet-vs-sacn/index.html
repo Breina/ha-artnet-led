@@ -1,0 +1,717 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<link href="../sacn-communication/" rel="prev"/>
+<link href="../beta/" rel="next"/>
+<link href="../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.6.14" name="generator"/>
+<title>Art-Net vs sACN - Art-Net &amp; sACN LED Lighting for DMX</title>
+<link href="../assets/stylesheets/main.342714a4.min.css" rel="stylesheet"/>
+<link href="../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+</head>
+<body data-md-color-accent="lime" data-md-color-primary="deep-purple" data-md-color-scheme="slate" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#art-net-vs-sacn-choosing-the-right-protocol">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header md-header--shadow" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="Art-Net &amp; sACN LED Lighting for DMX" class="md-header__button md-logo" data-md-component="logo" href=".." title="Art-Net &amp; sACN LED Lighting for DMX">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            Art-Net &amp; sACN LED Lighting for DMX
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Art-Net vs sACN
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-hidden="true" class="md-option" data-md-color-accent="lime" data-md-color-media="" data-md-color-primary="deep-purple" data-md-color-scheme="slate" id="__palette_0" name="__palette" type="radio"/>
+</form>
+<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="Art-Net &amp; sACN LED Lighting for DMX" class="md-nav__button md-logo" data-md-component="logo" href=".." title="Art-Net &amp; sACN LED Lighting for DMX">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+    Art-Net &amp; sACN LED Lighting for DMX
+  </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="..">
+<span class="md-ellipsis">
+    Overview
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../config/">
+<span class="md-ellipsis">
+    Configuration
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../artnet-controller-communication/">
+<span class="md-ellipsis">
+    External Art-Net controller
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../sacn-communication/">
+<span class="md-ellipsis">
+    External sACN controller
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    Art-Net vs sACN
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    Art-Net vs sACN
+    
+  </span>
+</a>
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#quick-decision-matrix">
+<span class="md-ellipsis">
+      Quick Decision Matrix
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#protocol-comparison">
+<span class="md-ellipsis">
+      Protocol Comparison
+    </span>
+</a>
+<nav aria-label="Protocol Comparison" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#network-transport">
+<span class="md-ellipsis">
+      Network Transport
+    </span>
+</a>
+<nav aria-label="Network Transport" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#art-net-broadcast-network">
+<span class="md-ellipsis">
+      Art-Net Broadcast Network
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#sacn-multicast-network">
+<span class="md-ellipsis">
+      sACN Multicast Network
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#universe-addressing">
+<span class="md-ellipsis">
+      Universe Addressing
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#multi-controller-support">
+<span class="md-ellipsis">
+      Multi-Controller Support
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#synchronization">
+<span class="md-ellipsis">
+      Synchronization
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#network-requirements-comparison">
+<span class="md-ellipsis">
+      Network Requirements Comparison
+    </span>
+</a>
+<nav aria-label="Network Requirements Comparison" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#art-net-network-needs">
+<span class="md-ellipsis">
+      Art-Net Network Needs
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#sacn-network-needs">
+<span class="md-ellipsis">
+      sACN Network Needs
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#installation-scenarios">
+<span class="md-ellipsis">
+      Installation Scenarios
+    </span>
+</a>
+<nav aria-label="Installation Scenarios" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#scenario-1-home-theater-setup">
+<span class="md-ellipsis">
+      Scenario 1: Home Theater Setup
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#scenario-2-nightclub-installation">
+<span class="md-ellipsis">
+      Scenario 2: Nightclub Installation
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#scenario-3-mixed-professional-environment">
+<span class="md-ellipsis">
+      Scenario 3: Mixed Professional Environment
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#future-considerations">
+<span class="md-ellipsis">
+      Future Considerations
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../beta/">
+<span class="md-ellipsis">
+    Beta information
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../migration/">
+<span class="md-ellipsis">
+    Migration
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#quick-decision-matrix">
+<span class="md-ellipsis">
+      Quick Decision Matrix
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#protocol-comparison">
+<span class="md-ellipsis">
+      Protocol Comparison
+    </span>
+</a>
+<nav aria-label="Protocol Comparison" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#network-transport">
+<span class="md-ellipsis">
+      Network Transport
+    </span>
+</a>
+<nav aria-label="Network Transport" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#art-net-broadcast-network">
+<span class="md-ellipsis">
+      Art-Net Broadcast Network
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#sacn-multicast-network">
+<span class="md-ellipsis">
+      sACN Multicast Network
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#universe-addressing">
+<span class="md-ellipsis">
+      Universe Addressing
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#multi-controller-support">
+<span class="md-ellipsis">
+      Multi-Controller Support
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#synchronization">
+<span class="md-ellipsis">
+      Synchronization
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#network-requirements-comparison">
+<span class="md-ellipsis">
+      Network Requirements Comparison
+    </span>
+</a>
+<nav aria-label="Network Requirements Comparison" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#art-net-network-needs">
+<span class="md-ellipsis">
+      Art-Net Network Needs
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#sacn-network-needs">
+<span class="md-ellipsis">
+      sACN Network Needs
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#installation-scenarios">
+<span class="md-ellipsis">
+      Installation Scenarios
+    </span>
+</a>
+<nav aria-label="Installation Scenarios" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#scenario-1-home-theater-setup">
+<span class="md-ellipsis">
+      Scenario 1: Home Theater Setup
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#scenario-2-nightclub-installation">
+<span class="md-ellipsis">
+      Scenario 2: Nightclub Installation
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#scenario-3-mixed-professional-environment">
+<span class="md-ellipsis">
+      Scenario 3: Mixed Professional Environment
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#future-considerations">
+<span class="md-ellipsis">
+      Future Considerations
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<h1 id="art-net-vs-sacn-choosing-the-right-protocol">Art-Net vs sACN: Choosing the Right Protocol<a class="headerlink" href="#art-net-vs-sacn-choosing-the-right-protocol" title="Permanent link">¶</a></h1>
+<p>Both Art-Net and sACN are professional lighting control protocols, but they serve different purposes and excel in different scenarios. This guide helps you choose the best protocol for your setup.</p>
+<p><strong>Standards Background:</strong>
+- <strong>Art-Net</strong> - Proprietary protocol by Artistic Licence, widely adopted industry standard
+- <strong>sACN</strong> - <strong>ANSI E1.31</strong> official standard by Entertainment Services and Technology Association (ESTA)</p>
+<h2 id="quick-decision-matrix">Quick Decision Matrix<a class="headerlink" href="#quick-decision-matrix" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th><strong>Use Case</strong></th>
+<th><strong>Recommended Protocol</strong></th>
+<th><strong>Why</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Home theater / residential</td>
+<td><strong>Art-Net</strong></td>
+<td>Simpler setup, works on any network</td>
+</tr>
+<tr>
+<td>DJ booth / mobile setup</td>
+<td><strong>Art-Net</strong></td>
+<td>Plug-and-play, broadcast discovery, trigger events</td>
+</tr>
+<tr>
+<td>Nightclub / permanent venue</td>
+<td><strong>sACN</strong></td>
+<td>Professional standard, efficient multicast</td>
+</tr>
+<tr>
+<td>Large installations (50+ fixtures)</td>
+<td><strong>sACN</strong></td>
+<td>Better network efficiency, priority system</td>
+</tr>
+<tr>
+<td>Mixed vendor environment</td>
+<td><strong>Art-Net</strong></td>
+<td>Universal compatibility</td>
+</tr>
+<tr>
+<td>Professional theater</td>
+<td><strong>sACN</strong></td>
+<td>Industry standard, synchronization features</td>
+</tr>
+</tbody>
+</table>
+<h2 id="protocol-comparison">Protocol Comparison<a class="headerlink" href="#protocol-comparison" title="Permanent link">¶</a></h2>
+<h3 id="network-transport">Network Transport<a class="headerlink" href="#network-transport" title="Permanent link">¶</a></h3>
+<p><strong>Art-Net:</strong>
+- Uses UDP <strong>broadcast</strong> (<code>255.255.255.255</code>) or <strong>unicast</strong>
+- Port 6454
+- Simple broadcast means all devices see all traffic
+- Works on any standard Ethernet network</p>
+<p><strong>sACN:</strong>
+- Uses IP <strong>multicast</strong> (<code>239.255.x.y</code>) or <strong>unicast</strong> fallback
+- Port 5568<br/>
+- Efficient: only interested receivers get the data
+- Requires multicast-capable network infrastructure</p>
+<h4 id="art-net-broadcast-network">Art-Net Broadcast Network<a class="headerlink" href="#art-net-broadcast-network" title="Permanent link">¶</a></h4>
+<pre class="mermaid"><code>graph TB
+    HA1[Home Assistant] --&gt;|UDP Broadcast| SWITCH1[Network Switch]
+    SWITCH1 --&gt; ALL1[All Devices&lt;br/&gt;Process or Ignore]
+    ALL1 --&gt; NODE1[Art-Net Node 1]
+    ALL1 --&gt; NODE2[Art-Net Node 2]
+    ALL1 --&gt; CONSOLE1[Art-Net Controller]
+
+    classDef ha fill:#4CAF50,stroke:#2E7D32,color:#fff
+    classDef artnet fill:#FF6B6B,stroke:#E63946,color:#fff
+    classDef network fill:#45B7D1,stroke:#2980B9,color:#fff
+
+    class HA1 ha
+    class NODE1,NODE2,CONSOLE1 artnet
+    class SWITCH1,ALL1 network</code></pre>
+<h4 id="sacn-multicast-network">sACN Multicast Network<a class="headerlink" href="#sacn-multicast-network" title="Permanent link">¶</a></h4>
+<pre class="mermaid"><code>graph TB
+    HA2[Home Assistant] --&gt;|Multicast Join| SWITCH2[Managed Switch&lt;br/&gt;IGMP Snooping]
+    SWITCH2 --&gt;|Only to Members| GROUP[Multicast Group&lt;br/&gt;239.255.0.1]
+    GROUP --&gt; NODE3[sACN Node 1]
+    GROUP --&gt; NODE4[sACN Node 2]
+    CONSOLE2[sACN Controller] -.-&gt;|Not Subscribed| SWITCH2
+
+    classDef ha fill:#4CAF50,stroke:#2E7D32,color:#fff
+    classDef sacn fill:#4ECDC4,stroke:#26A69A,color:#fff
+    classDef network fill:#45B7D1,stroke:#2980B9,color:#fff
+
+    class HA2 ha
+    class NODE3,NODE4,CONSOLE2 sacn
+    class SWITCH2,GROUP network</code></pre>
+<h3 id="universe-addressing">Universe Addressing<a class="headerlink" href="#universe-addressing" title="Permanent link">¶</a></h3>
+<p><strong>Art-Net:</strong>
+- Universe range: 0-32,767 (but practically 0-511 per subnet)
+- Uses Net/Subnet/Universe addressing (e.g., <code>1/2/0</code>)
+- 15-bit universe addressing within 4-bit net/subnet structure</p>
+<p><strong>sACN:</strong>
+- Universe range: 1-63,999
+- Simple integer universe IDs (e.g., Universe 1, Universe 42, Universe 5000)
+- No subnet limitations</p>
+<h3 id="multi-controller-support">Multi-Controller Support<a class="headerlink" href="#multi-controller-support" title="Permanent link">¶</a></h3>
+<p><strong>Art-Net:</strong>
+- <strong>HTP (Highest Takes Precedence)</strong> or <strong>LTP (Latest Takes Precedence)</strong> merge at receiver level
+- <strong>ArtTrigger system</strong> - Send trigger messages mapped to Home Assistant events
+- Manual configuration required for controller coordination
+- No automatic failover</p>
+<p><strong>sACN:</strong>
+- <strong>Built-in priority system</strong> (0-200, higher wins)
+- <strong>Automatic failover</strong> when higher-priority source disappears
+- <strong>Per-universe priority</strong> and <strong>per-address priority</strong> support</p>
+<h3 id="synchronization">Synchronization<a class="headerlink" href="#synchronization" title="Permanent link">¶</a></h3>
+<p><strong>sACN:</strong>
+- <strong>Built-in synchronization</strong> via sync universe
+- All receivers can wait for sync signal before applying data
+- <strong>Frame-accurate timing</strong> for complex effects</p>
+<p><strong>Art-Net:</strong>
+- <strong>ArtSync</strong> packets for universe synchronization
+- Optional feature, not widely implemented
+- Manual timing coordination</p>
+<div class="admonition note">
+<p class="admonition-title">ArtSync Not Implemented</p>
+<p>ArtSync is not currently implemented in this integration. If you need universe synchronization, please <a href="https://github.com/Breina/ha-artnet-led/issues">create a GitHub issue</a> to request this feature.</p>
+</div>
+<h2 id="network-requirements-comparison">Network Requirements Comparison<a class="headerlink" href="#network-requirements-comparison" title="Permanent link">¶</a></h2>
+<h3 id="art-net-network-needs">Art-Net Network Needs<a class="headerlink" href="#art-net-network-needs" title="Permanent link">¶</a></h3>
+<p>✅ <strong>Advantages:</strong></p>
+<ul>
+<li>Works on <strong>any</strong> standard Ethernet network</li>
+<li>No special router/switch configuration needed</li>
+<li>WiFi friendly (broadcast works everywhere)</li>
+<li>Zero network administration required</li>
+</ul>
+<p>⚠️ <strong>Limitations:</strong></p>
+<ul>
+<li>Broadcast traffic affects all network devices</li>
+<li>Can overwhelm networks with many universes  </li>
+<li>No built-in traffic optimization</li>
+</ul>
+<h3 id="sacn-network-needs">sACN Network Needs<a class="headerlink" href="#sacn-network-needs" title="Permanent link">¶</a></h3>
+<p>✅ <strong>Advantages:</strong></p>
+<ul>
+<li><strong>Multicast efficiency</strong> - only subscribers receive data</li>
+<li>Scales well to large installations</li>
+<li>Professional network optimization</li>
+</ul>
+<p>⚠️ <strong>Requirements:</strong></p>
+<ul>
+<li><strong>Managed switches</strong> with IGMP snooping</li>
+<li><strong>Multicast-capable routers</strong></li>
+<li><strong>WiFi multicast forwarding</strong> enabled</li>
+<li>Network administration knowledge helpful</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Home Network Reality Check</p>
+<p>Many home routers and "smart" switches disable or poorly handle multicast. Art-Net's broadcast approach "just works" on consumer equipment, while sACN may require network configuration or unicast fallback.</p>
+</div>
+<h2 id="installation-scenarios">Installation Scenarios<a class="headerlink" href="#installation-scenarios" title="Permanent link">¶</a></h2>
+<h3 id="scenario-1-home-theater-setup">Scenario 1: Home Theater Setup<a class="headerlink" href="#scenario-1-home-theater-setup" title="Permanent link">¶</a></h3>
+<p><strong>Setup:</strong> Living room with RGB LED strips, smart switches, couple of moving heads</p>
+<p><strong>Recommendation: Art-Net</strong></p>
+<p>Why Art-Net wins:
+- Simple setup with consumer network equipment
+- Few devices, so broadcast traffic is minimal<br/>
+- Easy troubleshooting with standard tools
+- Broader device compatibility
+- ArtTrigger events for Home Assistant automation integration</p>
+<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">artnet</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">0</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">TV Backlight</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">fixture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generic-rgb</span>
+<span class="w">                </span><span class="nt">start_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Ceiling Spots</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">fixture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generic-rgbw</span><span class="w">  </span>
+<span class="w">                </span><span class="nt">start_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</code></pre></div>
+<h3 id="scenario-2-nightclub-installation">Scenario 2: Nightclub Installation<a class="headerlink" href="#scenario-2-nightclub-installation" title="Permanent link">¶</a></h3>
+<p><strong>Setup:</strong> 200+ LED fixtures, multiple lighting consoles, backup systems required</p>
+<p><strong>Recommendation: sACN</strong></p>
+<p>Why sACN wins:
+- Multicast efficiency with hundreds of fixtures
+- Priority system for console backup/override
+- Professional standard expected by lighting techs
+- Synchronization for tight visual effects</p>
+<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">source_name</span><span class="p">:</span><span class="w"> </span><span class="s">"Main</span><span class="nv"> </span><span class="s">Lighting</span><span class="nv"> </span><span class="s">Controller"</span>
+<span class="w">    </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">    </span><span class="nt">sync_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7000</span>
+
+<span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">1</span><span class="p">:</span><span class="w">   </span><span class="c1"># DJ Booth RGB</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">2</span><span class="p">:</span><span class="w">   </span><span class="c1"># Dance Floor Wash</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">3</span><span class="p">:</span><span class="w">   </span><span class="c1"># Moving Heads</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">4</span><span class="p">:</span><span class="w">   </span><span class="c1"># LED Wall</span>
+<span class="w">      </span><span class="c1"># ... up to universe 50+</span>
+</code></pre></div>
+<h3 id="scenario-3-mixed-professional-environment">Scenario 3: Mixed Professional Environment<a class="headerlink" href="#scenario-3-mixed-professional-environment" title="Permanent link">¶</a></h3>
+<p><strong>Setup:</strong> Permanent installation with mix of old Art-Net gear and new sACN equipment</p>
+<p><strong>Recommendation: Both Protocols</strong></p>
+<p>Run simultaneously on different universes:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Legacy equipment on Art-Net</span>
+<span class="w">  </span><span class="nt">artnet</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">0</span><span class="p">:</span><span class="w">   </span><span class="c1"># Old dimmer racks</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">1</span><span class="p">:</span><span class="w">   </span><span class="c1"># Legacy LED controllers</span>
+
+<span class="w">  </span><span class="c1"># New equipment on sACN  </span>
+<span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">10</span><span class="p">:</span><span class="w">  </span><span class="c1"># Modern LED fixtures</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">11</span><span class="p">:</span><span class="w">  </span><span class="c1"># New moving lights</span>
+</code></pre></div>
+<h2 id="future-considerations">Future Considerations<a class="headerlink" href="#future-considerations" title="Permanent link">¶</a></h2>
+<p><strong>sACN Adoption:</strong></p>
+<ul>
+<li>New professional equipment primarily sACN</li>
+<li>Lighting console manufacturers prioritize sACN development  </li>
+<li>ANSI standard updates continue (E1.31-2018, etc.)</li>
+</ul>
+<p><strong>Art-Net Persistence:</strong></p>
+<ul>
+<li>Still dominant in retrofit and home installations</li>
+<li>Art-Net 4 adds some sACN-like features</li>
+<li>Broad compatibility ensures continued use</li>
+</ul>
+<p><strong>RDMnet Evolution:</strong></p>
+<ul>
+<li>Built on sACN foundation</li>
+<li>Bi-directional communication for device management</li>
+<li>Future of professional lighting control</li>
+</ul>
+<p>The choice between Art-Net and sACN ultimately depends on your specific installation requirements, network capabilities, and long-term maintenance considerations.</p>
+<hr/>
+<p><em>Art-Net™ Designed by and Copyright Artistic Licence</em></p>
+</article>
+</div>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+<script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+</body>
+</html>
