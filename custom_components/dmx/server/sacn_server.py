@@ -295,17 +295,27 @@ class SacnReceiver(asyncio.DatagramProtocol):
     
     def datagram_received(self, data: bytes, addr):
         try:
+            log.debug(f"Received {len(data)} bytes from {addr[0]}:{addr[1]}")
             packet = SacnPacket.deserialize(data)
             
             if packet.universe in self.subscribed_universes:
-                log.debug(f"Received sACN data for universe {packet.universe} from {addr}")
+                log.debug(f"Received sACN data for universe {packet.universe} from {addr[0]} "
+                        f"(source: '{packet.source_name}', seq: {packet.sequence_number}, "
+                        f"priority: {packet.priority}, channels: {len(packet.dmx_data)})")
                 
                 if self.data_callback:
                     port_address = PortAddress(0, 0, packet.universe)
                     self.data_callback(port_address, packet.dmx_data, packet.source_name)
+                else:
+                    log.warning("No data callback configured for sACN receiver")
+            else:
+                log.debug(f"Ignoring sACN data for universe {packet.universe} from {addr[0]} "
+                         f"(not subscribed, subscribed universes: {self.subscribed_universes})")
             
         except Exception as e:
-            log.debug(f"Error processing sACN packet from {addr}: {e}")
+            log.warning(f"Error processing sACN packet from {addr[0]}:{addr[1]} "
+                       f"({len(data)} bytes): {e}")
+            log.debug(f"Raw packet data: {data[:50].hex()}{'...' if len(data) > 50 else ''}")
     
     def subscribe_universe(self, universe_id: int):
         if not (1 <= universe_id <= 63999):
@@ -340,10 +350,12 @@ class SacnReceiver(asyncio.DatagramProtocol):
                 action = "Joined" if join else "Left"
                 sock.setsockopt(socket.IPPROTO_IP, operation, mreq)
                 log.debug(f"{action} multicast group {multicast_addr} for universe {universe_id}")
+            else:
+                log.error(f"No socket available to {'join' if join else 'leave'} multicast group for universe {universe_id}")
             
         except Exception as e:
             action = "join" if join else "leave"
-            log.error(f"Failed to {action} multicast group for universe {universe_id}: {e}")
+            log.error(f"Failed to {action} multicast group {multicast_addr} for universe {universe_id}: {e}")
     
     def _join_multicast_group(self, universe_id: int):
         self._manage_multicast_group(universe_id, True)
@@ -357,11 +369,21 @@ async def create_sacn_receiver(hass: HomeAssistant,
     receiver = SacnReceiver(hass, data_callback)
     
     loop = hass.loop
-    transport, protocol = await loop.create_datagram_endpoint(
-        lambda: receiver,
-        local_addr=('0.0.0.0', SACN_PORT),
-        reuse_address=True
-    )
-    
-    log.info("sACN receiver started")
-    return receiver
+    try:
+        transport, protocol = await loop.create_datagram_endpoint(
+            lambda: receiver,
+            local_addr=('0.0.0.0', SACN_PORT)
+        )
+        
+        # Set socket options for multicast reception
+        sock = transport.get_extra_info('socket')
+        if sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            log.debug("Set socket reuse option for sACN receiver")
+        
+        log.info("sACN receiver started successfully")
+        return receiver
+        
+    except Exception as e:
+        log.error(f"Failed to create sACN receiver: {e}")
+        raise

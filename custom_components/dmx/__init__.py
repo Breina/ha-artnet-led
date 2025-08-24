@@ -23,7 +23,7 @@ from custom_components.dmx.fixture.parser import parse
 from custom_components.dmx.io.dmx_io import DmxUniverse
 from custom_components.dmx.server import PortAddress, ArtPollReply
 from custom_components.dmx.server.artnet_server import ArtNetServer, Node, ManualNode
-from custom_components.dmx.server.sacn_server import SacnServer, SacnServerConfig
+from custom_components.dmx.server.sacn_server import SacnServer, SacnServerConfig, create_sacn_receiver
 from custom_components.dmx.util.rate_limiter import RateLimiter
 
 log = logging.getLogger(__name__)
@@ -222,6 +222,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     entities: list[Entity] = []
     universes: dict[PortAddress, DmxUniverse] = {}
     sacn_server = None
+    sacn_receiver = None
 
     # Initialize sACN server if configured
     if (sacn_yaml := dmx_yaml.get(CONF_NODE_TYPE_SACN)) is not None:
@@ -236,6 +237,59 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         sacn_server = SacnServer(hass, sacn_config)
         sacn_server.start_server()
         log.info(f"sACN server started with source name: {sacn_config.source_name}")
+
+        # Set up rate limiting for sACN reception (similar to Art-Net)
+        rate_limit = sacn_yaml.get(CONF_RATE_LIMIT, CONF_RATE_LIMIT_DEFAULT)
+        sacn_universe_rate_limiters = {}
+
+        # Function to process sACN universe updates with rate limiting
+        def sacn_state_callback(port_address: PortAddress, data: bytearray, source: str | None = None):
+            log.info(f"sACN state callback triggered for {port_address} from source '{source}' with {len(data)} channels")
+            
+            callback_universe: DmxUniverse = universes.get(port_address)
+            if callback_universe is None:
+                log.warning(f"Received sACN data for unknown universe: {port_address}")
+                return
+
+            if port_address not in sacn_universe_rate_limiters:
+                updates_dict = {}
+
+                async def process_updates():
+                    nonlocal updates_dict
+                    updates_to_process = updates_dict.copy()
+                    updates_dict.clear()
+
+                    if updates_to_process:
+                        log.debug(f"Processing {len(updates_to_process)} sACN channel updates for {port_address}")
+                        await callback_universe.update_multiple_values(updates_to_process, source, send_update=False)
+
+                limiter = RateLimiter(
+                    hass,
+                    update_method=lambda: hass.async_create_task(process_updates()),
+                    update_interval=rate_limit,
+                    force_update_after=rate_limit * 4
+                )
+
+                sacn_universe_rate_limiters[port_address] = (limiter, updates_dict)
+
+            limiter, updates_dict = sacn_universe_rate_limiters[port_address]
+
+            changes_detected = False
+
+            for channel, value in enumerate(data, start=1):  # DMX channels are 1-based
+                if value > 0 or callback_universe.get_channel_value(channel) != value:
+                    updates_dict[channel] = value
+                    changes_detected = True
+
+            if changes_detected:
+                log.debug(f"Detected changes in {len([k for k, v in updates_dict.items()])} channels for {port_address}")
+                limiter.schedule_update()
+            else:
+                log.debug(f"No changes detected for {port_address}")
+
+        # Create sACN receiver for incoming multicast data
+        sacn_receiver = await create_sacn_receiver(hass, sacn_state_callback)
+        log.info("sACN receiver started for multicast reception")
 
         # Process sACN universes and devices
         for universe_dict in sacn_yaml[CONF_UNIVERSES]:
@@ -256,6 +310,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             
             # Add universe to sACN server with unicast addresses
             sacn_server.add_universe(universe_id, unicast_addresses)
+            
+            # Subscribe receiver to this universe for incoming multicast data
+            sacn_receiver.subscribe_universe(universe_id)
+            log.info(f"Subscribed sACN receiver to universe {universe_id}")
             
             # Create universe with sACN support, passing the actual sACN universe ID
             universe = DmxUniverse(port_address, None, True, sacn_server, universe_id)
@@ -502,6 +560,7 @@ CONFIG_SCHEMA = vol.Schema(
                         vol.Optional(CONF_SYNC_ADDRESS, default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=63999)),
                         vol.Optional(CONF_MULTICAST_TTL, default=CONF_MULTICAST_TTL_DEFAULT): vol.All(vol.Coerce(int), vol.Range(min=1, max=255)),
                         vol.Optional(CONF_ENABLE_PREVIEW_DATA, default=False): cv.boolean,
+                        vol.Optional(CONF_RATE_LIMIT, default=CONF_RATE_LIMIT_DEFAULT): cv.positive_float,
 
                         vol.Required(CONF_UNIVERSES): vol.Schema(
                             [{

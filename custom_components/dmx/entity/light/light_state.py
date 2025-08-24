@@ -17,28 +17,62 @@ class LightState:
 
         self.is_on = False
         self.brightness = 255
-        self.rgb = (255, 255, 255)
         self.cold_white = 255
         self.warm_white = 255
         self.color_temp_kelvin = 3000
         self.color_temp_dmx = 255
 
         self.last_brightness = 255
-        self.last_rgb = (255, 255, 255)
         self.last_cold_white = 255
         self.last_warm_white = 255
         self.last_color_temp_kelvin = 3000
         self.last_color_temp_dmx = 255
+        
+        # Only initialize RGB for color modes that use it
+        if color_mode in [ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW]:
+            self.rgb = (255, 255, 255)
+            self.last_rgb = (255, 255, 255)
+        else:
+            self.rgb = None
+            self.last_rgb = None
 
-        self._channel_handlers = {
-            ChannelType.DIMMER: self._handle_dimmer_update,
-            ChannelType.RED: lambda v: self._handle_rgb_component_update(0, v),
-            ChannelType.GREEN: lambda v: self._handle_rgb_component_update(1, v),
-            ChannelType.BLUE: lambda v: self._handle_rgb_component_update(2, v),
-            ChannelType.COLD_WHITE: self._handle_cold_white_update,
-            ChannelType.WARM_WHITE: self._handle_warm_white_update,
-            ChannelType.COLOR_TEMPERATURE: self.update_color_temp_dmx,
-        }
+        self._channel_handlers = {}
+
+        if ChannelType.DIMMER in channels:
+            self._channel_handlers[ChannelType.DIMMER] = self._handle_dimmer_update
+            
+        if ChannelType.RED in channels:
+            self._channel_handlers[ChannelType.RED] = lambda v: self._handle_rgb_component_update(0, v)
+        if ChannelType.GREEN in channels:
+            self._channel_handlers[ChannelType.GREEN] = lambda v: self._handle_rgb_component_update(1, v)
+        if ChannelType.BLUE in channels:
+            self._channel_handlers[ChannelType.BLUE] = lambda v: self._handle_rgb_component_update(2, v)
+            
+        if ChannelType.COLD_WHITE in channels:
+            self._channel_handlers[ChannelType.COLD_WHITE] = self._handle_cold_white_update
+        if ChannelType.WARM_WHITE in channels:
+            self._channel_handlers[ChannelType.WARM_WHITE] = self._handle_warm_white_update
+        if ChannelType.COLOR_TEMPERATURE in channels:
+            self._channel_handlers[ChannelType.COLOR_TEMPERATURE] = self.update_color_temp_dmx
+            
+        # Ensure state consistency after init/restoration
+        self._validate_and_fix_state()
+
+    def _validate_and_fix_state(self):
+        """Ensure state fields are consistent with color mode after init/restoration"""
+        if self.color_mode in [ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW]:
+            # RGB color modes must have valid RGB values
+            if self.rgb is None:
+                self.rgb = (255, 255, 255)
+                log.warning(f"Fixed None RGB value for {self.color_mode} color mode")
+            if self.last_rgb is None:
+                self.last_rgb = (255, 255, 255)
+        else:
+            # Non-RGB color modes should have RGB as None
+            if self.rgb is not None:
+                self.rgb = None
+            if self.last_rgb is not None:
+                self.last_rgb = None
 
     def has_channel(self, t: ChannelType) -> bool:
         return t in self.channels
@@ -62,6 +96,16 @@ class LightState:
         self.is_on = value > 0
 
     def _handle_rgb_component_update(self, component_index: int, value: int):
+        # This should only be called for RGB color modes
+        if self.color_mode not in [ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW]:
+            log.warning(f"RGB component update called for non-RGB color mode {self.color_mode}")
+            return
+        
+        # Safety check: ensure RGB is valid (in case of state restoration corruption)
+        if self.rgb is None:
+            self.rgb = (255, 255, 255)
+            log.warning(f"Fixed None RGB during RGB update for {self.color_mode} color mode")
+            
         new_rgb = list(self.rgb)
         new_rgb[component_index] = value
         self._update_rgb_based_on_color_mode(*new_rgb)
@@ -254,7 +298,6 @@ class LightState:
 
     def reset(self):
         self.brightness = 0
-        self.rgb = (0, 0, 0)
         self.cold_white = 0
         self.warm_white = 0
         self.is_on = False
@@ -269,7 +312,7 @@ class LightState:
     def _update_brightness_from_channels(self):
         values = []
 
-        if self.has_rgb():
+        if self.has_rgb() and self.rgb is not None:
             values.extend(self.rgb)
 
         if self.has_channel(ChannelType.COLD_WHITE):
