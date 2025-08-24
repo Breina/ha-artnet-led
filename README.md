@@ -231,6 +231,18 @@ linear (default when nothing is set), quadratic, cubic then quadruple
 
 - Notes DMX king eDMX4 Pro does not seem to work if you have send less than 16 channels. Work around just add a dummy light at channel 16 or higher
 
+#### Recorder issues
+
+- DMX entities can be numerous and frequently-changing, and Home Assistant records everything into its database by default.
+- This can degrade performance system-wide and cause database bloat, particularly with devices like pixel strips where a single "device" may be represented by dozens (or hundreds) of entities.
+- To stop Home Assistant from recording every change to every device, use wildcard-friendly entity names (e.g., "pixelstrip_1_pixel_1")  and exclude them from recording with entity globs in `configuration.yaml`.  E.g.,
+    ```
+    recorder:
+      exclude:
+        entity_globs:
+          - light.pixelstrip*
+    ```
+
 #### Future improvements
 
 - Lights are assigned a unique ID generated from the IP addreess, Port, Universe and Channel.
