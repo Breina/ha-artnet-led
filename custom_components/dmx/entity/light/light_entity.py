@@ -28,6 +28,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
             channels: List[ChannelMapping],
             device: DeviceInfo,
             universe: DmxUniverse,
+            fixture_fingerprint: str,
             has_separate_dimmer: bool = False,
             min_kelvin: int = 2000,
             max_kelvin: int = 6500,
@@ -35,10 +36,13 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         self._matrix_key = matrix_key
         self._attr_name = f"{fixture_name} Light {matrix_key}" if matrix_key else f"{fixture_name} Light"
         if entity_id_prefix:
-            self._attr_unique_id = entity_id_prefix if not matrix_key else f"{entity_id_prefix}_{matrix_key}"
+            base_id = entity_id_prefix if not matrix_key else f"{entity_id_prefix}_{matrix_key}"
+            self._attr_unique_id = f"{base_id}_{fixture_fingerprint}"
             self.entity_id = f"light.{self._attr_unique_id}"
         else:
-            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{'/'.join(['-'.join(map(str, cm.dmx_indexes)) for cm in channels])}_{fixture_name}"
+            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{fixture_name}_{fixture_fingerprint}"
+            if matrix_key:
+                self._attr_unique_id = f"{self._attr_unique_id}_{matrix_key}"
 
         self._attr_device_info = device
         self._attr_color_mode = color_mode

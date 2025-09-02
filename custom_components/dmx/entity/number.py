@@ -15,7 +15,8 @@ log = logging.getLogger(__name__)
 
 class DmxNumberEntity(RestoreNumber):
     def __init__(self, fixture_name: str, channel_name: str, entity_id_prefix: str | None,
-                 capability: Capability, universe: DmxUniverse, dmx_indexes: List[int], device: DeviceInfo, available: bool = True) -> None:
+                 capability: Capability, universe: DmxUniverse, dmx_indexes: List[int], device: DeviceInfo, 
+                 fixture_fingerprint: str, available: bool = True) -> None:
         super().__init__()
 
         assert capability.dynamic_entities and len(capability.dynamic_entities) == 1
@@ -24,10 +25,10 @@ class DmxNumberEntity(RestoreNumber):
         self._attr_device_info = device
 
         if entity_id_prefix:
-            self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}"
+            self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}_{fixture_fingerprint}"
             self.entity_id = f"number.{self._attr_unique_id}"
         else:
-            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{'-'.join(map(str, dmx_indexes))}_{fixture_name.lower()}_{channel_name.lower()}"
+            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
 
         self._attr_icon = capability.icon()
         self._attr_extra_state_attributes = capability.extra_attributes()

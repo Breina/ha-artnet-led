@@ -25,6 +25,8 @@ from custom_components.dmx.server import PortAddress, ArtPollReply
 from custom_components.dmx.server.artnet_server import ArtNetServer, Node, ManualNode
 from custom_components.dmx.server.sacn_server import SacnServer, SacnServerConfig, create_sacn_receiver
 from custom_components.dmx.util.rate_limiter import RateLimiter
+from custom_components.dmx.util.entity_cleanup import cleanup_obsolete_entities, store_fixture_fingerprints
+from custom_components.dmx.util.fixture_fingerprint import generate_fixture_fingerprint
 
 log = logging.getLogger(__name__)
 
@@ -223,6 +225,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     universes: dict[PortAddress, DmxUniverse] = {}
     sacn_server = None
     sacn_receiver = None
+    
+    # Track fixture fingerprints for change detection
+    device_fingerprints: dict[str, str] = {}
 
     # Initialize sACN server if configured
     if (sacn_yaml := dmx_yaml.get(CONF_NODE_TYPE_SACN)) is not None:
@@ -339,6 +344,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     mode = next(iter(fixture.modes.keys()))
 
                 channels = fixture.select_mode(mode)
+                
+                fixture_fingerprint = generate_fixture_fingerprint(fixture_name, mode, channels)
+                device_fingerprints[device_name] = fixture_fingerprint
 
                 identifiers = {(DOMAIN, device_name)}
                 if entity_id_prefix is not None:
@@ -351,7 +359,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     name=device_name,
                 )
 
-                entities.extend(create_entities(device_name, start_address, channels, device, universe, entity_id_prefix))
+                entities.extend(create_entities(device_name, start_address, channels, device, universe, entity_id_prefix, fixture_name, mode))
 
     if (artnet_yaml := dmx_yaml.get(CONF_NODE_TYPE_ARTNET)) is not None:
 
@@ -461,6 +469,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     mode = next(iter(fixture.modes.keys()))
 
                 channels = fixture.select_mode(mode)
+                
+                fixture_fingerprint = generate_fixture_fingerprint(fixture_name, mode, channels)
+                device_fingerprints[device_name] = fixture_fingerprint
 
                 identifiers = {(DOMAIN, device_name)}
                 if entity_id_prefix is not None:
@@ -473,16 +484,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     name=device_name,
                 )
 
-                entities.extend(create_entities(device_name, start_address, channels, device, universe, entity_id_prefix))
+                entities.extend(create_entities(device_name, start_address, channels, device, universe, entity_id_prefix, fixture_name, mode))
 
         controller.start_server()
 
+    await cleanup_obsolete_entities(hass, entry, device_fingerprints)
+    
     hass.data[DOMAIN][entry.entry_id] = {
         CONF_FIXTURE_ENTITIES: entities,
         "universes": universes
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    
+    await store_fixture_fingerprints(hass, entry, device_fingerprints)
+    
     return True
 
 

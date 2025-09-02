@@ -23,17 +23,18 @@ class DmxSelectEntity(SelectEntity):
                  capability_entities: dict[str, DmxNumberEntity],
                  universe: DmxUniverse,
                  dmx_index: int,
-                 device: DeviceInfo
+                 device: DeviceInfo,
+                 fixture_fingerprint: str
                  ) -> None:
         super().__init__()
 
         self._attr_name = f"{fixture_name} {channel_name}"
         self._attr_device_info = device
         if entity_id_prefix:
-            self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}"
+            self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}_{fixture_fingerprint}"
             self.entity_id = f"select.{self._attr_unique_id}"
         else:
-            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{str(dmx_index)}_{fixture_name.lower()}_{channel_name.lower()}"
+            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
 
         self._attr_icon = determine_icon(channel)
 

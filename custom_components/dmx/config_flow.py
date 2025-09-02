@@ -24,7 +24,16 @@ class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         for entry in self._async_current_entries():
             if entry.unique_id == DOMAIN:
-                self.hass.config_entries.async_update_entry(entry, data=user_input)
+                # Preserve existing fingerprints when updating config from YAML
+                from custom_components.dmx.util.entity_cleanup import CONF_FINGERPRINTS
+                existing_data = entry.data.copy() if entry.data else {}
+                fingerprints = existing_data.get(CONF_FINGERPRINTS, {})
+                
+                # Update with new YAML data but preserve fingerprints
+                new_data = user_input.copy()
+                new_data[CONF_FINGERPRINTS] = fingerprints
+                
+                self.hass.config_entries.async_update_entry(entry, data=new_data)
                 self._abort_if_unique_id_configured()
 
         return self.async_create_entry(title=DOMAIN, data=user_input)

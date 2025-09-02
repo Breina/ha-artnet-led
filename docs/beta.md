@@ -20,7 +20,6 @@ Part of the beta is to test if my documentation suffices. So head over to [the i
 
 ## What's excluded?
 
-* sACN: I want to do a full implementation like I did with Art-Net/
 * Transitions: I'd love to support custom animations, but not yet sure how I would have you define them.
 * RDM: This is a HUGE standard, won't make it to the full release either.
 
