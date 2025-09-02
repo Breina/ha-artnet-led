@@ -399,7 +399,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             self._update_status_message()
             self.update_subscribers()
 
-        task = self.__hass.async_create_task(self.start_artdmx_loop(address, data, own_port, has_manual_node))
+        task = self.__hass.async_create_background_task(self.start_artdmx_loop(address, data, own_port, has_manual_node), f"Art-Net DMX loop {address}")
         own_port.update_task = task
         return task
 

@@ -249,7 +249,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         # Function to process sACN universe updates with rate limiting
         def sacn_state_callback(port_address: PortAddress, data: bytearray, source: str | None = None):
-            log.info(f"sACN state callback triggered for {port_address} from source '{source}' with {len(data)} channels")
+            log.debug(f"sACN state callback triggered for {port_address} from source '{source}' with {len(data)} channels")
             
             callback_universe: DmxUniverse = universes.get(port_address)
             if callback_universe is None:
