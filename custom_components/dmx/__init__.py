@@ -19,7 +19,7 @@ from homeassistant.helpers.typing import ConfigType
 from custom_components.dmx.const import DOMAIN, HASS_DATA_ENTITIES, ARTNET_CONTROLLER, CONF_DATA, CONF_FIXTURE_ENTITIES
 from custom_components.dmx.fixture.delegator import create_entities
 from custom_components.dmx.fixture.fixture import Fixture
-from custom_components.dmx.fixture.parser import parse
+from custom_components.dmx.fixture.parser import parse_async
 from custom_components.dmx.io.dmx_io import DmxUniverse
 from custom_components.dmx.server import PortAddress, ArtPollReply
 from custom_components.dmx.server.artnet_server import ArtNetServer, Node, ManualNode
@@ -196,7 +196,7 @@ async def process_fixtures(hass: HomeAssistant, fixture_folder: str) -> dict[str
         file_path = os.path.join(fixture_folder, filename)
 
         try:
-            fixture = parse(file_path)
+            fixture = await parse_async(file_path, hass)
             fixture_map[fixture.short_name] = fixture
 
         except json.JSONDecodeError as e:

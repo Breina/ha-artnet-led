@@ -36,15 +36,18 @@ entity_value = re.compile(r"([-\d.]*)(.*)")
 log = logging.getLogger(__name__)
 
 
-def parse(json_file: str) -> Fixture:
+def _read_json_file(json_file: str) -> dict:
+    """Helper function to read JSON file synchronously."""
+    with open(json_file, encoding='utf-8') as json_data:
+        return json.load(json_data)
+
+
+def _parse_fixture_data(data: dict) -> Fixture:
     """
-    Parses the json fixture-format file.
-    :param json_file: The fixture-format json file
+    Internal function to parse fixture data from a dictionary.
+    :param data: The parsed JSON data
     :return: The `Fixture` model class.
     """
-    with open(json_file, encoding='utf-8') as json_data:
-        data = json.load(json_data)
-
     fixture_model = __parse_fixture(data)
 
     matrix_json = data.get("matrix")
@@ -75,6 +78,27 @@ def parse(json_file: str) -> Fixture:
     __parse_modes(fixture_model, data['modes'])
 
     return fixture_model
+
+
+async def parse_async(json_file: str, hass) -> Fixture:
+    """
+    Parses the json fixture-format file asynchronously.
+    :param json_file: The fixture-format json file
+    :param hass: Home Assistant instance for executor job
+    :return: The `Fixture` model class.
+    """
+    data = await hass.async_add_executor_job(_read_json_file, json_file)
+    return _parse_fixture_data(data)
+
+
+def parse(json_file: str) -> Fixture:
+    """
+    Parses the json fixture-format file synchronously (for tests only).
+    :param json_file: The fixture-format json file
+    :return: The `Fixture` model class.
+    """
+    data = _read_json_file(json_file)
+    return _parse_fixture_data(data)
 
 
 def __parse_fixture(fixture_json: dict) -> Fixture:
