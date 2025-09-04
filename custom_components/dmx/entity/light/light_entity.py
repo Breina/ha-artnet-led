@@ -6,7 +6,6 @@ from homeassistant.components.light import LightEntity, ColorMode, LightEntityFe
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
-from homeassistant.util.color import color_temperature_kelvin_to_mired
 
 from custom_components.dmx.const import DOMAIN
 from custom_components.dmx.entity.light import ChannelMapping, ChannelType
@@ -52,8 +51,6 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         if ColorMode.COLOR_TEMP in self.supported_color_modes:
             self._attr_min_color_temp_kelvin = min_kelvin
             self._attr_max_color_temp_kelvin = max_kelvin
-            self._attr_min_mireds = color_temperature_kelvin_to_mired(max_kelvin)
-            self._attr_max_mireds = color_temperature_kelvin_to_mired(min_kelvin)
 
         converter = ColorConverter(min_kelvin, max_kelvin)
 
@@ -121,6 +118,16 @@ class DmxLightEntity(LightEntity, RestoreEntity):
     def color_temp_kelvin(self) -> int | None:
         return self._state.color_temp_kelvin
 
+    @property
+    def min_color_temp_kelvin(self) -> int:
+        value = getattr(self, '_attr_min_color_temp_kelvin', None)
+        return value if value is not None else 2000
+
+    @property 
+    def max_color_temp_kelvin(self) -> int:
+        value = getattr(self, '_attr_max_color_temp_kelvin', None)
+        return value if value is not None else 6500
+
     async def async_turn_on(self, **kwargs: Any):
         await self._controller.turn_on(**kwargs)
 
@@ -161,20 +168,25 @@ class DmxLightEntity(LightEntity, RestoreEntity):
             self._state.rgb = rgb
             self._state.last_rgb = rgb
 
-        if "color_temp" in attrs:
-            color_temp = attrs["color_temp"]
-            if color_temp is not None:
-                self._state.color_temp_kelvin = color_temp
-                self._state.last_color_temp_kelvin = color_temp
+        if "color_temp_kelvin" in attrs:
+            color_temp_kelvin = attrs["color_temp_kelvin"]
+            if color_temp_kelvin is not None:
+                self._state.color_temp_kelvin = color_temp_kelvin
+                self._state.last_color_temp_kelvin = color_temp_kelvin
 
         # For color temp mode without dimmer, restore CW/WW values if available
         if (self._state.color_mode == ColorMode.COLOR_TEMP and
                 not self._has_separate_dimmer and
-                "brightness" in attrs and "color_temp" in attrs):
+                "brightness" in attrs and ("color_temp_kelvin" in attrs or "color_temp" in attrs)):
             # Reconstruct CW/WW values from brightness and color temp
             brightness = attrs["brightness"] or 100
-            color_temp = attrs["color_temp"] or (self.min_color_temp_kelvin + self.max_color_temp_kelvin) / 2
-            cold, warm = self._state.converter.temp_to_cw_ww(color_temp, brightness)
+            
+            if "color_temp_kelvin" in attrs and attrs["color_temp_kelvin"] is not None:
+                color_temp_kelvin = attrs["color_temp_kelvin"]
+            else:
+                color_temp_kelvin = (self.min_color_temp_kelvin + self.max_color_temp_kelvin) / 2
+                
+            cold, warm = self._state.converter.temp_to_cw_ww(color_temp_kelvin, brightness)
             self._state.cold_white = cold
             self._state.warm_white = warm
             self._state.last_cold_white = cold

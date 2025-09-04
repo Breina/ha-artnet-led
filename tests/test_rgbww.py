@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import homeassistant.helpers.device_registry
+from homeassistant.util.color import color_temperature_kelvin_to_mired
 
 from custom_components.dmx.entity.light.light_entity import DmxLightEntity
 from custom_components.dmx.entity.number import DmxNumberEntity
@@ -90,7 +91,6 @@ class TestRgbwwFixture(unittest.TestCase):
         asyncio.run(cold_white.async_set_native_value(50))
         assert_dmx_range(self.universe, 1, [0, 0, 0, 127, 127])
         self.assertEqual(127, light.brightness)
-        mid_mired = (light.min_mireds + light.max_mireds - 1) / 2
 
         # Test RGBWW combination
         asyncio.run(red.async_set_native_value(40))
@@ -149,7 +149,6 @@ class TestRgbwwFixture(unittest.TestCase):
         self.assertEqual(100, cold_white.native_value)
 
         # Test setting neutral white (mixed warm/cold)
-        mid_mired = (light.min_mireds + light.max_mireds - 1) / 2
         asyncio.run(light.async_turn_on(rgbww_color=(0, 0, 0, 127, 127)))
         assert_dmx_range(self.universe, 2, [0, 0, 0, 127, 127])
         self.assertEqual(0, red.native_value)
