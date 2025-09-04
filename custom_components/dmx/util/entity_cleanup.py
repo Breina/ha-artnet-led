@@ -39,7 +39,7 @@ async def cleanup_obsolete_entities(
     changed_devices = set()
     for device_name, current_fingerprint in current_fingerprints.items():
         stored_fingerprint = stored_data.get(device_name)
-        log.info(f"Checking device '{device_name}': stored='{stored_fingerprint}' vs current='{current_fingerprint}'")
+        log.debug(f"Checking device '{device_name}': stored='{stored_fingerprint}' vs current='{current_fingerprint}'")
         if stored_fingerprint and stored_fingerprint != current_fingerprint:
             changed_devices.add(device_name)
             log.warning(f"Detected fixture configuration change for device '{device_name}' "

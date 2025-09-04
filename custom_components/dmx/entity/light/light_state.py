@@ -30,6 +30,9 @@ class LightState:
         
         self.rgb = (255, 255, 255)
         self.last_rgb = (255, 255, 255)
+        
+        # Flag to prevent updating last_* values during animations
+        self._preserve_last_values = False
 
         self._channel_handlers = {}
 
@@ -220,18 +223,18 @@ class LightState:
             raise RuntimeError("Shouldn't be able to update WW if color mode is not COLOR_TEMP, BRIGHTNESS, RGBW or RGBWW.")
 
     def _update_last_value_if_positive(self, value: int, last_attr: str, current_attr: str):
-        if value > 0:
+        if value > 0 and not self._preserve_last_values:
             setattr(self, last_attr, getattr(self, current_attr))
 
     def update_rgb(self, r: int, g: int, b: int):
         self.rgb = (r, g, b)
-        if any(c > 0 for c in (r, g, b)):
+        if any(c > 0 for c in (r, g, b)) and not self._preserve_last_values:
             self.last_rgb = self.rgb
 
     def update_rgbw(self, r: int, g: int, b: int, w: int):
         self.rgb = (r, g, b)
         self.warm_white = w
-        if any(c > 0 for c in (r, g, b, w)):
+        if any(c > 0 for c in (r, g, b, w)) and not self._preserve_last_values:
             self.last_rgb = self.rgb
             self.last_warm_white = w
 
@@ -239,13 +242,13 @@ class LightState:
         self.rgb = (r, g, b)
         self.cold_white = cw
         self.warm_white = ww
-        if any(c > 0 for c in (r, g, b, ww, cw)):
+        if any(c > 0 for c in (r, g, b, ww, cw)) and not self._preserve_last_values:
             self.last_rgb = self.rgb
             self.last_cold_white = cw
             self.last_warm_white = ww
 
     def update_whites(self, cold: int, warm: int):
-        if cold > 0 or warm > 0:
+        if (cold > 0 or warm > 0) and not self._preserve_last_values:
             self.last_cold_white = cold
             self.last_warm_white = warm
 
@@ -255,21 +258,24 @@ class LightState:
     def update_brightness(self, value: int):
         if value is not None:
             self.brightness = value
-            if value > 0:
+            if value > 0 and not self._preserve_last_values:
                 self.last_brightness = value
-                self.is_on = True
 
     def update_color_temp_dmx(self, dmx_value: int):
         self.color_temp_dmx = dmx_value
-        self.last_color_temp_dmx = dmx_value
+        if not self._preserve_last_values:
+            self.last_color_temp_dmx = dmx_value
         self.color_temp_kelvin = self.converter.dmx_to_kelvin(dmx_value)
-        self.last_color_temp_kelvin = self.color_temp_kelvin
+        if not self._preserve_last_values:
+            self.last_color_temp_kelvin = self.color_temp_kelvin
 
     def update_color_temp_kelvin(self, kelvin: int):
         self.color_temp_kelvin = kelvin
-        self.last_color_temp_kelvin = kelvin
+        if not self._preserve_last_values:
+            self.last_color_temp_kelvin = kelvin
         self.color_temp_dmx = self.converter.kelvin_to_dmx(kelvin)
-        self.last_color_temp_dmx = self.color_temp_dmx
+        if not self._preserve_last_values:
+            self.last_color_temp_dmx = self.color_temp_dmx
 
     def reset(self):
         self.brightness = 0
@@ -300,7 +306,7 @@ class LightState:
             max_val = max(values)
             old_brightness = self.brightness
             self.brightness = max_val
-            if max_val > 0:
+            if max_val > 0 and not self._preserve_last_values:
                 self.last_brightness = max_val
 
             if max_val == 0 and old_brightness > 0:
@@ -314,7 +320,7 @@ class LightState:
                 self.cold_white, self.warm_white
             )
             self.brightness = brightness
-            if brightness > 0:
+            if brightness > 0 and not self._preserve_last_values:
                 self.last_brightness = brightness
 
     def _update_color_temp_from_cw_ww(self):

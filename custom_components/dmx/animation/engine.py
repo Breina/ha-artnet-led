@@ -81,6 +81,12 @@ class DmxAnimationEngine:
 
                 if progress >= 1.0:
                     _LOGGER.debug(f"Animation {animation.animation_id} completed")
+                    # Call completion callback if provided
+                    if hasattr(animation, 'completion_callback') and animation.completion_callback:
+                        try:
+                            animation.completion_callback()
+                        except Exception as e:
+                            _LOGGER.error(f"Error calling completion callback for animation {animation.animation_id}: {e}")
                     break
 
                 elapsed = time.time() - start_time
@@ -131,7 +137,8 @@ class DmxAnimationEngine:
             desired_values: Dict[ChannelType, int],
             animation_duration_seconds: float,
             min_kelvin: Optional[int] = None,
-            max_kelvin: Optional[int] = None
+            max_kelvin: Optional[int] = None,
+            completion_callback=None
     ) -> str:
         """
         Create and start a new animation.
@@ -148,6 +155,7 @@ class DmxAnimationEngine:
             min_kelvin=min_kelvin,
             max_kelvin=max_kelvin
         )
+        animation.completion_callback = completion_callback
 
         # Cancel any conflicting animations
         self._cancel_conflicting_animations(animation)

@@ -25,6 +25,10 @@ class LightController:
         if not updates:
             updates = self._restore_previous_state()
         
+        # Clear preserve flag when user explicitly turns light on
+        if self.state._preserve_last_values:
+            self.state._preserve_last_values = False
+        
         transition = kwargs.get(ATTR_TRANSITION)
         await self._apply_updates(updates, transition)
 
@@ -49,9 +53,13 @@ class LightController:
         if self._current_animation_id and self.animation_engine:
             self.animation_engine.cancel_animation(self._current_animation_id)
             self._current_animation_id = None
+            # Clear the preserve flag when cancelling animations
+            self.state._preserve_last_values = False
         
         # If no animation engine, channel mappings, or no transition requested, apply immediately
         if not transition or transition <= 0 or not self.animation_engine or not self.channel_mappings:
+            # Make sure preserve flag is cleared for immediate updates
+            self.state._preserve_last_values = False
             for ct, val in updates.items():
                 self.state.apply_channel_update(ct, val)
             dmx_updates = self.state.get_dmx_updates(updates)
@@ -79,6 +87,9 @@ class LightController:
                            if mapping.channel_type in updates.keys()]
         
         if relevant_mappings:
+            # Preserve last_* values during animation to prevent animation frames from corrupting them
+            self.state._preserve_last_values = True
+            
             log.debug(f"Creating animation with {len(relevant_mappings)} mappings, current: {current_values}, desired: {updates}")
             # Create animation with L*U*V* transitions
             self._current_animation_id = self.animation_engine.create_animation(
@@ -87,7 +98,8 @@ class LightController:
                 desired_values=updates,
                 animation_duration_seconds=transition,
                 min_kelvin=getattr(self.state.converter, 'min_kelvin', 2700),
-                max_kelvin=getattr(self.state.converter, 'max_kelvin', 6500)
+                max_kelvin=getattr(self.state.converter, 'max_kelvin', 6500),
+                completion_callback=self._on_animation_complete
             )
             
             # Update state to target values immediately (for UI consistency)
@@ -165,3 +177,8 @@ class LightController:
         self.state.last_warm_white = s['warm_white']
         self.state.last_color_temp_kelvin = s['color_temp_kelvin']
         self.state.last_color_temp_dmx = s['color_temp_dmx']
+    
+    def _on_animation_complete(self):
+        """Called when an animation completes naturally"""
+        self._current_animation_id = None
+    
