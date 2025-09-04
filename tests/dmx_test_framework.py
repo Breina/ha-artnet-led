@@ -21,7 +21,9 @@ class MockDmxUniverse(DmxUniverse):
     """Mock DMX Universe for testing."""
 
     def __init__(self):
-        super().__init__(None, None, True)
+        # Create a mock hass for animation engine
+        mock_hass = MockHomeAssistant()
+        super().__init__(None, None, True, hass=mock_hass, max_fps=30)
         self.values = [0] * 512
         self.channel_callbacks = {}
 

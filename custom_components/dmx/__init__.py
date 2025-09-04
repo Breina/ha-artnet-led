@@ -32,6 +32,7 @@ log = logging.getLogger(__name__)
 
 CONF_NODE_TYPE_ARTNET = "artnet"
 CONF_NODE_TYPE_SACN = "sacn"
+CONF_ANIMATION = "animation"
 CONF_MAX_FPS = "max_fps"
 CONF_MAX_FPS_DEFAULT = 30
 CONF_RATE_LIMIT = "rate_limit"
@@ -243,7 +244,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         sacn_server.start_server()
         log.info(f"sACN server started with source name: {sacn_config.source_name}")
 
-        # Set up rate limiting for sACN reception (similar to Art-Net)
+        animation_yaml = dmx_yaml.get(CONF_ANIMATION, {})
+        max_fps = animation_yaml.get(CONF_MAX_FPS, CONF_MAX_FPS_DEFAULT)
         rate_limit = sacn_yaml.get(CONF_RATE_LIMIT, CONF_RATE_LIMIT_DEFAULT)
         sacn_universe_rate_limiters = {}
 
@@ -293,7 +295,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                 log.debug(f"No changes detected for {port_address}")
 
         # Create sACN receiver for incoming multicast data
-        sacn_receiver = await create_sacn_receiver(hass, sacn_state_callback)
+        sacn_receiver = await create_sacn_receiver(hass, sacn_state_callback, sacn_config.source_name)
         log.info("sACN receiver started for multicast reception")
 
         # Process sACN universes and devices
@@ -321,7 +323,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             log.info(f"Subscribed sACN receiver to universe {universe_id}")
             
             # Create universe with sACN support, passing the actual sACN universe ID
-            universe = DmxUniverse(port_address, None, True, sacn_server, universe_id)
+            universe = DmxUniverse(port_address, None, True, sacn_server, universe_id, hass, max_fps)
             universes[port_address] = universe
             
             # Process devices for this sACN universe
@@ -363,7 +365,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     if (artnet_yaml := dmx_yaml.get(CONF_NODE_TYPE_ARTNET)) is not None:
 
-        max_fps = artnet_yaml.get(CONF_MAX_FPS, CONF_MAX_FPS_DEFAULT)  # TODO no animations yet
+        animation_yaml = dmx_yaml.get(CONF_ANIMATION, {})
+        max_fps = animation_yaml.get(CONF_MAX_FPS, CONF_MAX_FPS_DEFAULT)
         refresh_every = artnet_yaml.get(CONF_REFRESH_EVERY, CONF_REFRESH_EVERY_DEFAULT)
         rate_limit = artnet_yaml.get(CONF_RATE_LIMIT, CONF_RATE_LIMIT_DEFAULT)
 
@@ -445,7 +448,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             else:
                 send_partial_universe = True
 
-            universe = DmxUniverse(port_address, controller, send_partial_universe, sacn_server)
+            universe = DmxUniverse(port_address, controller, send_partial_universe, sacn_server, None, hass, max_fps)
             universes[port_address] = universe
 
             controller.add_port(port_address)
@@ -546,10 +549,14 @@ CONFIG_SCHEMA = vol.Schema(
                         vol.Optional(CONF_FOLDER, default=CONF_FOLDER_DEFAULT): cv.string
                     }
                 ),
+                vol.Optional(CONF_ANIMATION): vol.Schema(
+                    {
+                        vol.Optional(CONF_MAX_FPS, default=CONF_MAX_FPS_DEFAULT): vol.All(vol.Coerce(int), vol.Range(min=1, max=43))
+                    }
+                ),
                 # TODO add ArtNet server name configuration
                 vol.Optional(CONF_NODE_TYPE_ARTNET): vol.Schema(
                     {
-                        vol.Optional(CONF_MAX_FPS, default=CONF_MAX_FPS_DEFAULT): vol.All(vol.Coerce(int), vol.Range(min=0, max=43)),
                         vol.Optional(CONF_REFRESH_EVERY, default=CONF_REFRESH_EVERY_DEFAULT): cv.positive_float,
                         vol.Optional(CONF_RATE_LIMIT, default=CONF_RATE_LIMIT_DEFAULT): cv.positive_float,
 

@@ -8,7 +8,7 @@
 
 A Home Assistant integration that transforms your instance into a professional Art-Net and sACN lighting controller. Control DMX fixtures, LED strips, and stage lighting directly from Home Assistant with full bidirectional communication using both Art-Net and sACN (E1.31) protocols.
 
-![Integration Entities](docs/Entities.png)
+![Integration Entities](docs/img/Entities.png)
 
 ## Features
 

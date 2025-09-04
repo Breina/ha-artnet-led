@@ -276,11 +276,12 @@ class SacnServer:
 
 
 class SacnReceiver(asyncio.DatagramProtocol):
-    def __init__(self, hass: HomeAssistant, data_callback: Optional[Callable] = None):
+    def __init__(self, hass: HomeAssistant, data_callback: Optional[Callable] = None, own_source_name: Optional[str] = None):
         self.hass = hass
         self.data_callback = data_callback
         self.transport: Optional[asyncio.DatagramTransport] = None
         self.subscribed_universes: Set[int] = set()
+        self.own_source_name = own_source_name
         
     def connection_made(self, transport: asyncio.DatagramTransport):
         self.transport = transport
@@ -302,6 +303,11 @@ class SacnReceiver(asyncio.DatagramProtocol):
                 log.debug(f"Received sACN data for universe {packet.universe} from {addr[0]} "
                         f"(source: '{packet.source_name}', seq: {packet.sequence_number}, "
                         f"priority: {packet.priority}, channels: {len(packet.dmx_data)})")
+                
+                # Ignore packets from our own sACN server to prevent feedback loops
+                if self.own_source_name and packet.source_name == self.own_source_name:
+                    log.debug(f"Ignoring sACN packet from own source '{packet.source_name}' to prevent feedback")
+                    return
                 
                 if self.data_callback:
                     port_address = PortAddress(0, 0, packet.universe)
@@ -365,8 +371,9 @@ class SacnReceiver(asyncio.DatagramProtocol):
 
 
 async def create_sacn_receiver(hass: HomeAssistant, 
-                               data_callback: Optional[Callable] = None) -> SacnReceiver:
-    receiver = SacnReceiver(hass, data_callback)
+                               data_callback: Optional[Callable] = None,
+                               own_source_name: Optional[str] = None) -> SacnReceiver:
+    receiver = SacnReceiver(hass, data_callback, own_source_name)
     
     loop = hass.loop
     try:

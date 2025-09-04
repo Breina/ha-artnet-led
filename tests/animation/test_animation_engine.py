@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 
 from custom_components.dmx.animation import Channel
-from custom_components.dmx.animation.engine import ArtNetAnimationEngine
+from custom_components.dmx.animation.engine import DmxAnimationEngine
 from custom_components.dmx.entity.light import ChannelType, ChannelMapping
 from tests.dmx_test_framework import MockHomeAssistant
 
@@ -41,15 +41,15 @@ def sample_channel_mappings(sample_channels):
 @pytest.fixture
 def animation_engine(mock_hass):
     """Fixture providing an animation engine instance"""
-    return ArtNetAnimationEngine(mock_hass, max_fps=10)
+    return DmxAnimationEngine(mock_hass, max_fps=10)
 
 
-class TestArtNetAnimationEngine:
-    """Test cases for ArtNetAnimationEngine class"""
+class TestDmxAnimationEngine:
+    """Test cases for DmxAnimationEngine class"""
 
     def test_engine_initialization(self, mock_hass):
         """Test animation engine initialization"""
-        engine = ArtNetAnimationEngine(mock_hass, max_fps=30)
+        engine = DmxAnimationEngine(mock_hass, max_fps=30)
 
         assert engine.hass == mock_hass
         assert engine.max_fps == 30

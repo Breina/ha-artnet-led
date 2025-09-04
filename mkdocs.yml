@@ -13,6 +13,7 @@ nav:
   - External sACN controller: sacn-communication.md
   - Art-Net vs sACN: artnet-vs-sacn.md
   - Beta information: beta.md
+  - Transitions: transitions.md
   - Migration: migration.md
 
 plugins:

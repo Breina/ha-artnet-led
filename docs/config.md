@@ -14,13 +14,39 @@ Before configuring the integration, you need fixture definition files from the O
 
 Add the DMX configuration to your `configuration.yaml`:
 
+### Minimum Configuration
+
+This includes Art-Net and sACN, remove what you don't need.
+
+```yaml
+dmx:
+  artnet:
+    universes:
+      - 1:
+          devices:
+            - Epic triple lights:
+                start_address: 11
+                fixture: CLHB300RGBW
+  sacn:
+    universes:
+      - 1:
+          devices:
+            - RGB Strip:
+                start_address: 1
+                fixture: generic-rgb
+```
+
+### Maximum Configuration
+
 ```yaml
 dmx:
   fixtures:
     folder: fixtures
 
-  artnet:
+  animation:
     max_fps: 43
+
+  artnet:
     refresh_every: 1.2
     rate_limit: 0.5
 
@@ -78,9 +104,11 @@ dmx:
 - **`folder`** *(optional, default: `fixtures`)*  
   Directory containing fixture JSON files, relative to Home Assistant config directory (where your `configuration.yaml` is located)
 
-#### `dmx.artnet`
+#### `dmx.animation`
 - **`max_fps`** *(optional, default: `30`)*  
-  Maximum frames per second for animations [0, 43]
+  Maximum frames per second for animations [1, 43], used for transitions.
+
+#### `dmx.artnet`
 - **`refresh_every`** *(optional, default: `0.8`)*  
   The interval in seconds in which universe data is retransmitted. This is useful when there are external controllers sending to the same universes. Set to `0` to disable this behavior.
 - **`rate_limit`** *(optional, default: `0.5`)*  

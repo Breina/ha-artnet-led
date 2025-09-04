@@ -187,12 +187,13 @@ class TestLightTransitionAnimator(unittest.TestCase):
 
         animator = LightTransitionAnimator(test_channels, test_channels)
 
-        # Convert to RGB
-        rgb = animator._channels_to_rgb(test_channels)
+        # Convert to RGB using the channel converter
+        rgb = animator.channel_converter.channels_to_rgb(test_channels)
 
-        # Convert to L*u*v* and back
-        luv = animator._rgb_to_luv(rgb)
-        rgb_back = animator._luv_to_rgb(luv)
+        # Convert to L*u*v* and back using ColorSpaceConverter
+        from custom_components.dmx.animation.color_calculator import ColorSpaceConverter
+        luv = ColorSpaceConverter.rgb_to_luv(rgb)
+        rgb_back = ColorSpaceConverter.luv_to_rgb(luv)
 
         # Check that we get approximately the same RGB values back
         for i in range(3):

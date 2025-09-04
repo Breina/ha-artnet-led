@@ -2,11 +2,13 @@ dmx:
   fixtures:
     folder: fixtures
 
-#  artnet:
-#    max_fps: 43 # Optional
-#    refresh_every: 1.2 # Optional
-#
-#    universes:
+  animation:
+    max_fps: 43 # Optional
+
+  artnet:
+    refresh_every: 1.2 # Optional
+
+    universes:
 #      - 1/2/0: # Net = 1 / Sub-net = 2 / Universe = 0
 #          devices:
 #            - Epic triple lights:
@@ -19,37 +21,37 @@ dmx:
 #            manual_nodes:
 #              - { host: 192.168.1.11, port: 6454 }
 #              - { host: 192.168.1.12 }
-#
+
 #      - 3: # Net and Sub-net default to 0, universe = 3
 #          devices:
 #            - DJ led:
 #                start_address: 0
 #                fixture: DJ Scan LED
-#      - 0/0/20:
-#          devices:
-#            - Bureau NO:
-#                fixture: CW/WW Fader
-#                start_address: 0
-#                mode: 16bit-cw
-#                entity_id_prefix: lol_this_is_prefix
-#            - Bureau LED strip:
-#                fixture: CW/WW Fader
-#                start_address: 247
-#                mode: 8bit-wc
-  sacn:
-    source_name: "Test SACN source LOL!!"
-    priority: 123
-    enable_preview_data: true
-    universes:
-      - 1:
+      - 0/0/20:
           devices:
-            - Test RGBWW fixture:
-                fixture: RGBWW
-                start_address: 1
-                mode: 8bit
-          compatibility:
-            unicast_addresses:
-              - { host: 192.168.1.15 }
+            - Bureau NO:
+                fixture: CW/WW Fader
+                start_address: 0
+                mode: 16bit-cw
+                entity_id_prefix: lol_this_is_prefix
+            - Bureau LED strip:
+                fixture: CW/WW Fader
+                start_address: 247
+                mode: 8bit-wc
+#  sacn:
+#    source_name: "Test SACN source LOL!!"
+#    priority: 123
+#    enable_preview_data: true
+#    universes:
+#      - 1:
+#          devices:
+#            - Test RGBWW fixture:
+#                fixture: RGBWW
+#                start_address: 1
+#                mode: 8bit
+#          compatibility:
+#            unicast_addresses:
+#              - { host: 192.168.1.15 }
 
 
 

@@ -11,11 +11,12 @@ from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 _LOGGER = logging.getLogger(__name__)
 
 
-class ArtNetAnimationEngine:
-    """Animation engine for Art-Net DMX lighting transitions"""
+class DmxAnimationEngine:
+    """Animation engine for DMX lighting transitions (supports Art-Net and sACN)"""
 
-    def __init__(self, hass: HomeAssistant, max_fps: int = 30):
+    def __init__(self, hass: HomeAssistant, universe=None, max_fps: int = 30):
         self.hass = hass
+        self.universe = universe
         self.max_fps = max_fps
         self.frame_interval = 1.0 / max_fps
         self.active_animations: Dict[str, AnimationTask] = {}
@@ -94,8 +95,34 @@ class ArtNetAnimationEngine:
             self._cleanup_animation(animation.animation_id)
 
     def _output_frame(self, frame_values: Dict[ChannelType, int]):
-        """Output frame data (dummy implementation)"""
-        pass
+        """Output frame data to DMX universe"""
+        if not self.universe:
+            return
+        
+        # Convert ChannelType values to DMX updates
+        dmx_updates = {}
+        for channel_type, value in frame_values.items():
+            # Find the channel mapping for this channel type
+            for animation in self.active_animations.values():
+                for mapping in animation.channel_mappings:
+                    if mapping.channel_type == channel_type:
+                        try:
+                            # Convert to DMX values using the mapping
+                            [entity] = mapping.channel.capabilities[0].dynamic_entities
+                            norm_val = entity.normalize(value)
+                            dmx_values = entity.to_dmx_fine(norm_val, len(mapping.dmx_indexes))
+                            
+                            for i, dmx_index in enumerate(mapping.dmx_indexes):
+                                dmx_updates[dmx_index] = dmx_values[i]
+                        except Exception as e:
+                            _LOGGER.error(f"Error converting channel {channel_type} value {value} to DMX: {e}")
+                        break
+        
+        # Send DMX updates to universe (non-blocking)
+        if dmx_updates:
+            self.hass.create_task(self.universe.update_multiple_values(dmx_updates))
+        else:
+            _LOGGER.debug(f"No DMX updates generated from frame values: {frame_values}")
 
     def create_animation(
             self,
@@ -140,8 +167,17 @@ class ArtNetAnimationEngine:
     def cancel_animation(self, animation_id: str) -> bool:
         """Cancel a specific animation by ID"""
         if animation_id in self.active_animations:
+            animation = self.active_animations[animation_id]
+            animation.is_cancelled = True
+            if animation.task and not animation.task.done():
+                animation.task.cancel()
             return True
         return False
+    
+    def cancel_all_animations(self):
+        """Cancel all active animations"""
+        for animation_id in list(self.active_animations.keys()):
+            self.cancel_animation(animation_id)
 
     def get_active_animation_count(self) -> int:
         """Get the number of currently active animations"""

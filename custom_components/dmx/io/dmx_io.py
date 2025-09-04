@@ -1,6 +1,7 @@
 import asyncio
 from typing import List, Callable, Dict, Optional
 
+from custom_components.dmx.animation.engine import DmxAnimationEngine
 from custom_components.dmx.server import PortAddress
 from custom_components.dmx.server.artnet_server import ArtNetServer
 from custom_components.dmx.server.sacn_server import SacnServer
@@ -8,7 +9,7 @@ from custom_components.dmx.server.sacn_server import SacnServer
 
 class DmxUniverse:
 
-    def __init__(self, port_address: PortAddress, controller: ArtNetServer, use_partial_universe: bool = True, sacn_server: Optional[SacnServer] = None, sacn_universe: Optional[int] = None):
+    def __init__(self, port_address: PortAddress, controller: ArtNetServer, use_partial_universe: bool = True, sacn_server: Optional[SacnServer] = None, sacn_universe: Optional[int] = None, hass=None, max_fps: int = 30):
         self.port_address = port_address
         self.controller = controller
         self.sacn_server = sacn_server
@@ -21,6 +22,9 @@ class DmxUniverse:
         self._changed_channels = set()
         self._first_send = True
         self._output_enabled = True
+
+        if hass:
+            self.animation_engine = DmxAnimationEngine(hass, self, max_fps)
         
         if self.sacn_server and self.sacn_universe:
             self.sacn_server.add_universe(self.sacn_universe)

@@ -4,7 +4,7 @@ from typing import Dict, Tuple
 import pytest
 from matplotlib import pyplot as plt
 
-from custom_components.dmx.animation.engine import ArtNetAnimationEngine
+from custom_components.dmx.animation.engine import DmxAnimationEngine
 from custom_components.dmx.entity.light import ChannelType, ChannelMapping
 from tests.dmx_test_framework import MockHomeAssistant
 
@@ -100,7 +100,7 @@ async def test_rgb_fade_animation(mock_hass):
         timestamp = time.time()
         captured_frames.append((timestamp, frame_values.copy()))
 
-    engine = ArtNetAnimationEngine(mock_hass, max_fps=60)
+    engine = DmxAnimationEngine(mock_hass, max_fps=60)
     engine._output_frame = capture_output_frame
 
     channel_mappings = [
@@ -154,7 +154,7 @@ async def test_ww_cw_fade_animation(mock_hass):
         timestamp = time.time()
         captured_frames.append((timestamp, frame_values.copy()))
 
-    engine = ArtNetAnimationEngine(mock_hass, max_fps=60)
+    engine = DmxAnimationEngine(mock_hass, max_fps=60)
     engine._output_frame = capture_output_frame
 
     channel_mappings = [
@@ -206,7 +206,7 @@ async def test_rgbww_fade_animation(mock_hass):
         timestamp = time.time()
         captured_frames.append((timestamp, frame_values.copy()))
 
-    engine = ArtNetAnimationEngine(mock_hass, max_fps=60)
+    engine = DmxAnimationEngine(mock_hass, max_fps=60)
     engine._output_frame = capture_output_frame
 
     channel_mappings = [

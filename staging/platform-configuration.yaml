@@ -1,6 +1,8 @@
 dmx:
-  artnet:
+  animation:
     max_fps: 43 # Optional
+
+  artnet:
     refresh_every: 1.2 # Optional
 
     universes:

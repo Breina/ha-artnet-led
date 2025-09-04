@@ -1,24 +1,34 @@
-from typing import Dict, Any
+import logging
+from typing import Dict, Any, Optional, List
 
-from custom_components.dmx.entity.light import ChannelType
+from homeassistant.components.light import ATTR_TRANSITION
+
+from custom_components.dmx.entity.light import ChannelType, ChannelMapping
 from custom_components.dmx.entity.light.light_state import LightState
 from custom_components.dmx.io.dmx_io import DmxUniverse
 
+log = logging.getLogger(__name__)
+
 
 class LightController:
-    def __init__(self, state: LightState, universe: DmxUniverse):
+    def __init__(self, state: LightState, universe: DmxUniverse, channel_mappings: Optional[List[ChannelMapping]] = None, animation_engine = None):
         self.state = state
         self.universe = universe
+        self.channel_mappings = channel_mappings
+        self.animation_engine = animation_engine
         self.is_updating = False
+        self._current_animation_id: Optional[str] = None
 
     async def turn_on(self, **kwargs):
         self.state.is_on = True
         updates = self._collect_updates_from_kwargs(kwargs)
         if not updates:
             updates = self._restore_previous_state()
-        await self._apply_updates(updates)
+        
+        transition = kwargs.get(ATTR_TRANSITION)
+        await self._apply_updates(updates, transition)
 
-    async def turn_off(self):
+    async def turn_off(self, transition: Optional[float] = None):
         self.state.is_on = False
         preserved = self._capture_current_state()
         updates = {}
@@ -32,21 +42,65 @@ class LightController:
                 if channel != ChannelType.COLOR_TEMPERATURE:
                     updates[channel] = 0
 
-        await self._apply_updates(updates)
+        await self._apply_updates(updates, transition)
         self._save_last_state(preserved)
 
-    async def _apply_updates(self, updates: Dict[ChannelType, int]):
-        for ct, val in updates.items():
-            self.state.apply_channel_update(ct, val)
-        dmx_updates = self.state.get_dmx_updates(updates)
-        await self.universe.update_multiple_values(dmx_updates)
+    async def _apply_updates(self, updates: Dict[ChannelType, int], transition: Optional[float] = None):
+        if self._current_animation_id and self.animation_engine:
+            self.animation_engine.cancel_animation(self._current_animation_id)
+            self._current_animation_id = None
+        
+        # If no animation engine, channel mappings, or no transition requested, apply immediately
+        if not transition or transition <= 0 or not self.animation_engine or not self.channel_mappings:
+            for ct, val in updates.items():
+                self.state.apply_channel_update(ct, val)
+            dmx_updates = self.state.get_dmx_updates(updates)
+            await self.universe.update_multiple_values(dmx_updates)
+            return
+        
+        current_values = {}
+        for channel_type in updates.keys():
+            current_entity_value = 0
+            dmx_values = []
+            for mapping in self.channel_mappings:
+                if mapping.channel_type == channel_type:
+                    # Get all DMX values for this channel (handles multi-byte channels properly)
+                    dmx_values = [self.universe.get_channel_value(idx) for idx in mapping.dmx_indexes]
+                    
+                    # Convert DMX values to entity value using the dynamic entity
+                    [dynamic_entity] = mapping.channel.capabilities[0].dynamic_entities
+                    normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
+                    current_entity_value = dynamic_entity.unnormalize(normalized_value)
+                    break
+            
+            current_values[channel_type] = int(current_entity_value)
+        
+        relevant_mappings = [mapping for mapping in self.channel_mappings
+                           if mapping.channel_type in updates.keys()]
+        
+        if relevant_mappings:
+            log.debug(f"Creating animation with {len(relevant_mappings)} mappings, current: {current_values}, desired: {updates}")
+            # Create animation with L*U*V* transitions
+            self._current_animation_id = self.animation_engine.create_animation(
+                channel_mappings=relevant_mappings,
+                current_values=current_values,
+                desired_values=updates,
+                animation_duration_seconds=transition,
+                min_kelvin=getattr(self.state.converter, 'min_kelvin', 2700),
+                max_kelvin=getattr(self.state.converter, 'max_kelvin', 6500)
+            )
+            
+            # Update state to target values immediately (for UI consistency)
+            for ct, val in updates.items():
+                self.state.apply_channel_update(ct, val)
 
     def _collect_updates_from_kwargs(self, kwargs: Dict[str, Any]) -> Dict[ChannelType, int]:
         updates = {}
 
         if "brightness" in kwargs:
             brightness = kwargs["brightness"]
-            updates.update(self.state.get_scaled_brightness_updates(brightness))
+            brightness_updates = self.state.get_scaled_brightness_updates(brightness)
+            updates.update(brightness_updates)
 
         if "rgb_color" in kwargs and self.state.has_rgb():
             r, g, b = kwargs["rgb_color"]
@@ -64,6 +118,9 @@ class LightController:
             kelvin = kwargs["color_temp_kelvin"]
             self.state.update_color_temp_kelvin(kelvin)
             brightness = kwargs.get("brightness", self.state.brightness)
+            
+            if brightness is None:
+                brightness = 255
 
             if self.state.has_channel(ChannelType.COLOR_TEMPERATURE):
                 updates[ChannelType.COLOR_TEMPERATURE] = self.state.color_temp_dmx

@@ -28,13 +28,8 @@ class LightState:
         self.last_color_temp_kelvin = 3000
         self.last_color_temp_dmx = 255
         
-        # Only initialize RGB for color modes that use it
-        if color_mode in [ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW]:
-            self.rgb = (255, 255, 255)
-            self.last_rgb = (255, 255, 255)
-        else:
-            self.rgb = None
-            self.last_rgb = None
+        self.rgb = (255, 255, 255)
+        self.last_rgb = (255, 255, 255)
 
         self._channel_handlers = {}
 
@@ -54,25 +49,6 @@ class LightState:
             self._channel_handlers[ChannelType.WARM_WHITE] = self._handle_warm_white_update
         if ChannelType.COLOR_TEMPERATURE in channels:
             self._channel_handlers[ChannelType.COLOR_TEMPERATURE] = self.update_color_temp_dmx
-            
-        # Ensure state consistency after init/restoration
-        self._validate_and_fix_state()
-
-    def _validate_and_fix_state(self):
-        """Ensure state fields are consistent with color mode after init/restoration"""
-        if self.color_mode in [ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW]:
-            # RGB color modes must have valid RGB values
-            if self.rgb is None:
-                self.rgb = (255, 255, 255)
-                log.warning(f"Fixed None RGB value for {self.color_mode} color mode")
-            if self.last_rgb is None:
-                self.last_rgb = (255, 255, 255)
-        else:
-            # Non-RGB color modes should have RGB as None
-            if self.rgb is not None:
-                self.rgb = None
-            if self.last_rgb is not None:
-                self.last_rgb = None
 
     def has_channel(self, t: ChannelType) -> bool:
         return t in self.channels
@@ -100,11 +76,6 @@ class LightState:
         if self.color_mode not in [ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW]:
             log.warning(f"RGB component update called for non-RGB color mode {self.color_mode}")
             return
-        
-        # Safety check: ensure RGB is valid (in case of state restoration corruption)
-        if self.rgb is None:
-            self.rgb = (255, 255, 255)
-            log.warning(f"Fixed None RGB during RGB update for {self.color_mode} color mode")
             
         new_rgb = list(self.rgb)
         new_rgb[component_index] = value
@@ -144,11 +115,14 @@ class LightState:
         if self.color_mode == ColorMode.COLOR_TEMP and self.has_cw_ww():
             self.is_on = (self.cold_white > 0 or self.warm_white > 0)
         elif self.color_mode == ColorMode.RGBWW:
-            self.is_on = any(v > 0 for v in (*self.rgb, self.cold_white, self.warm_white))
+            rgb = self.rgb or (0, 0, 0)
+            self.is_on = any(v > 0 for v in (*rgb, self.cold_white, self.warm_white))
         elif self.color_mode == ColorMode.RGBW:
-            self.is_on = any(v > 0 for v in (*self.rgb, self.warm_white))
+            rgb = self.rgb or (0, 0, 0)
+            self.is_on = any(v > 0 for v in (*rgb, self.warm_white))
         elif self.color_mode == ColorMode.RGB:
-            self.is_on = any(v > 0 for v in self.rgb)
+            rgb = self.rgb or (0, 0, 0)
+            self.is_on = any(v > 0 for v in rgb)
         elif self.has_channel(ChannelType.COLD_WHITE):
             self.is_on = self.cold_white > 0
         elif self.has_channel(ChannelType.WARM_WHITE):
@@ -279,10 +253,11 @@ class LightState:
         self.warm_white = warm
 
     def update_brightness(self, value: int):
-        self.brightness = value
-        if value > 0:
-            self.last_brightness = value
-            self.is_on = True
+        if value is not None:
+            self.brightness = value
+            if value > 0:
+                self.last_brightness = value
+                self.is_on = True
 
     def update_color_temp_dmx(self, dmx_value: int):
         self.color_temp_dmx = dmx_value
@@ -349,16 +324,20 @@ class LightState:
 
     @property
     def rgbw_color(self) -> Tuple[int, int, int, int]:
-        return (*self.rgb, self.warm_white)
+        rgb = self.rgb or (0, 0, 0)
+        return (*rgb, self.warm_white)
 
     @property
     def rgbww_color(self) -> Tuple[int, int, int, int, int]:
-        return (*self.rgb, self.cold_white, self.warm_white)
+        rgb = self.rgb or (0, 0, 0)
+        return (*rgb, self.cold_white, self.warm_white)
 
     @property
     def last_rgbw_color(self) -> Tuple[int, int, int, int]:
-        return (*self.last_rgb, self.last_cold_white)
+        last_rgb = self.last_rgb or (0, 0, 0)
+        return (*last_rgb, self.last_cold_white)
 
     @property
     def last_rgbww_color(self) -> Tuple[int, int, int, int, int]:
-        return (*self.last_rgb, self.last_cold_white, self.last_warm_white)
+        last_rgb = self.last_rgb or (0, 0, 0)
+        return (*last_rgb, self.last_cold_white, self.last_warm_white)

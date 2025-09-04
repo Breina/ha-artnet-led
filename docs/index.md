@@ -10,7 +10,7 @@ This integration creates software-based Art-Net and sACN controllers within Home
 
 Once configured, the integration creates Home Assistant entities for each fixture and channel:
 
-![Integration Entities](Entities.png)
+![Integration Entities](img/Entities.png)
 *Example: Configured fixtures appear as standard Home Assistant entities with full control capabilities*
 
 ## Key Features

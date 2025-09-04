@@ -2,7 +2,7 @@ import logging
 from functools import partial
 from typing import Optional, List, Dict, Tuple, Any
 
-from homeassistant.components.light import LightEntity, ColorMode
+from homeassistant.components.light import LightEntity, ColorMode, LightEntityFeature, ATTR_TRANSITION
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -47,6 +47,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         self._attr_device_info = device
         self._attr_color_mode = color_mode
         self._attr_supported_color_modes = {color_mode}
+        self._attr_supported_features = LightEntityFeature.TRANSITION
 
         if ColorMode.COLOR_TEMP in self.supported_color_modes:
             self._attr_min_color_temp_kelvin = min_kelvin
@@ -58,7 +59,9 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         self.channel_map = {ch.channel_type: ch for ch in channels}
         self._state = LightState(color_mode, converter, self.channel_map)
-        self._controller = LightController(self._state, universe)
+
+        animation_engine = getattr(universe, 'animation_engine', None)
+        self._controller = LightController(self._state, universe, channels, animation_engine)
 
         self._has_separate_dimmer = has_separate_dimmer
         self._universe = universe
@@ -128,7 +131,8 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any):
-        await self._controller.turn_off()
+        transition = kwargs.get(ATTR_TRANSITION)
+        await self._controller.turn_off(transition)
 
         if not self.hass:
             log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
@@ -148,8 +152,9 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         if "brightness" in attrs:
             brightness = attrs["brightness"]
-            self._state.brightness = brightness
-            self._state.last_brightness = brightness
+            if brightness is not None:
+                self._state.brightness = brightness
+                self._state.last_brightness = brightness
 
         if "rgb_color" in attrs:
             rgb = attrs["rgb_color"]
@@ -158,8 +163,9 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         if "color_temp" in attrs:
             color_temp = attrs["color_temp"]
-            self._state.color_temp_kelvin = color_temp
-            self._state.last_color_temp_kelvin = color_temp
+            if color_temp is not None:
+                self._state.color_temp_kelvin = color_temp
+                self._state.last_color_temp_kelvin = color_temp
 
         # For color temp mode without dimmer, restore CW/WW values if available
         if (self._state.color_mode == ColorMode.COLOR_TEMP and

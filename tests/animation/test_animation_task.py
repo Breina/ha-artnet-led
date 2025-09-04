@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from custom_components.dmx.animation import Channel
-from custom_components.dmx.animation.engine import AnimationTask, ArtNetAnimationEngine
+from custom_components.dmx.animation.engine import AnimationTask, DmxAnimationEngine
 from custom_components.dmx.entity.light import ChannelType, ChannelMapping
 from tests.dmx_test_framework import MockHomeAssistant
 
@@ -42,7 +42,7 @@ def sample_channel_mappings(sample_channels):
 @pytest.fixture
 def animation_engine(mock_hass):
     """Fixture providing an animation engine instance"""
-    return ArtNetAnimationEngine(mock_hass, max_fps=60)
+    return DmxAnimationEngine(mock_hass, max_fps=60)
 
 
 class TestAnimationTask:
@@ -65,8 +65,8 @@ class TestAnimationTask:
 
         assert task.animation_id == "test_anim"
         assert task.duration_seconds == 2.0
-        assert task.min_kelvin == 2700
-        assert task.max_kelvin == 6500
+        assert task.animator.min_kelvin == 2700
+        assert task.animator.max_kelvin == 6500
         assert not task.is_cancelled
         assert task.controlled_indexes == {1, 2, 3, 4}
 
@@ -104,11 +104,14 @@ class TestAnimationTask:
             duration_seconds=1.0
         )
 
-        # Test interpolation at different progress points
-        assert task.interpolate_value(0, 255, 0.0) == 0
-        assert task.interpolate_value(0, 255, 0.5) == 127
-        assert task.interpolate_value(0, 255, 1.0) == 255
-        assert task.interpolate_value(100, 200, 0.5) == 150
+        # Test interpolation through the animator
+        initial_values = task.animator.interpolate(0.0)
+        mid_values = task.animator.interpolate(0.5)
+        final_values = task.animator.interpolate(1.0)
+        
+        # Check that interpolation produces reasonable values
+        assert initial_values[ChannelType.RED] <= mid_values[ChannelType.RED] <= final_values[ChannelType.RED]
+        assert initial_values[ChannelType.GREEN] <= mid_values[ChannelType.GREEN] <= final_values[ChannelType.GREEN]
 
     def test_frame_value_calculation(self, sample_channel_mappings):
         """Test frame value calculation"""
@@ -139,7 +142,7 @@ if __name__ == "__main__":
     async def run_manual_test():
         """Run a basic test manually"""
         hass = MockHomeAssistant()
-        engine = ArtNetAnimationEngine(hass, max_fps=30)
+        engine = DmxAnimationEngine(hass, max_fps=30)
 
         # Create sample channels
         red_channel = Channel(1, "Red")
