@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Dict, Any
 
@@ -33,10 +34,11 @@ class DynamicNodeHandler:
 
         if unique_id in self.discovered_nodes:
             # Previously disabled, but found again
+            log.debug(f"Node {artpoll_reply.short_name} already discovered, attempting to re-enable")
             await self.reenable_node(artpoll_reply)
             return
 
-        log.info(f"Discovered new ArtNet node: {artpoll_reply.short_name}")
+        log.info(f"Discovered new ArtNet node: {artpoll_reply.short_name}, creating entities")
 
         # Track this node to avoid duplicate processing
         self.discovered_nodes[unique_id] = artpoll_reply
@@ -79,7 +81,10 @@ class DynamicNodeHandler:
                 entities.append(ArtNetPortOutputModeSensor(artpoll_reply, device_info, i))
 
         if entities:
+            log.info(f"Adding {len(entities)} entities for node {artpoll_reply.short_name}")
             await self._add_entities(entities)
+        else:
+            log.warning(f"No entities created for node {artpoll_reply.short_name}")
 
     async def update_node(self, artpoll_reply: ArtPollReply) -> None:
         """Update an existing ArtNet node with new ArtPollReply data."""
@@ -143,44 +148,65 @@ class DynamicNodeHandler:
                             entity.async_schedule_update_ha_state()
                         continue
 
-                    entity_reg.async_update_entity(entity.registry_entry, disabled_by=RegistryEntryDisabler.INTEGRATION)
+                    if hasattr(entity, "registry_entry") and entity.registry_entry:
+                        entity_reg.async_update_entity(entity.registry_entry, disabled_by=RegistryEntryDisabler.INTEGRATION)
 
     async def reenable_node(self, artpoll_reply: ArtPollReply) -> None:
-        unique_id = f"{artpoll_reply.mac_address}{artpoll_reply.bind_index}"
+        # Check if we have any runtime entities to re-enable
+        if CONF_NODE_ENTITIES not in self.hass.data[DOMAIN][self.entry.entry_id]:
+            log.debug(f"No node entities exist to re-enable for {artpoll_reply.short_name}")
+            return
 
-        if unique_id not in self.discovered_nodes:
+        entities = self.hass.data[DOMAIN][self.entry.entry_id][CONF_NODE_ENTITIES]
+        if not entities:
+            log.debug(f"No node entities exist to re-enable for {artpoll_reply.short_name}")
             return
 
         entity_reg = er.async_get(self.hass)
+        mac_string = ":".join(f"{b:02x}" for b in artpoll_reply.mac_address)
+        entities_updated = 0
 
-        if CONF_NODE_ENTITIES in self.hass.data[DOMAIN][self.entry.entry_id]:
-            entities = self.hass.data[DOMAIN][self.entry.entry_id][CONF_NODE_ENTITIES]
+        # Find entities belonging to this node and update them
+        for entity in entities:
+            # Check if this entity belongs to the node being updated
+            if (hasattr(entity, "_mac_address") and entity._mac_address == mac_string and
+                    hasattr(entity, "art_poll_reply") and 
+                    entity.art_poll_reply.bind_index == artpoll_reply.bind_index):
 
-            # Find entities belonging to this node and update them
-            mac_string = ":".join(f"{b:02x}" for b in artpoll_reply.mac_address)
-            for entity in entities:
-                # Check if this entity belongs to the node being updated
-                if hasattr(entity, "_mac_address") and entity._mac_address == mac_string and \
-                        hasattr(entity, "art_poll_reply") and \
-                        entity.art_poll_reply.bind_index == artpoll_reply.bind_index:
+                if isinstance(entity, ArtNetOnlineBinarySensor):
+                    entity.connected = True
 
-                    if isinstance(entity, ArtNetOnlineBinarySensor):
-                        entity.connected = True
-
-                        if not self.hass:
-                            log.debug(f"Not updating {self.controller} because it hasn't been added to hass yet.")
-
-                        elif hasattr(entity, "async_schedule_update_ha_state"):
-                            entity.async_schedule_update_ha_state()
+                    if not hasattr(entity, "hass") or entity.hass is None:
+                        log.debug(f"Skipping entity {getattr(entity, 'unique_id', 'unknown')} - not yet initialized")
                         continue
 
+                    if hasattr(entity, "async_schedule_update_ha_state"):
+                        entity.async_schedule_update_ha_state()
+                        entities_updated += 1
+                    continue
+
+                if hasattr(entity, "registry_entry") and entity.registry_entry:
                     entity_reg.async_update_entity(entity.registry_entry, disabled_by=None)
+                    entities_updated += 1
+
+        if entities_updated == 0:
+            log.debug(f"No entities were found to re-enable for node {artpoll_reply.short_name}")
+        else:
+            log.debug(f"Re-enabled {entities_updated} entities for node {artpoll_reply.short_name}")
 
     async def _add_entities(self, entities) -> None:
         """Add entities to Home Assistant."""
-        for platform in async_get_platforms(self.hass, DOMAIN):
+        # Wait for platforms to be set up if they aren't ready yet
+        platforms = list(async_get_platforms(self.hass, DOMAIN))
+        if not platforms:
+            log.warning("Platforms not ready yet, waiting 1 second...")
+            await asyncio.sleep(1)
+            platforms = list(async_get_platforms(self.hass, DOMAIN))
+        
+        for platform in platforms:
             platform_entities = [e for e in entities if e.platform_type == platform.domain]
             if platform_entities:
+                log.debug(f"Adding {len(platform_entities)} entities to {platform.domain}")
                 await platform.async_add_entities(platform_entities)
 
         if CONF_NODE_ENTITIES not in self.hass.data[DOMAIN][self.entry.entry_id]:

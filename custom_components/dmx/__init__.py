@@ -80,7 +80,7 @@ CONF_FOLDER = 'folder'
 CONF_FOLDER_DEFAULT = 'fixtures'
 CONF_ENTITY_ID_PREFIX = 'entity_id_prefix'
 
-PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT, Platform.SWITCH]
+PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT, Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR]
 
 FIXTURES = {}
 
