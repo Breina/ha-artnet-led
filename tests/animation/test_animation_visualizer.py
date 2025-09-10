@@ -92,6 +92,7 @@ def plot_animation_data(captured_frames,
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="Run manually to plot animations")
 async def test_rgb_fade_animation(mock_hass):
     """Test RGB color fade with visualization"""
     captured_frames = []
@@ -146,6 +147,7 @@ async def test_rgb_fade_animation(mock_hass):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="Run manually to plot animations")
 async def test_ww_cw_fade_animation(mock_hass):
     """Test RGB color fade with visualization"""
     captured_frames = []
@@ -198,6 +200,7 @@ async def test_ww_cw_fade_animation(mock_hass):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="Run manually to plot animations")
 async def test_rgbww_fade_animation(mock_hass):
     """Test RGB color fade with visualization"""
     captured_frames = []
@@ -254,62 +257,3 @@ async def animate(engine, channel_mappings, current_values, desired_values, min_
     )
     animation = engine.active_animations[animation_id]
     await animation.task
-
-# async def test_temperature_animation(self):
-#     """Test color temperature animation with visualization"""
-#     print("Testing color temperature animation...")
-#
-#     # Clear previous captures
-#     self.captured_frames = []
-#
-#     # Mock the _output_frame method to capture data
-#     original_output_frame = self.engine._output_frame
-#     self.engine._output_frame = self.capture_output_frame
-#
-#     try:
-#         # Create channel mappings for white LEDs
-#         channel_mappings = [
-#             ChannelMapping(ChannelType.COLD_WHITE, 4),
-#             ChannelMapping(ChannelType.WARM_WHITE, 5),
-#             ChannelMapping(ChannelType.COLOR_TEMPERATURE, 6),
-#         ]
-#
-#         # Set up animation from warm to cold
-#         current_values = {
-#             ChannelType.COLD_WHITE: 50,
-#             ChannelType.WARM_WHITE: 200,
-#             ChannelType.COLOR_TEMPERATURE: 2700,  # Warm
-#         }
-#
-#         desired_values = {
-#             ChannelType.COLD_WHITE: 200,
-#             ChannelType.WARM_WHITE: 50,
-#             ChannelType.COLOR_TEMPERATURE: 6500,  # Cold
-#         }
-#
-#         # Create and run animation
-#         animation_id = self.engine.create_animation(
-#             channel_mappings=channel_mappings,
-#             current_values=current_values,
-#             desired_values=desired_values,
-#             animation_duration_seconds=3.0,
-#             min_kelvin=2000,
-#             max_kelvin=6500
-#         )
-#
-#         # Wait for animation to complete
-#         animation = self.engine.active_animations[animation_id]
-#         await animation.task
-#
-#         # Create visualization with temperature range
-#         self.plot_animation_data(
-#             title="Color Temperature Animation (Warm → Cold)",
-#             y_range=(0, 6500),  # Wide range to show both intensity and temperature
-#             save_path="temperature_animation.png"
-#         )
-#
-#         print(f"Captured {len(self.captured_frames)} frames")
-#
-#     finally:
-#         # Restore original method
-#         self.engine._output_frame = original_output_frame
