@@ -86,13 +86,11 @@ def _serialize_channel(channel: Channel) -> dict:
 
 def _serialize_capability(capability: Capability) -> dict:
     """Serialize a Capability to a dict representation."""
-    # Get the basic capability info - we need the class name and key properties
-    # that would affect entity behavior
     result = {
         "type": capability.__class__.__name__,
         "dmx_range_start": capability.dmx_range_start,
         "dmx_range_end": capability.dmx_range_end,
-        "menu_click": capability.menu_click,
+        "menu_click": capability.menu_click.name if hasattr(capability.menu_click, 'name') else str(capability.menu_click),
         "menu_click_value": capability.menu_click_value,
         "switch_channels": capability.switch_channels
     }
@@ -100,11 +98,11 @@ def _serialize_capability(capability: Capability) -> dict:
     # Add type-specific properties that would affect entity behavior
     if hasattr(capability, 'color'):
         result['color'] = capability.color.name if hasattr(capability.color, 'name') else str(capability.color)
-    if hasattr(capability, 'color_temperature'):
+    if hasattr(capability, 'color_temperature') and capability.color_temperature is not None:
         result['color_temperature'] = [
             {"value": ct.value, "unit": ct.unit} for ct in capability.color_temperature
         ]
-    if hasattr(capability, 'dynamic_entities'):
+    if hasattr(capability, 'dynamic_entities') and capability.dynamic_entities is not None:
         result['dynamic_entities'] = [
             {
                 "start": {"value": de.entity_start.value, "unit": de.entity_start.unit},

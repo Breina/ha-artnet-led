@@ -139,7 +139,7 @@ async def test_rgb_fade_animation(mock_hass):
         mock_hass,
         title="RGB Fade Animation (Off → Red → Green → Blue → Red → White)",
         y_range=(0, 255),
-        save_path="plots/rgb_fade_animation.png"
+        save_path="animation/plots/rgb_fade_animation.png"
     )
 
     print(f"Captured {len(captured_frames)} frames")
@@ -191,7 +191,7 @@ async def test_ww_cw_fade_animation(mock_hass):
         mock_hass,
         title="WW/CW Fade Animation (Off → Cold → Warm → White → Off)",
         y_range=(0, 255),
-        save_path="plots/ww_cw_fade_animation.png"
+        save_path="animation/plots/ww_cw_fade_animation.png"
     )
 
     print(f"Captured {len(captured_frames)} frames")
@@ -237,7 +237,7 @@ async def test_rgbww_fade_animation(mock_hass):
         mock_hass,
         title="RGBWW Fade Animation (Red/WW → Blue/CW → RGB white → CW/WW white)",
         y_range=(0, 255),
-        save_path="plots/rgbww_fade_animation.png"
+        save_path="animation/plots/rgbww_fade_animation.png"
     )
 
     print(f"Captured {len(captured_frames)} frames")
