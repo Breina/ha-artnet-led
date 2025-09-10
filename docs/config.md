@@ -182,6 +182,24 @@ Universe definitions for sACN. Each universe number [1-63999] maps to multicast 
 
 ## Troubleshooting
 
+### Performance Optimization for Large Installations
+
+DMX installations can generate numerous entities that update frequently, which can impact Home Assistant's database performance and cause significant database growth over time. This is particularly noticeable with pixel strips or large lighting arrays where each device may create dozens or hundreds of individual entities.
+
+To optimize performance and prevent database bloat, exclude DMX entities from Home Assistant's recorder using entity globs in your `configuration.yaml`:
+
+```yaml
+recorder:
+  exclude:
+    entity_globs:
+      - light.pixelstrip*
+      - light.dmx_*
+      - number.dmx_*
+      - select.dmx_*
+```
+
+**Tip**: Use consistent, wildcard-friendly naming patterns for your fixtures (e.g., `pixelstrip_1_pixel_1`, `dmx_universe1_*`) to make exclusion patterns more effective.
+
 ### Check Logs
 1. Go to **Settings** → **System** → **Logs**
 2. Filter logs by typing `dmx` in the search box
