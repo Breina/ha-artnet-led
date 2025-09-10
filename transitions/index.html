@@ -695,17 +695,21 @@
 <li><strong>CW/WW</strong>: Color temperature and brightness interpolation</li>
 </ul>
 <h2 id="why-luv-color-space">Why L*U*V* Color Space?<a class="headerlink" href="#why-luv-color-space" title="Permanent link">&para;</a></h2>
-<p>Traditional RGB interpolation creates unnatural color transitions that don't match how humans perceive color changes. Our implementation uses <strong>L*U*V* (L*u*v*)</strong> color space for perceptually uniform transitions.</p>
+<p>Traditional RGB interpolation creates unnatural color transitions that don't match how humans perceive color changes. Our implementation uses <strong>L*U*V* (CIELUV)</strong> color space for perceptually uniform transitions.</p>
 <h3 id="the-problem-with-rgb-interpolation">The Problem with RGB Interpolation<a class="headerlink" href="#the-problem-with-rgb-interpolation" title="Permanent link">&para;</a></h3>
-<p>When transitioning from red to green in RGB space:
-- <strong>RGB values</strong>: (255, 0, 0) → (0, 255, 0)<br />
-- <strong>Perceived path</strong>: Red → Brown/Yellow → Green
-- <strong>Visual result</strong>: Unnatural, muddy intermediate colors</p>
+<p>When transitioning from red to green in RGB space:</p>
+<ul>
+<li><strong>RGB values</strong>: (255, 0, 0) → (0, 255, 0)  </li>
+<li><strong>Perceived path</strong>: Red → Brown/Yellow → Green</li>
+<li><strong>Visual result</strong>: Unnatural, muddy intermediate colors</li>
+</ul>
 <h3 id="the-luv-solution">The L*U*V* Solution<a class="headerlink" href="#the-luv-solution" title="Permanent link">&para;</a></h3>
-<p>L*U*V* color space is designed for perceptual uniformity:
-- <strong>L* (Lightness)</strong>: Matches human brightness perception
-- <strong>u* and v* (Chromaticity)</strong>: Uniform color differences
-- <strong>Interpolation result</strong>: Smooth, natural color transitions</p>
+<p>L*U*V* color space is designed for perceptual uniformity:</p>
+<ul>
+<li><strong>L* (Lightness)</strong>: Matches human brightness perception</li>
+<li><strong>u* and v* (Chromaticity)</strong>: Uniform color differences</li>
+<li><strong>Interpolation result</strong>: Smooth, natural color transitions</li>
+</ul>
 <h2 id="animation-behavior">Animation Behavior<a class="headerlink" href="#animation-behavior" title="Permanent link">&para;</a></h2>
 <h3 id="rgb-color-changes">RGB Color Changes<a class="headerlink" href="#rgb-color-changes" title="Permanent link">&para;</a></h3>
 <p>Color transitions use L*U*V* interpolation for smooth, natural color paths:</p>
