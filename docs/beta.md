@@ -17,10 +17,11 @@ Part of the beta is to test if my documentation suffices. So head over to [the i
 * Rate limiting when sending DMX data from an external controller to HomeAssistant
 * Discovered Art-Net nodes will create new entities
 * Art-Net triggers will invoke HomeAssistant events
+* sACN has multicast support meaning it will work automatically without needing to define an IP
+* Transitions going through L\*U\*V\* color space
 
 ## What's excluded?
 
-* Transitions: I'd love to support custom animations, but not yet sure how I would have you define them.
 * RDM: This is a HUGE standard, won't make it to the full release either.
 
 ## Where to report feedback?
