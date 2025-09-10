@@ -309,6 +309,24 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#minimum-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Minimum Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maximum-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Maximum Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#configuration-options" class="md-nav__link">
     <span class="md-ellipsis">
       Configuration Options
@@ -322,6 +340,15 @@
   <a href="#dmxfixtures" class="md-nav__link">
     <span class="md-ellipsis">
       dmx.fixtures
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dmxanimation" class="md-nav__link">
+    <span class="md-ellipsis">
+      dmx.animation
     </span>
   </a>
   
@@ -436,6 +463,15 @@
   
     <nav class="md-nav" aria-label="Troubleshooting">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#performance-optimization-for-large-installations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Optimization for Large Installations
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#check-logs" class="md-nav__link">
@@ -563,6 +599,28 @@
   
   
     <li class="md-nav__item">
+      <a href="../transitions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Transitions
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../migration/" class="md-nav__link">
         
   
@@ -624,6 +682,24 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#minimum-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Minimum Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maximum-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Maximum Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#configuration-options" class="md-nav__link">
     <span class="md-ellipsis">
       Configuration Options
@@ -637,6 +713,15 @@
   <a href="#dmxfixtures" class="md-nav__link">
     <span class="md-ellipsis">
       dmx.fixtures
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dmxanimation" class="md-nav__link">
+    <span class="md-ellipsis">
+      dmx.animation
     </span>
   </a>
   
@@ -753,6 +838,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#performance-optimization-for-large-installations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Optimization for Large Installations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#check-logs" class="md-nav__link">
     <span class="md-ellipsis">
       Check Logs
@@ -803,12 +897,33 @@
 </ol>
 <h2 id="step-2-yaml-configuration">Step 2: YAML Configuration<a class="headerlink" href="#step-2-yaml-configuration" title="Permanent link">&para;</a></h2>
 <p>Add the DMX configuration to your <code>configuration.yaml</code>:</p>
+<h3 id="minimum-configuration">Minimum Configuration<a class="headerlink" href="#minimum-configuration" title="Permanent link">&para;</a></h3>
+<p>This includes Art-Net and sACN, remove what you don't need.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">artnet</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">1</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Epic triple lights</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">start_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">11</span>
+<span class="w">                </span><span class="nt">fixture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CLHB300RGBW</span>
+<span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">1</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">RGB Strip</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">start_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">                </span><span class="nt">fixture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generic-rgb</span>
+</code></pre></div>
+<h3 id="maximum-configuration">Maximum Configuration<a class="headerlink" href="#maximum-configuration" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">fixtures</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">folder</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fixtures</span>
 
-<span class="w">  </span><span class="nt">artnet</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">animation</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">max_fps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">43</span>
+
+<span class="w">  </span><span class="nt">artnet</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">refresh_every</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.2</span>
 <span class="w">    </span><span class="nt">rate_limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
 
@@ -865,10 +980,13 @@
 <li><strong><code>folder</code></strong> <em>(optional, default: <code>fixtures</code>)</em><br />
   Directory containing fixture JSON files, relative to Home Assistant config directory (where your <code>configuration.yaml</code> is located)</li>
 </ul>
-<h4 id="dmxartnet"><code>dmx.artnet</code><a class="headerlink" href="#dmxartnet" title="Permanent link">&para;</a></h4>
+<h4 id="dmxanimation"><code>dmx.animation</code><a class="headerlink" href="#dmxanimation" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong><code>max_fps</code></strong> <em>(optional, default: <code>30</code>)</em><br />
-  Maximum frames per second for animations [0, 43]</li>
+  Maximum frames per second for animations [1, 43], used for transitions.</li>
+</ul>
+<h4 id="dmxartnet"><code>dmx.artnet</code><a class="headerlink" href="#dmxartnet" title="Permanent link">&para;</a></h4>
+<ul>
 <li><strong><code>refresh_every</code></strong> <em>(optional, default: <code>0.8</code>)</em><br />
   The interval in seconds in which universe data is retransmitted. This is useful when there are external controllers sending to the same universes. Set to <code>0</code> to disable this behavior.</li>
 <li><strong><code>rate_limit</code></strong> <em>(optional, default: <code>0.5</code>)</em><br />
@@ -973,6 +1091,18 @@
 <li>Check that your fixtures appear as entities in Home Assistant</li>
 </ol>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="performance-optimization-for-large-installations">Performance Optimization for Large Installations<a class="headerlink" href="#performance-optimization-for-large-installations" title="Permanent link">&para;</a></h3>
+<p>DMX installations can generate numerous entities that update frequently, which can impact Home Assistant's database performance and cause significant database growth over time. This is particularly noticeable with pixel strips or large lighting arrays where each device may create dozens or hundreds of individual entities.</p>
+<p>To optimize performance and prevent database bloat, exclude DMX entities from Home Assistant's recorder using entity globs in your <code>configuration.yaml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">recorder</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">exclude</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">entity_globs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">light.pixelstrip*</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">light.dmx_*</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">number.dmx_*</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">select.dmx_*</span>
+</code></pre></div>
+<p><strong>Tip</strong>: Use consistent, wildcard-friendly naming patterns for your fixtures (e.g., <code>pixelstrip_1_pixel_1</code>, <code>dmx_universe1_*</code>) to make exclusion patterns more effective.</p>
 <h3 id="check-logs">Check Logs<a class="headerlink" href="#check-logs" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Go to <strong>Settings</strong> → <strong>System</strong> → <strong>Logs</strong></li>
