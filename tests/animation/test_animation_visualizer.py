@@ -2,7 +2,6 @@ import time
 from typing import Dict, Tuple
 
 import pytest
-from matplotlib import pyplot as plt
 
 from custom_components.dmx.animation.engine import DmxAnimationEngine
 from custom_components.dmx.entity.light import ChannelType, ChannelMapping
@@ -42,6 +41,8 @@ def plot_animation_data(captured_frames,
     if not captured_frames:
         print("No animation data captured to plot")
         return
+
+    from matplotlib import pyplot as plt
 
     # Set up the plot with dark background
     plt.style.use('dark_background')
