@@ -439,7 +439,7 @@
           <li class="md-nav__item">
   <a href="#the-luv-solution" class="md-nav__link">
     <span class="md-ellipsis">
-      The LUV* Solution
+      The L*U*V* Solution
     </span>
   </a>
   
@@ -588,7 +588,7 @@
           <li class="md-nav__item">
   <a href="#the-luv-solution" class="md-nav__link">
     <span class="md-ellipsis">
-      The LUV* Solution
+      The L*U*V* Solution
     </span>
   </a>
   
@@ -657,7 +657,7 @@
 
 
 
-<h1 id="light-transitions-with-luv-color-space">Light Transitions with L<em>U</em>V* Color Space<a class="headerlink" href="#light-transitions-with-luv-color-space" title="Permanent link">&para;</a></h1>
+<h1 id="light-transitions-with-luv-color-space">Light Transitions with L*U*V* Color Space<a class="headerlink" href="#light-transitions-with-luv-color-space" title="Permanent link">&para;</a></h1>
 <p>The DMX integration provides professional-grade smooth color transitions using perceptually uniform color space interpolation. This ensures that color changes appear natural and consistent to human vision.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <p>Add a <code>transition</code> parameter to any light service call to enable smooth animations:</p>
@@ -688,29 +688,29 @@
 <h2 id="supported-fixture-types">Supported Fixture Types<a class="headerlink" href="#supported-fixture-types" title="Permanent link">&para;</a></h2>
 <p>Transitions work with all fixture color modes:</p>
 <ul>
-<li><strong>RGB</strong>: Smooth color transitions through L<em>U</em>V* color space</li>
-<li><strong>RGBW</strong>: RGB channels use L<em>U</em>V*, white channel uses linear interpolation  </li>
-<li><strong>RGBWW</strong>: RGB channels use L<em>U</em>V*, white channels use linear interpolation</li>
+<li><strong>RGB</strong>: Smooth color transitions through L*U*V* color space</li>
+<li><strong>RGBW</strong>: RGB channels use L*U*V*, white channel uses linear interpolation  </li>
+<li><strong>RGBWW</strong>: RGB channels use L*U*V*, white channels use linear interpolation</li>
 <li><strong>Color Temperature</strong>: Direct brightness and temperature interpolation</li>
 <li><strong>CW/WW</strong>: Color temperature and brightness interpolation</li>
 </ul>
 <h2 id="why-luv-color-space">Why L<em>U</em>V* Color Space?<a class="headerlink" href="#why-luv-color-space" title="Permanent link">&para;</a></h2>
-<p>Traditional RGB interpolation creates unnatural color transitions that don't match how humans perceive color changes. Our implementation uses <strong>L<em>U</em>V* (L*u*v*)</strong> color space for perceptually uniform transitions.</p>
+<p>Traditional RGB interpolation creates unnatural color transitions that don't match how humans perceive color changes. Our implementation uses <strong>L*U*V* (L*u*v*)</strong> color space for perceptually uniform transitions.</p>
 <h3 id="the-problem-with-rgb-interpolation">The Problem with RGB Interpolation<a class="headerlink" href="#the-problem-with-rgb-interpolation" title="Permanent link">&para;</a></h3>
 <p>When transitioning from red to green in RGB space:
 - <strong>RGB values</strong>: (255, 0, 0) → (0, 255, 0)<br />
 - <strong>Perceived path</strong>: Red → Brown/Yellow → Green
 - <strong>Visual result</strong>: Unnatural, muddy intermediate colors</p>
-<h3 id="the-luv-solution">The L<em>U</em>V* Solution<a class="headerlink" href="#the-luv-solution" title="Permanent link">&para;</a></h3>
-<p>L<em>U</em>V<em> color space is designed for perceptual uniformity:
-- </em><em>L* (Lightness)</em><em>: Matches human brightness perception
-- </em><em>u* and v* (Chromaticity)</em><em>: Uniform color differences
-- </em><em>Interpolation result</em>*: Smooth, natural color transitions</p>
+<h3 id="the-luv-solution">The L*U*V* Solution<a class="headerlink" href="#the-luv-solution" title="Permanent link">&para;</a></h3>
+<p>L*U*V* color space is designed for perceptual uniformity:
+- <strong>L* (Lightness)</strong>: Matches human brightness perception
+- <strong>u* and v* (Chromaticity)</strong>: Uniform color differences
+- <strong>Interpolation result</strong>: Smooth, natural color transitions</p>
 <h2 id="animation-behavior">Animation Behavior<a class="headerlink" href="#animation-behavior" title="Permanent link">&para;</a></h2>
 <h3 id="rgb-color-changes">RGB Color Changes<a class="headerlink" href="#rgb-color-changes" title="Permanent link">&para;</a></h3>
-<p>Color transitions use L<em>U</em>V* interpolation for smooth, natural color paths:</p>
+<p>Color transitions use L*U*V* interpolation for smooth, natural color paths:</p>
 <p><img alt="RGB Fade Animation" src="../img/rgb_fade_animation.png" /></p>
-<p><em>RGB transitions through L</em>U<em>V</em> color space create smooth color paths*</p>
+<p><em>RGB transitions through L*U*V* color space create smooth color paths</em></p>
 <h3 id="white-light-control">White Light Control<a class="headerlink" href="#white-light-control" title="Permanent link">&para;</a></h3>
 <p>Color temperature and white channel changes use direct interpolation:</p>
 <p><img alt="WW/CW Fade Animation" src="../img/ww_cw_fade_animation.png" /></p>
@@ -718,7 +718,7 @@
 <h3 id="mixed-rgbww-fixtures">Mixed RGBWW Fixtures<a class="headerlink" href="#mixed-rgbww-fixtures" title="Permanent link">&para;</a></h3>
 <p>RGB and white channels are handled separately to maintain color accuracy:</p>
 <p><img alt="RGBWW Fade Animation" src="../img/rgbww_fade_animation.png" /></p>
-<p><em>RGBWW fixtures transition RGB through L</em>U<em>V</em> while white channels interpolate directly*</p>
+<p><em>RGBWW fixtures transition RGB through L*U*V* while white channels interpolate directly</em></p>
 
 
 
