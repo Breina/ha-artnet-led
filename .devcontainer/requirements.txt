@@ -1,3 +1,4 @@
 homeassistant
 netifaces
 matplotlib
+pytest-asyncio
