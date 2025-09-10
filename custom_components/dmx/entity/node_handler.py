@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 
 from custom_components.dmx import ArtPollReply, DOMAIN, Node
 from custom_components.dmx.const import CONF_NODE_ENTITIES
+from custom_components.dmx.server import StyleCode
 from custom_components.dmx.entity.node import ArtNetOnlineBinarySensor, ArtNetIndicatorStateSensor, ArtNetBootProcessSensor, ArtNetRDMBinarySensor, ArtNetDHCPBinarySensor, \
     ArtNetFailsafeStateSensor, ArtNetACNPrioritySensor, ArtNetNodeReportSensor, ArtNetPortAddressProgrammingAuthoritySensor, ArtNetPortInputBinarySensor, \
     ArtNetPortUniverseSensor, ArtNetPortOutputBinarySensor, ArtNetPortMergeModeSelect, ArtNetPortSACNBinarySensor, ArtNetPortRDMBinarySensor, ArtNetPortOutputModeSensor
@@ -46,7 +47,7 @@ class DynamicNodeHandler:
         # Create a device for this node
         device_info = DeviceInfo(
             identifiers={(DOMAIN, f"artnet_node_{unique_id}")},
-            name=artpoll_reply.long_name,
+            name=artpoll_reply.short_name,
             manufacturer=f"ESTA ID: {artpoll_reply.esta:04x}" if artpoll_reply.esta else "Unknown",
             model=artpoll_reply.long_name,
             sw_version=f"{artpoll_reply.firmware_version}",
@@ -81,7 +82,6 @@ class DynamicNodeHandler:
                 entities.append(ArtNetPortOutputModeSensor(artpoll_reply, device_info, i))
 
         if entities:
-            log.info(f"Adding {len(entities)} entities for node {artpoll_reply.short_name}")
             await self._add_entities(entities)
         else:
             log.warning(f"No entities created for node {artpoll_reply.short_name}")
@@ -97,25 +97,26 @@ class DynamicNodeHandler:
 
         if CONF_NODE_ENTITIES in self.hass.data[DOMAIN][self.entry.entry_id]:
             entities = self.hass.data[DOMAIN][self.entry.entry_id][CONF_NODE_ENTITIES]
-
-            mac_string = ":".join(f"{b:02x}" for b in artpoll_reply.mac_address)
+            
+            entities_updated = 0
             for entity in entities:
                 if not hasattr(entity, "hass") or entity.hass is None:
                     log.debug(f"Skipping entity {getattr(entity, 'unique_id', 'unknown')} - not yet initialized")
                     continue
 
-                if (hasattr(entity, "_mac_address") and
-                        entity._mac_address == mac_string and
-                        hasattr(entity, "art_poll_reply") and
-                        entity.art_poll_reply.bind_index == artpoll_reply.bind_index):
-
-                    entity.art_poll_reply = artpoll_reply
-
-                    if hasattr(entity, "async_schedule_update_ha_state"):
-                        try:
-                            entity.async_schedule_update_ha_state()
-                        except Exception as e:
-                            log.warning(f"Failed to schedule update for entity {entity.unique_id}: {e}")
+                # Use the new unified update method - entity handles validation and value extraction
+                if hasattr(entity, "safe_update_from_artpoll_reply"):
+                    update_successful = await entity.update_from_artpoll_reply(artpoll_reply)
+                    
+                    if update_successful:
+                        entities_updated += 1
+                        if hasattr(entity, "async_schedule_update_ha_state"):
+                            try:
+                                entity.async_schedule_update_ha_state()
+                            except Exception as e:
+                                log.warning(f"Failed to schedule update for entity {entity.unique_id}: {e}")
+                else:
+                    log.debug(f"Skipping entity {getattr(entity, 'unique_id', 'unknown')} - no update method available")
 
         log.debug(f"Updated ArtNet node: {artpoll_reply.long_name}")
 
@@ -139,7 +140,7 @@ class DynamicNodeHandler:
                         entity.art_poll_reply.bind_index == node.bind_index:
 
                     if isinstance(entity, ArtNetOnlineBinarySensor):
-                        entity.connected = False
+                        entity.set_offline()
 
                         if not self.hass:
                             log.debug(f"Not updating {self.controller} because it hasn't been added to hass yet.")
@@ -174,7 +175,7 @@ class DynamicNodeHandler:
                     entity.art_poll_reply.bind_index == artpoll_reply.bind_index):
 
                 if isinstance(entity, ArtNetOnlineBinarySensor):
-                    entity.connected = True
+                    await entity.update_from_artpoll_reply(artpoll_reply)
 
                     if not hasattr(entity, "hass") or entity.hass is None:
                         log.debug(f"Skipping entity {getattr(entity, 'unique_id', 'unknown')} - not yet initialized")
