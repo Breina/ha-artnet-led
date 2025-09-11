@@ -5,6 +5,7 @@ https://github.com/OpenLightingProject/open-fixture-library/blob/master/docs/fix
 Most arguments, instance attributes and class names are directly mapped to
 values of the fixture format. Therefore, we will excuse the python linter.
 """
+
 # pylint: disable=too-few-public-methods
 
 
@@ -48,9 +49,12 @@ class Color(WheelSlot):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, name: str | None = None,
-                 colors: list[str] | None = None,
-                 color_temperature: entity.ColorTemperature | None = None):
+    def __init__(
+        self,
+        name: str | None = None,
+        colors: list[str] | None = None,
+        color_temperature: entity.ColorTemperature | None = None,
+    ):
         super().__init__()
         assert not colors or len(colors) >= 1
         self.name = name
@@ -158,8 +162,8 @@ class Wheel:
     """
     The Wheel model class, containing all of its wheel slots.
     """
-    def __init__(self, name: str, slots: list[WheelSlot],
-                 direction: str | None = None):
+
+    def __init__(self, name: str, slots: list[WheelSlot], direction: str | None = None):
         assert len(slots) >= 2
 
         self.name = name

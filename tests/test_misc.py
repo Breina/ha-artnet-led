@@ -16,10 +16,10 @@ class TestSelectEntity(unittest.TestCase):
 
     def setUp(self):
         self.hass = MockHomeAssistant()
-        self.write_ha_state_patcher = patch('homeassistant.helpers.entity.Entity.async_write_ha_state')
+        self.write_ha_state_patcher = patch("homeassistant.helpers.entity.Entity.async_write_ha_state")
         self.mock_write_ha_state = self.write_ha_state_patcher.start()
 
-        self.schedule_update_patcher = patch('homeassistant.helpers.entity.Entity.async_schedule_update_ha_state')
+        self.schedule_update_patcher = patch("homeassistant.helpers.entity.Entity.async_schedule_update_ha_state")
         self.mock_schedule_update = self.schedule_update_patcher.start()
 
         self.universe = MockDmxUniverse()
@@ -29,10 +29,10 @@ class TestSelectEntity(unittest.TestCase):
         self.schedule_update_patcher.stop()
 
     def test_uv(self):
-        fixture_path = Path(__file__).parent / 'fixtures' / 'par-uv.json'
+        fixture_path = Path(__file__).parent / "fixtures" / "par-uv.json"
         fixture = parser.parse(str(fixture_path))
-        channels = fixture.select_mode('A')
-        delegator.create_entities('PAR UV', 1, channels, None, self.universe)
+        channels = fixture.select_mode("A")
+        delegator.create_entities("PAR UV", 1, channels, None, self.universe)
 
 
 if __name__ == "__main__":

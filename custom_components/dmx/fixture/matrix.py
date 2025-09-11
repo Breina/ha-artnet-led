@@ -55,6 +55,7 @@ class PixelGroup:
     Pixels can also be grouped if a fixture allows control in different fine
     grades, like fourths or halves of a light bar.
     """
+
     name: str
     pixels: list[Pixel]
 
@@ -113,9 +114,7 @@ class Matrix:
         :return: The newly created pixel group.
         """
         if ref == "all":
-            group = PixelGroup(name, [pixel for pixel in flatten(self.pixels)
-                                      if pixel
-                                      ])
+            group = PixelGroup(name, [pixel for pixel in flatten(self.pixels) if pixel])
             self.pixel_groups[name] = group
             return group
 
@@ -125,13 +124,10 @@ class Matrix:
             z_slice = self.__map_to_slice(ref, "z")
             patterns = ref.get("name", [])
 
-            flat_pixels = flatten(
-                [[row[x_slice] for row in zy_plane[y_slice]] for zy_plane in
-                 self.pixels[z_slice]])
+            flat_pixels = flatten([[row[x_slice] for row in zy_plane[y_slice]] for zy_plane in self.pixels[z_slice]])
 
             flat_pixels = [
-                pixel for pixel in flat_pixels
-                if pixel and all(pixel.match(pattern) for pattern in patterns)
+                pixel for pixel in flat_pixels if pixel and all(pixel.match(pattern) for pattern in patterns)
             ]
 
             group = PixelGroup(name, flat_pixels)
@@ -139,8 +135,7 @@ class Matrix:
             return group
 
         if isinstance(ref, list):
-            group = PixelGroup(name, list(
-                map(lambda pixel_name: self[pixel_name], ref)))
+            group = PixelGroup(name, list(map(lambda pixel_name: self[pixel_name], ref)))
             self.pixel_groups[name] = group
             return group
 
@@ -171,14 +166,13 @@ class Matrix:
                 start = exact - 1
                 stop = exact
             elif "n" in constraint:
-                step = int(constraint[:constraint.index("n")])
+                step = int(constraint[: constraint.index("n")])
                 if "+" in constraint:
-                    start = int(constraint[constraint.index("+") + 1:]) - 1
+                    start = int(constraint[constraint.index("+") + 1 :]) - 1
                 else:
                     start = step - 1
             else:
-                raise FixtureConfigurationError(
-                    f"Wtf is this kind of pixel group: {constraint}")
+                raise FixtureConfigurationError(f"Wtf is this kind of pixel group: {constraint}")
 
         return slice(start, stop, step)
 
@@ -195,9 +189,14 @@ def matrix_from_pixel_count(x_size: int, y_size: int, z_size: int) -> Matrix:
     :return: The newly created matrix
     """
     return Matrix(
-        [[[Pixel(x, y, z, str((x + 1) + y * x_size + z * (x_size + y_size)))
-           for x in range(x_size)] for y in range(y_size)] for z in
-         range(z_size)])
+        [
+            [
+                [Pixel(x, y, z, str((x + 1) + y * x_size + z * (x_size + y_size))) for x in range(x_size)]
+                for y in range(y_size)
+            ]
+            for z in range(z_size)
+        ]
+    )
 
 
 def matrix_from_pixel_names(pixels: list[list[list[str | None]]]) -> Matrix:
@@ -213,7 +212,6 @@ def matrix_from_pixel_names(pixels: list[list[list[str | None]]]) -> Matrix:
     for z in range(z_size):
         for y in range(y_size):
             for x in range(x_size):
-                pixels[z][y][x] = Pixel(x, y, z, pixels[z][y][x]) if \
-                    pixels[z][y][x] else None
+                pixels[z][y][x] = Pixel(x, y, z, pixels[z][y][x]) if pixels[z][y][x] else None
 
     return Matrix(pixels)

@@ -19,13 +19,13 @@ class TestColorTemperatureFader(unittest.TestCase):
 
     def setUp(self):
         self.hass = MockHomeAssistant()
-        self.write_ha_state_patcher = patch('homeassistant.helpers.entity.Entity.async_write_ha_state')
+        self.write_ha_state_patcher = patch("homeassistant.helpers.entity.Entity.async_write_ha_state")
         self.mock_write_ha_state = self.write_ha_state_patcher.start()
 
-        self.schedule_update_patcher = patch('homeassistant.helpers.entity.Entity.async_schedule_update_ha_state')
+        self.schedule_update_patcher = patch("homeassistant.helpers.entity.Entity.async_schedule_update_ha_state")
         self.mock_schedule_update = self.schedule_update_patcher.start()
 
-        fixture_path = Path(__file__).parent / 'fixtures' / 'desk-channel-inverted.json'
+        fixture_path = Path(__file__).parent / "fixtures" / "desk-channel-inverted.json"
         self.fixture = parser.parse(str(fixture_path))
         self.universe = MockDmxUniverse()
 
@@ -34,11 +34,11 @@ class TestColorTemperatureFader(unittest.TestCase):
         self.schedule_update_patcher.stop()
 
     def test_8bit_number_updates(self):
-        channels = self.fixture.select_mode('8bit')
-        entities = delegator.create_entities('Desk channel', 1, channels, None, self.universe)
+        channels = self.fixture.select_mode("8bit")
+        entities = delegator.create_entities("Desk channel", 1, channels, None, self.universe)
 
-        dimmer: DmxNumberEntity = get_entity_by_name(entities, 'Desk channel Intensity')
-        light: DmxLightEntity = get_entity_by_name(entities, 'Desk channel Light')
+        dimmer: DmxNumberEntity = get_entity_by_name(entities, "Desk channel Intensity")
+        light: DmxLightEntity = get_entity_by_name(entities, "Desk channel Light")
 
         asyncio.run(dimmer.async_set_native_value(0))
         assert_dmx_range(self.universe, 1, [255])
@@ -57,11 +57,11 @@ class TestColorTemperatureFader(unittest.TestCase):
         self.assertEqual(255, light.brightness)
 
     def test_8bit_light_updates(self):
-        channels = self.fixture.select_mode('8bit')
-        entities = delegator.create_entities('Desk channel', 1, channels, None, self.universe)
+        channels = self.fixture.select_mode("8bit")
+        entities = delegator.create_entities("Desk channel", 1, channels, None, self.universe)
 
-        dimmer: DmxNumberEntity = get_entity_by_name(entities, 'Desk channel Intensity')
-        light: DmxLightEntity = get_entity_by_name(entities, 'Desk channel Light')
+        dimmer: DmxNumberEntity = get_entity_by_name(entities, "Desk channel Intensity")
+        light: DmxLightEntity = get_entity_by_name(entities, "Desk channel Light")
 
         asyncio.run(light.async_turn_on(brightness=0))
         assert_dmx_range(self.universe, 1, [255])

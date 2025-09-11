@@ -15,17 +15,18 @@ log = logging.getLogger(__name__)
 
 
 class DmxSelectEntity(SelectEntity):
-    def __init__(self,
-                 fixture_name: str,
-                 channel_name: str,
-                 entity_id_prefix: str,
-                 channel: Channel,
-                 capability_entities: dict[str, DmxNumberEntity],
-                 universe: DmxUniverse,
-                 dmx_index: int,
-                 device: DeviceInfo,
-                 fixture_fingerprint: str
-                 ) -> None:
+    def __init__(
+        self,
+        fixture_name: str,
+        channel_name: str,
+        entity_id_prefix: str,
+        channel: Channel,
+        capability_entities: dict[str, DmxNumberEntity],
+        universe: DmxUniverse,
+        dmx_index: int,
+        device: DeviceInfo,
+        fixture_fingerprint: str,
+    ) -> None:
         super().__init__()
 
         self._attr_name = f"{fixture_name} {channel_name}"
@@ -96,14 +97,9 @@ class DmxSelectEntity(SelectEntity):
             log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
 
     def update_option_to_dmx_value(self, value):
-        capability = [
-            capability for capability in self.capability_types.values()
-            if capability.is_applicable(value)
-        ]
+        capability = [capability for capability in self.capability_types.values() if capability.is_applicable(value)]
         if not any(capability):
-            raise FixtureConfigurationError(
-                f"Fixture {self._attr_name} received an invalid DMX value: "
-                f"{value}")
+            raise FixtureConfigurationError(f"Fixture {self._attr_name} received an invalid DMX value: " f"{value}")
 
         # Only update the option, don't handle availability here
         self._update_current_option_sync(str(capability[0]))

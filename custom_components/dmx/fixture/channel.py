@@ -5,8 +5,7 @@ One Channel maps to one DMX value.
 import math
 from dataclasses import dataclass
 
-from custom_components.dmx.fixture.capability import Capability, \
-    DmxValueResolution
+from custom_components.dmx.fixture.capability import Capability, DmxValueResolution
 
 Capabilities = Capability | list[Capability]
 
@@ -19,7 +18,7 @@ def percent_to_byte(default_value: str | int):
     :return: The converted byte.
     """
     if isinstance(default_value, str):
-        assert default_value[-1] == '%'
+        assert default_value[-1] == "%"
         return int(2.55 * int(default_value[:-1]))
     return default_value
 
@@ -30,13 +29,15 @@ class Channel:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, name: str,
-                 fine_channel_aliases: [str],
-                 dmx_value_resolution: DmxValueResolution,
-                 default_value: int | str | None = None,
-                 highlight_value: int | str | None = None,
-                 constant: bool = False
-                 ):
+    def __init__(
+        self,
+        name: str,
+        fine_channel_aliases: [str],
+        dmx_value_resolution: DmxValueResolution,
+        default_value: int | str | None = None,
+        highlight_value: int | str | None = None,
+        constant: bool = False,
+    ):
         self.name = name
         self.matrix_key = None  # Used to identify channels part of a templated matrix
 
@@ -99,6 +100,7 @@ class SwitchingChannel:
     """
     A switching channel, which can forward itself to multiple other channels.
     """
+
     name: str
     controlled_channels: dict[str, ChannelOffset]
 

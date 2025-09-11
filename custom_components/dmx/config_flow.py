@@ -1,4 +1,5 @@
 """Config flow to configure DMX."""
+
 from homeassistant import config_entries
 
 from .const import DOMAIN
@@ -6,6 +7,7 @@ from .const import DOMAIN
 
 class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle an Artnet config flow."""
+
     VERSION = 1
 
     def __init__(self):
@@ -16,7 +18,9 @@ class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         pass
 
     async def async_step_user(self, user_input=None):
-        return self.async_abort(reason="I acknowledge that it's fun to click buttons, but alas, this integration is configured through `configuration.yaml`. Here's how: https://breina.github.io/ha-artnet-led/config/")
+        return self.async_abort(
+            reason="I acknowledge that it's fun to click buttons, but alas, this integration is configured through `configuration.yaml`. Here's how: https://breina.github.io/ha-artnet-led/config/"
+        )
 
     async def async_step_import(self, user_input=None):
         """Handle configuration by YAML file."""
@@ -29,6 +33,7 @@ class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             if entry.unique_id == DOMAIN:
                 # Preserve existing fingerprints when updating config from YAML
                 from custom_components.dmx.util.entity_cleanup import CONF_FINGERPRINTS
+
                 existing_data = entry.data.copy() if entry.data else {}
                 fingerprints = existing_data.get(CONF_FINGERPRINTS, {})
 

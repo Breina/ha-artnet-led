@@ -11,7 +11,13 @@ from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import DeviceInfo
 
 from custom_components.dmx import ArtPollReply
-from custom_components.dmx.server import StyleCode, IndicatorState, BootProcess, FailsafeState, PortAddressProgrammingAuthority
+from custom_components.dmx.server import (
+    StyleCode,
+    IndicatorState,
+    BootProcess,
+    FailsafeState,
+    PortAddressProgrammingAuthority,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,11 +32,11 @@ class ArtNetEntity:
     """Representation of an ArtNet entity."""
 
     def __init__(
-            self,
-            art_poll_reply: ArtPollReply,
-            name: str,
-            entity_id_suffix: str,
-            device_info: DeviceInfo,
+        self,
+        art_poll_reply: ArtPollReply,
+        name: str,
+        entity_id_suffix: str,
+        device_info: DeviceInfo,
     ):
         """Initialize the entity."""
         super().__init__()
@@ -74,14 +80,13 @@ class ArtNetEntity:
             # Let the entity handle its own value extraction
             self._update_from_artpoll_reply(new_artpoll_reply)
             return True
-    
+
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """
         Entity-specific method to extract and update values from ArtPollReply.
         Must be implemented by each entity type.
         """
         raise NotImplementedError("Entities must implement _update_from_artpoll_reply")
-
 
 
 class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
@@ -95,8 +100,10 @@ class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
         self._short_name = art_poll_reply.short_name
         self._long_name = art_poll_reply.long_name
         self._style_name = next((s.value[1] for s in StyleCode if s.value[0] == art_poll_reply.style), "Unknown")
-        
-        super().__init__(art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Online", "online", device_info)
+
+        super().__init__(
+            art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Online", "online", device_info
+        )
         self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
@@ -106,7 +113,7 @@ class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
         self._short_name = artpoll_reply.short_name
         self._long_name = artpoll_reply.long_name
         self._style_name = next((s.value[1] for s in StyleCode if s.value[0] == artpoll_reply.style), "Unknown")
-    
+
     def set_offline(self) -> None:
         """Mark this entity as offline."""
         self._connected = False
@@ -139,7 +146,12 @@ class ArtNetIndicatorStateSensor(ArtNetEntity, SensorEntity):
         """Initialize the sensor."""
         self._indicator_state_name = art_poll_reply.indicator_state.name
 
-        super().__init__(art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Indicator", "indicator", device_info)
+        super().__init__(
+            art_poll_reply,
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Indicator",
+            "indicator",
+            device_info,
+        )
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_icon = "mdi:lightbulb"
         self._attr_options = [member.name for member in IndicatorState]
@@ -166,7 +178,12 @@ class ArtNetBootProcessSensor(ArtNetEntity, SensorEntity):
         """Initialize the sensor."""
         self._boot_process_name = art_poll_reply.boot_process.name
 
-        super().__init__(art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Boot Process", "boot_process", device_info)
+        super().__init__(
+            art_poll_reply,
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Boot Process",
+            "boot_process",
+            device_info,
+        )
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = [member.name for member in BootProcess]
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -193,7 +210,12 @@ class ArtNetRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
         self._supports_rdm = art_poll_reply.supports_rdm
         self._supports_rdm_through_artnet = art_poll_reply.supports_rdm_through_artnet
 
-        super().__init__(art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} RDM Support", "rdm_support", device_info)
+        super().__init__(
+            art_poll_reply,
+            f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} RDM Support",
+            "rdm_support",
+            device_info,
+        )
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
@@ -226,7 +248,9 @@ class ArtNetDHCPBinarySensor(ArtNetEntity, BinarySensorEntity):
         self._dhcp_configured = art_poll_reply.dhcp_configured
         self._dhcp_capable = art_poll_reply.dhcp_capable
 
-        super().__init__(art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} DHCP", "dhcp", device_info)
+        super().__init__(
+            art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} DHCP", "dhcp", device_info
+        )
         self._attr_icon = "mdi:network"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
@@ -283,7 +307,7 @@ class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} Input Active",
             f"port_{port_index}_input_active",
-            device_info
+            device_info,
         )
         self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
         self._attr_icon = "mdi:arrow-down-bold"
@@ -369,7 +393,7 @@ class ArtNetPortOutputBinarySensor(ArtNetEntity, BinarySensorEntity):
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} Output Active",
             f"port_{port_index}_output_active",
-            device_info
+            device_info,
         )
         self._attr_icon = "mdi:arrow-up-bold"
         self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
@@ -445,7 +469,7 @@ class ArtNetPortMergeModeSelect(ArtNetEntity, BinarySensorEntity):
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} Merge Mode",
             f"port_{port_index}_merge_mode",
-            device_info
+            device_info,
         )
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -470,9 +494,7 @@ class ArtNetPortMergeModeSelect(ArtNetEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         """Return merge mode as extra state attributes."""
-        return {
-            "Merge mode": self._merge_mode
-        }
+        return {"Merge mode": self._merge_mode}
 
     @property
     def available(self) -> bool:
@@ -503,7 +525,7 @@ class ArtNetPortSACNBinarySensor(ArtNetEntity, BinarySensorEntity):
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} sACN Mode",
             f"port_{port_index}_sacn_mode",
-            device_info
+            device_info,
         )
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -539,7 +561,7 @@ class ArtNetPortRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
     def __init__(self, art_poll_reply, device_info: DeviceInfo, port_index):
         """Initialize the binary sensor."""
         self.port_index = port_index
-        
+
         # Extract and store the RDM status and availability at creation time
         if port_index < len(art_poll_reply.ports):
             port = art_poll_reply.ports[port_index]
@@ -548,12 +570,12 @@ class ArtNetPortRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
         else:
             self._rdm_enabled = False
             self._is_available = False
-            
+
         super().__init__(
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} RDM",
             f"port_{port_index}_rdm",
-            device_info
+            device_info,
         )
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -589,7 +611,7 @@ class ArtNetPortOutputModeSensor(ArtNetEntity, SensorEntity):
     def __init__(self, art_poll_reply, device_info: DeviceInfo, port_index):
         """Initialize the sensor."""
         self.port_index = port_index
-        
+
         # Extract and store the output mode and availability at creation time
         if port_index < len(art_poll_reply.ports):
             port = art_poll_reply.ports[port_index]
@@ -598,12 +620,12 @@ class ArtNetPortOutputModeSensor(ArtNetEntity, SensorEntity):
         else:
             self._output_mode = "Non-continuous"
             self._is_available = False
-            
+
         super().__init__(
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} Output Mode",
             f"port_{port_index}_output_mode",
-            device_info
+            device_info,
         )
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = ["Continuous", "Non-continuous"]
@@ -652,7 +674,7 @@ class ArtNetPortUniverseSensor(ArtNetEntity, SensorEntity):
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port {port_index + 1} {direction} Universe",
             f"port_{port_index}_{direction.lower()}_universe",
-            device_info
+            device_info,
         )
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
@@ -661,10 +683,10 @@ class ArtNetPortUniverseSensor(ArtNetEntity, SensorEntity):
             port = artpoll_reply.ports[self.port_index]
             universe = port.sw_in if self.is_input else port.sw_out
             new_universe_value = f"{artpoll_reply.net_switch}/{artpoll_reply.sub_switch}/{universe}"
-            
+
             if self._universe_value != new_universe_value:
                 _LOGGER.info(f"Universe updated for {self.unique_id}: {self._universe_value} -> {new_universe_value}")
-            
+
             self._universe_value = new_universe_value
             self._is_available = port.input if self.is_input else port.output
         else:
@@ -696,7 +718,7 @@ class ArtNetFailsafeStateSensor(ArtNetEntity, SensorEntity):
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Failsafe State",
             "failsafe_state",
-            device_info
+            device_info,
         )
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = [member.name for member in FailsafeState]
@@ -727,7 +749,7 @@ class ArtNetACNPrioritySensor(ArtNetEntity, SensorEntity):
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} ACN Priority",
             "acn_priority",
-            device_info
+            device_info,
         )
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
@@ -756,7 +778,7 @@ class ArtNetNodeReportSensor(ArtNetEntity, SensorEntity):
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Node Report",
             "node_report",
-            device_info
+            device_info,
         )
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
@@ -785,7 +807,7 @@ class ArtNetPortAddressProgrammingAuthoritySensor(ArtNetEntity, SensorEntity):
             art_poll_reply,
             f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Port Programming Authority",
             "port_programming_authority",
-            device_info
+            device_info,
         )
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = [member.name for member in PortAddressProgrammingAuthority]

@@ -12,9 +12,24 @@ from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 from custom_components.dmx import ArtPollReply, DOMAIN, Node
 from custom_components.dmx.const import CONF_NODE_ENTITIES
 from custom_components.dmx.server import StyleCode
-from custom_components.dmx.entity.node import ArtNetOnlineBinarySensor, ArtNetIndicatorStateSensor, ArtNetBootProcessSensor, ArtNetRDMBinarySensor, ArtNetDHCPBinarySensor, \
-    ArtNetFailsafeStateSensor, ArtNetACNPrioritySensor, ArtNetNodeReportSensor, ArtNetPortAddressProgrammingAuthoritySensor, ArtNetPortInputBinarySensor, \
-    ArtNetPortUniverseSensor, ArtNetPortOutputBinarySensor, ArtNetPortMergeModeSelect, ArtNetPortSACNBinarySensor, ArtNetPortRDMBinarySensor, ArtNetPortOutputModeSensor
+from custom_components.dmx.entity.node import (
+    ArtNetOnlineBinarySensor,
+    ArtNetIndicatorStateSensor,
+    ArtNetBootProcessSensor,
+    ArtNetRDMBinarySensor,
+    ArtNetDHCPBinarySensor,
+    ArtNetFailsafeStateSensor,
+    ArtNetACNPrioritySensor,
+    ArtNetNodeReportSensor,
+    ArtNetPortAddressProgrammingAuthoritySensor,
+    ArtNetPortInputBinarySensor,
+    ArtNetPortUniverseSensor,
+    ArtNetPortOutputBinarySensor,
+    ArtNetPortMergeModeSelect,
+    ArtNetPortSACNBinarySensor,
+    ArtNetPortRDMBinarySensor,
+    ArtNetPortOutputModeSensor,
+)
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +70,7 @@ class DynamicNodeHandler:
         )
 
         if artpoll_reply.supports_web_browser_configuration:
-            device_info['configuration_url'] = f"http://{'.'.join(map(str, artpoll_reply.source_ip))}/"
+            device_info["configuration_url"] = f"http://{'.'.join(map(str, artpoll_reply.source_ip))}/"
 
         entities = []
 
@@ -97,7 +112,7 @@ class DynamicNodeHandler:
 
         if CONF_NODE_ENTITIES in self.hass.data[DOMAIN][self.entry.entry_id]:
             entities = self.hass.data[DOMAIN][self.entry.entry_id][CONF_NODE_ENTITIES]
-            
+
             entities_updated = 0
             for entity in entities:
                 if not hasattr(entity, "hass") or entity.hass is None:
@@ -107,7 +122,7 @@ class DynamicNodeHandler:
                 # Use the new unified update method - entity handles validation and value extraction
                 if hasattr(entity, "safe_update_from_artpoll_reply"):
                     update_successful = await entity.update_from_artpoll_reply(artpoll_reply)
-                    
+
                     if update_successful:
                         entities_updated += 1
                         if hasattr(entity, "async_schedule_update_ha_state"):
@@ -135,9 +150,12 @@ class DynamicNodeHandler:
             mac_string = ":".join(f"{b:02x}" for b in node.mac_address)
             for entity in entities:
                 # Check if this entity belongs to the node being updated
-                if hasattr(entity, "_mac_address") and entity._mac_address == mac_string and \
-                        hasattr(entity, "art_poll_reply") and \
-                        entity.art_poll_reply.bind_index == node.bind_index:
+                if (
+                    hasattr(entity, "_mac_address")
+                    and entity._mac_address == mac_string
+                    and hasattr(entity, "art_poll_reply")
+                    and entity.art_poll_reply.bind_index == node.bind_index
+                ):
 
                     if isinstance(entity, ArtNetOnlineBinarySensor):
                         entity.set_offline()
@@ -150,7 +168,9 @@ class DynamicNodeHandler:
                         continue
 
                     if hasattr(entity, "registry_entry") and entity.registry_entry:
-                        entity_reg.async_update_entity(entity.registry_entry, disabled_by=RegistryEntryDisabler.INTEGRATION)
+                        entity_reg.async_update_entity(
+                            entity.registry_entry, disabled_by=RegistryEntryDisabler.INTEGRATION
+                        )
 
     async def reenable_node(self, artpoll_reply: ArtPollReply) -> None:
         # Check if we have any runtime entities to re-enable
@@ -170,9 +190,12 @@ class DynamicNodeHandler:
         # Find entities belonging to this node and update them
         for entity in entities:
             # Check if this entity belongs to the node being updated
-            if (hasattr(entity, "_mac_address") and entity._mac_address == mac_string and
-                    hasattr(entity, "art_poll_reply") and 
-                    entity.art_poll_reply.bind_index == artpoll_reply.bind_index):
+            if (
+                hasattr(entity, "_mac_address")
+                and entity._mac_address == mac_string
+                and hasattr(entity, "art_poll_reply")
+                and entity.art_poll_reply.bind_index == artpoll_reply.bind_index
+            ):
 
                 if isinstance(entity, ArtNetOnlineBinarySensor):
                     await entity.update_from_artpoll_reply(artpoll_reply)
@@ -203,7 +226,7 @@ class DynamicNodeHandler:
             log.warning("Platforms not ready yet, waiting 1 second...")
             await asyncio.sleep(1)
             platforms = list(async_get_platforms(self.hass, DOMAIN))
-        
+
         for platform in platforms:
             platform_entities = [e for e in entities if e.platform_type == platform.domain]
             if platform_entities:

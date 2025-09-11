@@ -14,17 +14,18 @@ from tests.dmx_test_framework import MockDmxUniverse, get_entity_by_name, MockHo
 device_info_mock = MagicMock()
 homeassistant.helpers.device_registry.DeviceInfo = device_info_mock
 
+
 class TestRgbwFixture(unittest.TestCase):
 
     def setUp(self):
         self.hass = MockHomeAssistant()
-        self.write_ha_state_patcher = patch('homeassistant.helpers.entity.Entity.async_write_ha_state')
+        self.write_ha_state_patcher = patch("homeassistant.helpers.entity.Entity.async_write_ha_state")
         self.mock_write_ha_state = self.write_ha_state_patcher.start()
 
-        self.schedule_update_patcher = patch('homeassistant.helpers.entity.Entity.async_schedule_update_ha_state')
+        self.schedule_update_patcher = patch("homeassistant.helpers.entity.Entity.async_schedule_update_ha_state")
         self.mock_schedule_update = self.schedule_update_patcher.start()
 
-        fixture_path = Path(__file__).parent / 'fixtures' / 'rgbw-fader.json'
+        fixture_path = Path(__file__).parent / "fixtures" / "rgbw-fader.json"
         self.fixture = parser.parse(str(fixture_path))
         self.universe = MockDmxUniverse()
 
@@ -33,14 +34,14 @@ class TestRgbwFixture(unittest.TestCase):
         self.schedule_update_patcher.stop()
 
     def test_8bit_rgbw_number_updates(self):
-        channels = self.fixture.select_mode('8bit')
-        entities = delegator.create_entities('RGBW fader', 1, channels, None, self.universe)
+        channels = self.fixture.select_mode("8bit")
+        entities = delegator.create_entities("RGBW fader", 1, channels, None, self.universe)
 
-        red: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Red')
-        green: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Green')
-        blue: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Blue')
-        white: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'RGBW fader Light')
+        red: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Red")
+        green: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Green")
+        blue: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Blue")
+        white: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader White")
+        light: DmxLightEntity = get_entity_by_name(entities, "RGBW fader Light")
 
         # Test pure red
         asyncio.run(red.async_set_native_value(100))
@@ -77,14 +78,14 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(127, light.brightness)
 
     def test_8bit_rgbw_light_updates(self):
-        channels = self.fixture.select_mode('8bit')
-        entities = delegator.create_entities('RGBW fader', 2, channels, None, self.universe)
+        channels = self.fixture.select_mode("8bit")
+        entities = delegator.create_entities("RGBW fader", 2, channels, None, self.universe)
 
-        red: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Red')
-        green: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Green')
-        blue: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Blue')
-        white: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'RGBW fader Light')
+        red: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Red")
+        green: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Green")
+        blue: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Blue")
+        white: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader White")
+        light: DmxLightEntity = get_entity_by_name(entities, "RGBW fader Light")
 
         asyncio.run(light.async_turn_on(rgbw_color=(255, 128, 64, 0)))
         assert_dmx_range(self.universe, 2, [255, 128, 64, 0])
@@ -108,14 +109,14 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(0, white.native_value)
 
     def test_16bit_rgbw_number_updates(self):
-        channels = self.fixture.select_mode('16bit')
-        entities = delegator.create_entities('RGBW fader', 3, channels, None, self.universe)
+        channels = self.fixture.select_mode("16bit")
+        entities = delegator.create_entities("RGBW fader", 3, channels, None, self.universe)
 
-        red: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Red')
-        green: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Green')
-        blue: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Blue')
-        white: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'RGBW fader Light')
+        red: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Red")
+        green: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Green")
+        blue: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Blue")
+        white: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader White")
+        light: DmxLightEntity = get_entity_by_name(entities, "RGBW fader Light")
 
         asyncio.run(red.async_set_native_value(100))
         asyncio.run(green.async_set_native_value(0))
@@ -141,14 +142,14 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(127, light.brightness)
 
     def test_16bit_rgbw_light_updates(self):
-        channels = self.fixture.select_mode('16bit')
-        entities = delegator.create_entities('RGBW fader', 4, channels, None, self.universe)
+        channels = self.fixture.select_mode("16bit")
+        entities = delegator.create_entities("RGBW fader", 4, channels, None, self.universe)
 
-        red: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Red')
-        green: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Green')
-        blue: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Blue')
-        white: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'RGBW fader Light')
+        red: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Red")
+        green: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Green")
+        blue: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Blue")
+        white: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader White")
+        light: DmxLightEntity = get_entity_by_name(entities, "RGBW fader Light")
 
         # Test setting pure red
         asyncio.run(light.async_turn_on(rgbw_color=(255, 0, 0, 0)))
@@ -167,14 +168,14 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(0, white.native_value)
 
     def test_turn_on_restore_last_value(self):
-        channels = self.fixture.select_mode('8bit')
-        entities = delegator.create_entities('RGBW fader', 1, channels, None, self.universe)
+        channels = self.fixture.select_mode("8bit")
+        entities = delegator.create_entities("RGBW fader", 1, channels, None, self.universe)
 
-        red: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Red')
-        green: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Green')
-        blue: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Blue')
-        white: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'RGBW fader Light')
+        red: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Red")
+        green: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Green")
+        blue: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Blue")
+        white: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader White")
+        light: DmxLightEntity = get_entity_by_name(entities, "RGBW fader Light")
 
         asyncio.run(red.async_set_native_value(75))
         asyncio.run(green.async_set_native_value(50))
@@ -211,14 +212,14 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertAlmostEqual(10.0, white.native_value, 0)
 
     def test_rgbw_color_effects(self):
-        channels = self.fixture.select_mode('8bit')
-        entities = delegator.create_entities('RGBW fader', 5, channels, None, self.universe)
+        channels = self.fixture.select_mode("8bit")
+        entities = delegator.create_entities("RGBW fader", 5, channels, None, self.universe)
 
-        red: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Red')
-        green: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Green')
-        blue: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader Blue')
-        white: DmxNumberEntity = get_entity_by_name(entities, 'RGBW fader White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'RGBW fader Light')
+        red: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Red")
+        green: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Green")
+        blue: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader Blue")
+        white: DmxNumberEntity = get_entity_by_name(entities, "RGBW fader White")
+        light: DmxLightEntity = get_entity_by_name(entities, "RGBW fader Light")
 
         colors_to_test = [
             (255, 0, 0),

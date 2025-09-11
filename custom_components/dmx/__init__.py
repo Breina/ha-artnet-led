@@ -1,4 +1,5 @@
 """ARTNET LED"""
+
 import json
 import logging
 import os
@@ -73,12 +74,12 @@ CONF_SCENE_ENTITY_ID = "scene_entity_id"
 CONF_SHOWS = "shows"
 CONF_OEM = "oem"
 CONF_TEXT = "text"
-CONF_START_ADDRESS = 'start_address'
-CONF_FIXTURE = 'fixture'
-CONF_FIXTURES = 'fixtures'
-CONF_FOLDER = 'folder'
-CONF_FOLDER_DEFAULT = 'fixtures'
-CONF_ENTITY_ID_PREFIX = 'entity_id_prefix'
+CONF_START_ADDRESS = "start_address"
+CONF_FIXTURE = "fixture"
+CONF_FIXTURES = "fixtures"
+CONF_FOLDER = "folder"
+CONF_FOLDER_DEFAULT = "fixtures"
+CONF_ENTITY_ID_PREFIX = "entity_id_prefix"
 
 PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT, Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR]
 
@@ -93,12 +94,16 @@ class UnknownFixtureError(IntegrationError):
 
     def __str__(self) -> str:
         if not self._discovered_fixtures:
-            return "Didn't discover any fixtures. Put them in the fixtures folder as defined by " \
-                   "config `dmx.fixtures.folder`"
+            return (
+                "Didn't discover any fixtures. Put them in the fixtures folder as defined by "
+                "config `dmx.fixtures.folder`"
+            )
         else:
-            return f"Could not find any fixture named '{self._fixture}, should be one of {self._discovered_fixtures}'. " \
-                   f"Note that first the fixture's `fixtureKey` is matched, if that's not " \
-                   f"available `shortName`, or finally `name`."
+            return (
+                f"Could not find any fixture named '{self._fixture}, should be one of {self._discovered_fixtures}'. "
+                f"Note that first the fixture's `fixtureKey` is matched, if that's not "
+                f"available `shortName`, or finally `name`."
+            )
 
 
 def port_address_config(value: Any) -> int:
@@ -125,9 +130,7 @@ def port_address_config(value: Any) -> int:
         try:
             address_ints = list(map(int, address_parts))
         except ValueError as e:
-            raise vol.Invalid(
-                f"Port address '{value}' could not be parsed as numbers because of: '{e}'"
-            )
+            raise vol.Invalid(f"Port address '{value}' could not be parsed as numbers because of: '{e}'")
 
         universe = address_ints[2] if not universe_only else address_ints[0]
 
@@ -142,15 +145,11 @@ def port_address_config(value: Any) -> int:
 
     net = address_ints[0]
     if not (0x0 <= net <= 0xF):
-        raise vol.Invalid(
-            f"Port address '{value}' Net must be within the range [{0x0}, {0xF}], but was {net}"
-        )
+        raise vol.Invalid(f"Port address '{value}' Net must be within the range [{0x0}, {0xF}], but was {net}")
 
     sub_net = address_ints[1]
     if not (0x0 <= sub_net <= 0xF):
-        raise vol.Invalid(
-            f"Port address '{value}' Sub-Net must be within the range [{0x0}, {0xF}], but was {sub_net}"
-        )
+        raise vol.Invalid(f"Port address '{value}' Sub-Net must be within the range [{0x0}, {0xF}], but was {sub_net}")
 
     return PortAddress(net, sub_net, universe).port_address
 
@@ -171,12 +170,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     if DOMAIN not in config:
         return True
 
-    discovery_flow.async_create_flow(
-        hass,
-        DOMAIN,
-        context={CONF_SOURCE: SOURCE_IMPORT},
-        data=config
-    )
+    discovery_flow.async_create_flow(hass, DOMAIN, context={CONF_SOURCE: SOURCE_IMPORT}, data=config)
 
     return True
 
@@ -191,7 +185,7 @@ async def process_fixtures(hass: HomeAssistant, fixture_folder: str) -> dict[str
     file_list = await hass.async_add_executor_job(os.listdir, fixture_folder)
 
     for filename in file_list:
-        if not filename.endswith('.json'):
+        if not filename.endswith(".json"):
             continue
 
         file_path = os.path.join(fixture_folder, filename)
@@ -226,7 +220,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     universes: dict[PortAddress, DmxUniverse] = {}
     sacn_server = None
     sacn_receiver = None
-    
+
     # Track fixture fingerprints for change detection
     device_fingerprints: dict[str, str] = {}
 
@@ -237,9 +231,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             priority=sacn_yaml.get(CONF_PRIORITY, CONF_PRIORITY_DEFAULT),
             sync_address=sacn_yaml.get(CONF_SYNC_ADDRESS, 0),
             multicast_ttl=sacn_yaml.get(CONF_MULTICAST_TTL, CONF_MULTICAST_TTL_DEFAULT),
-            enable_preview_data=sacn_yaml.get(CONF_ENABLE_PREVIEW_DATA, False)
+            enable_preview_data=sacn_yaml.get(CONF_ENABLE_PREVIEW_DATA, False),
         )
-        
+
         sacn_server = SacnServer(hass, sacn_config)
         sacn_server.start_server()
         log.info(f"sACN server started with source name: {sacn_config.source_name}")
@@ -251,8 +245,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         # Function to process sACN universe updates with rate limiting
         def sacn_state_callback(port_address: PortAddress, data: bytearray, source: str | None = None):
-            log.debug(f"sACN state callback triggered for {port_address} from source '{source}' with {len(data)} channels")
-            
+            log.debug(
+                f"sACN state callback triggered for {port_address} from source '{source}' with {len(data)} channels"
+            )
+
             callback_universe: DmxUniverse = universes.get(port_address)
             if callback_universe is None:
                 log.warning(f"Received sACN data for unknown universe: {port_address}")
@@ -274,7 +270,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     hass,
                     update_method=lambda: hass.async_create_task(process_updates()),
                     update_interval=rate_limit,
-                    force_update_after=rate_limit * 4
+                    force_update_after=rate_limit * 4,
                 )
 
                 sacn_universe_rate_limiters[port_address] = (limiter, updates_dict)
@@ -289,7 +285,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     changes_detected = True
 
             if changes_detected:
-                log.debug(f"Detected changes in {len([k for k, v in updates_dict.items()])} channels for {port_address}")
+                log.debug(
+                    f"Detected changes in {len([k for k, v in updates_dict.items()])} channels for {port_address}"
+                )
                 limiter.schedule_update()
             else:
                 log.debug(f"No changes detected for {port_address}")
@@ -300,36 +298,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         # Process sACN universes and devices
         for universe_dict in sacn_yaml[CONF_UNIVERSES]:
-            (universe_value, universe_yaml), = universe_dict.items()
+            ((universe_value, universe_yaml),) = universe_dict.items()
             universe_id = int(universe_value)
-            
+
             # Handle unicast addresses if configured
             unicast_addresses = []
             if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
                 if (unicast_yaml := compatibility_yaml.get(CONF_UNICAST_ADDRESSES)) is not None:
                     for unicast_yaml_item in unicast_yaml:
-                        unicast_addresses.append({
-                            'host': unicast_yaml_item[CONF_HOST],
-                            'port': unicast_yaml_item.get(CONF_PORT, 5568)
-                        })
-            
+                        unicast_addresses.append(
+                            {"host": unicast_yaml_item[CONF_HOST], "port": unicast_yaml_item.get(CONF_PORT, 5568)}
+                        )
+
             port_address = PortAddress(0, 0, universe_id if universe_id <= 511 else universe_id % 512)
-            
+
             # Add universe to sACN server with unicast addresses
             sacn_server.add_universe(universe_id, unicast_addresses)
-            
+
             # Subscribe receiver to this universe for incoming multicast data
             sacn_receiver.subscribe_universe(universe_id)
             log.info(f"Subscribed sACN receiver to universe {universe_id}")
-            
+
             # Create universe with sACN support, passing the actual sACN universe ID
             universe = DmxUniverse(port_address, None, True, sacn_server, universe_id, hass, max_fps)
             universes[port_address] = universe
-            
+
             # Process devices for this sACN universe
             devices_yaml = universe_yaml[CONF_DEVICES]
             for device_dict in devices_yaml:
-                (device_name, device_yaml), = device_dict.items()
+                ((device_name, device_yaml),) = device_dict.items()
 
                 start_address = device_yaml[CONF_START_ADDRESS]
                 fixture_name = device_yaml[CONF_FIXTURE]
@@ -346,7 +343,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     mode = next(iter(fixture.modes.keys()))
 
                 channels = fixture.select_mode(mode)
-                
+
                 fixture_fingerprint = generate_fixture_fingerprint(fixture_name, mode, channels)
                 device_fingerprints[device_name] = fixture_fingerprint
 
@@ -361,7 +358,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     name=device_name,
                 )
 
-                entities.extend(create_entities(device_name, start_address, channels, device, universe, entity_id_prefix, fixture_name, mode))
+                entities.extend(
+                    create_entities(
+                        device_name, start_address, channels, device, universe, entity_id_prefix, fixture_name, mode
+                    )
+                )
 
     if (artnet_yaml := dmx_yaml.get(CONF_NODE_TYPE_ARTNET)) is not None:
 
@@ -394,7 +395,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     hass,
                     update_method=lambda: hass.async_create_task(process_updates()),
                     update_interval=rate_limit,
-                    force_update_after=rate_limit * 4
+                    force_update_after=rate_limit * 4,
                 )
 
                 universe_rate_limiters[port_address] = (limiter, updates_dict)
@@ -415,6 +416,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         def _get_node_handler():
             from custom_components.dmx.entity.node_handler import DynamicNodeHandler
+
             return DynamicNodeHandler
 
         DynamicNodeHandler = _get_node_handler()
@@ -436,14 +438,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         controller.node_lost_callback = node_lost_callback
 
         for universe_dict in artnet_yaml[CONF_UNIVERSES]:
-            (universe_value, universe_yaml), = universe_dict.items()
+            ((universe_value, universe_yaml),) = universe_dict.items()
             port_address = PortAddress.parse(int(universe_value))
 
             if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
                 send_partial_universe = compatibility_yaml[CONF_SEND_PARTIAL_UNIVERSE]
                 if (manual_nodes_yaml := compatibility_yaml.get(CONF_MANUAL_NODES)) is not None:
                     for manual_node_yaml in manual_nodes_yaml:
-                        controller.add_manual_node(ManualNode(port_address, manual_node_yaml[CONF_HOST], manual_node_yaml[CONF_PORT]))
+                        controller.add_manual_node(
+                            ManualNode(port_address, manual_node_yaml[CONF_HOST], manual_node_yaml[CONF_PORT])
+                        )
 
             else:
                 send_partial_universe = True
@@ -455,7 +459,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
             devices_yaml = universe_yaml[CONF_DEVICES]
             for device_dict in devices_yaml:
-                (device_name, device_yaml), = device_dict.items()
+                ((device_name, device_yaml),) = device_dict.items()
 
                 start_address = device_yaml[CONF_START_ADDRESS]
                 fixture_name = device_yaml[CONF_FIXTURE]
@@ -472,7 +476,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     mode = next(iter(fixture.modes.keys()))
 
                 channels = fixture.select_mode(mode)
-                
+
                 fixture_fingerprint = generate_fixture_fingerprint(fixture_name, mode, channels)
                 device_fingerprints[device_name] = fixture_fingerprint
 
@@ -487,71 +491,63 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     name=device_name,
                 )
 
-                entities.extend(create_entities(device_name, start_address, channels, device, universe, entity_id_prefix, fixture_name, mode))
+                entities.extend(
+                    create_entities(
+                        device_name, start_address, channels, device, universe, entity_id_prefix, fixture_name, mode
+                    )
+                )
 
         controller.start_server()
 
     await cleanup_obsolete_entities(hass, entry, device_fingerprints)
-    
-    hass.data[DOMAIN][entry.entry_id] = {
-        CONF_FIXTURE_ENTITIES: entities,
-        "universes": universes
-    }
+
+    hass.data[DOMAIN][entry.entry_id] = {CONF_FIXTURE_ENTITIES: entities, "universes": universes}
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    
+
     await store_fixture_fingerprints(hass, entry, device_fingerprints)
-    
+
     return True
 
 
-ARTNET_COMPATIBILITY_SCHEMA = \
-    vol.Schema(
-        {
-            vol.Optional(CONF_SEND_PARTIAL_UNIVERSE, default=True): cv.boolean,
-            vol.Optional(CONF_MANUAL_NODES): vol.Schema(
-                [{
-                    vol.Required(CONF_HOST): cv.string,
-                    vol.Optional(CONF_PORT, default=6454): cv.port
-                }]
-            )
-        }
-    )
+ARTNET_COMPATIBILITY_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_SEND_PARTIAL_UNIVERSE, default=True): cv.boolean,
+        vol.Optional(CONF_MANUAL_NODES): vol.Schema(
+            [{vol.Required(CONF_HOST): cv.string, vol.Optional(CONF_PORT, default=6454): cv.port}]
+        ),
+    }
+)
 
-SACN_COMPATIBILITY_SCHEMA = \
-    vol.Schema(
-        {
-            vol.Optional(CONF_UNICAST_ADDRESSES): vol.Schema(
-                [{
-                    vol.Required(CONF_HOST): cv.string,
-                    vol.Optional(CONF_PORT, default=5568): cv.port
-                }]
-            )
-        }
-    )
+SACN_COMPATIBILITY_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_UNICAST_ADDRESSES): vol.Schema(
+            [{vol.Required(CONF_HOST): cv.string, vol.Optional(CONF_PORT, default=5568): cv.port}]
+        )
+    }
+)
 
-DEVICE_CONFIG = \
-    vol.Schema(
-        {
-            vol.Required(CONF_START_ADDRESS): vol.All(vol.Coerce(int), vol.Range(min=0, max=511)),
-            vol.Required(CONF_FIXTURE): cv.string,
-            vol.Optional(CONF_MODE): vol.Any(None, cv.string),
-            vol.Optional(CONF_ENTITY_ID_PREFIX): vol.Any(None, cv.string)
-        }
-    )
+DEVICE_CONFIG = vol.Schema(
+    {
+        vol.Required(CONF_START_ADDRESS): vol.All(vol.Coerce(int), vol.Range(min=0, max=511)),
+        vol.Required(CONF_FIXTURE): cv.string,
+        vol.Optional(CONF_MODE): vol.Any(None, cv.string),
+        vol.Optional(CONF_ENTITY_ID_PREFIX): vol.Any(None, cv.string),
+    }
+)
 
 CONFIG_SCHEMA = vol.Schema(
     {
         DOMAIN: vol.Schema(
             {
                 vol.Optional(CONF_FIXTURES): vol.Schema(
-                    {
-                        vol.Optional(CONF_FOLDER, default=CONF_FOLDER_DEFAULT): cv.string
-                    }
+                    {vol.Optional(CONF_FOLDER, default=CONF_FOLDER_DEFAULT): cv.string}
                 ),
                 vol.Optional(CONF_ANIMATION): vol.Schema(
                     {
-                        vol.Optional(CONF_MAX_FPS, default=CONF_MAX_FPS_DEFAULT): vol.All(vol.Coerce(int), vol.Range(min=1, max=43))
+                        vol.Optional(CONF_MAX_FPS, default=CONF_MAX_FPS_DEFAULT): vol.All(
+                            vol.Coerce(int), vol.Range(min=1, max=43)
+                        )
                     }
                 ),
                 # TODO add ArtNet server name configuration
@@ -559,51 +555,51 @@ CONFIG_SCHEMA = vol.Schema(
                     {
                         vol.Optional(CONF_REFRESH_EVERY, default=CONF_REFRESH_EVERY_DEFAULT): cv.positive_float,
                         vol.Optional(CONF_RATE_LIMIT, default=CONF_RATE_LIMIT_DEFAULT): cv.positive_float,
-
                         vol.Required(CONF_UNIVERSES): vol.Schema(
-                            [{
-                                port_address_config: vol.Schema(
-                                    {
-                                        vol.Optional(CONF_COMPATIBILITY): ARTNET_COMPATIBILITY_SCHEMA,
-                                        vol.Required(CONF_DEVICES): vol.Schema(
-                                            [{
-                                                cv.string: DEVICE_CONFIG
-                                            }]
-                                        )
-                                    }
-                                )
-                            }]
-                        )
+                            [
+                                {
+                                    port_address_config: vol.Schema(
+                                        {
+                                            vol.Optional(CONF_COMPATIBILITY): ARTNET_COMPATIBILITY_SCHEMA,
+                                            vol.Required(CONF_DEVICES): vol.Schema([{cv.string: DEVICE_CONFIG}]),
+                                        }
+                                    )
+                                }
+                            ]
+                        ),
                     }
                 ),
                 vol.Optional(CONF_NODE_TYPE_SACN): vol.Schema(
                     {
                         vol.Optional(CONF_SOURCE_NAME, default=CONF_SOURCE_NAME_DEFAULT): cv.string,
-                        vol.Optional(CONF_PRIORITY, default=CONF_PRIORITY_DEFAULT): vol.All(vol.Coerce(int), vol.Range(min=0, max=200)),
-                        vol.Optional(CONF_SYNC_ADDRESS, default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=63999)),
-                        vol.Optional(CONF_MULTICAST_TTL, default=CONF_MULTICAST_TTL_DEFAULT): vol.All(vol.Coerce(int), vol.Range(min=1, max=255)),
+                        vol.Optional(CONF_PRIORITY, default=CONF_PRIORITY_DEFAULT): vol.All(
+                            vol.Coerce(int), vol.Range(min=0, max=200)
+                        ),
+                        vol.Optional(CONF_SYNC_ADDRESS, default=0): vol.All(
+                            vol.Coerce(int), vol.Range(min=0, max=63999)
+                        ),
+                        vol.Optional(CONF_MULTICAST_TTL, default=CONF_MULTICAST_TTL_DEFAULT): vol.All(
+                            vol.Coerce(int), vol.Range(min=1, max=255)
+                        ),
                         vol.Optional(CONF_ENABLE_PREVIEW_DATA, default=False): cv.boolean,
                         vol.Optional(CONF_RATE_LIMIT, default=CONF_RATE_LIMIT_DEFAULT): cv.positive_float,
-
                         vol.Required(CONF_UNIVERSES): vol.Schema(
-                            [{
-                                vol.All(vol.Coerce(int), vol.Range(min=1, max=63999)): vol.Schema(
-                                    {
-                                        vol.Optional(CONF_COMPATIBILITY): SACN_COMPATIBILITY_SCHEMA,
-                                        vol.Required(CONF_DEVICES): vol.Schema(
-                                            [{
-                                                cv.string: DEVICE_CONFIG
-                                            }]
-                                        )
-                                    }
-                                )
-                            }]
-                        )
+                            [
+                                {
+                                    vol.All(vol.Coerce(int), vol.Range(min=1, max=63999)): vol.Schema(
+                                        {
+                                            vol.Optional(CONF_COMPATIBILITY): SACN_COMPATIBILITY_SCHEMA,
+                                            vol.Required(CONF_DEVICES): vol.Schema([{cv.string: DEVICE_CONFIG}]),
+                                        }
+                                    )
+                                }
+                            ]
+                        ),
                     }
-                )
+                ),
             },
-            extra=vol.ALLOW_EXTRA
+            extra=vol.ALLOW_EXTRA,
         )
     },
-    extra=vol.ALLOW_EXTRA
+    extra=vol.ALLOW_EXTRA,
 )

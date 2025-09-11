@@ -11,7 +11,13 @@ log = logging.getLogger(__name__)
 
 
 class LightController:
-    def __init__(self, state: LightState, universe: DmxUniverse, channel_mappings: Optional[List[ChannelMapping]] = None, animation_engine = None):
+    def __init__(
+        self,
+        state: LightState,
+        universe: DmxUniverse,
+        channel_mappings: Optional[List[ChannelMapping]] = None,
+        animation_engine=None,
+    ):
         self.state = state
         self.universe = universe
         self.channel_mappings = channel_mappings
@@ -24,11 +30,11 @@ class LightController:
         updates = self._collect_updates_from_kwargs(kwargs)
         if not updates:
             updates = self._restore_previous_state()
-        
+
         # Clear preserve flag when user explicitly turns light on
         if self.state._preserve_last_values:
             self.state._preserve_last_values = False
-        
+
         transition = kwargs.get(ATTR_TRANSITION)
         await self._apply_updates(updates, transition)
 
@@ -55,7 +61,7 @@ class LightController:
             self._current_animation_id = None
             # Clear the preserve flag when cancelling animations
             self.state._preserve_last_values = False
-        
+
         # If no animation engine, channel mappings, or no transition requested, apply immediately
         if not transition or transition <= 0 or not self.animation_engine or not self.channel_mappings:
             # Make sure preserve flag is cleared for immediate updates
@@ -65,7 +71,7 @@ class LightController:
             dmx_updates = self.state.get_dmx_updates(updates)
             await self.universe.update_multiple_values(dmx_updates)
             return
-        
+
         current_values = {}
         for channel_type in updates.keys():
             current_entity_value = 0
@@ -74,34 +80,35 @@ class LightController:
                 if mapping.channel_type == channel_type:
                     # Get all DMX values for this channel (handles multi-byte channels properly)
                     dmx_values = [self.universe.get_channel_value(idx) for idx in mapping.dmx_indexes]
-                    
+
                     # Convert DMX values to entity value using the dynamic entity
                     [dynamic_entity] = mapping.channel.capabilities[0].dynamic_entities
                     normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
                     current_entity_value = dynamic_entity.unnormalize(normalized_value)
                     break
-            
+
             current_values[channel_type] = int(current_entity_value)
-        
-        relevant_mappings = [mapping for mapping in self.channel_mappings
-                           if mapping.channel_type in updates.keys()]
-        
+
+        relevant_mappings = [mapping for mapping in self.channel_mappings if mapping.channel_type in updates.keys()]
+
         if relevant_mappings:
             # Preserve last_* values during animation to prevent animation frames from corrupting them
             self.state._preserve_last_values = True
-            
-            log.debug(f"Creating animation with {len(relevant_mappings)} mappings, current: {current_values}, desired: {updates}")
+
+            log.debug(
+                f"Creating animation with {len(relevant_mappings)} mappings, current: {current_values}, desired: {updates}"
+            )
             # Create animation with L*U*V* transitions
             self._current_animation_id = self.animation_engine.create_animation(
                 channel_mappings=relevant_mappings,
                 current_values=current_values,
                 desired_values=updates,
                 animation_duration_seconds=transition,
-                min_kelvin=getattr(self.state.converter, 'min_kelvin', 2700),
-                max_kelvin=getattr(self.state.converter, 'max_kelvin', 6500),
-                completion_callback=self._on_animation_complete
+                min_kelvin=getattr(self.state.converter, "min_kelvin", 2700),
+                max_kelvin=getattr(self.state.converter, "max_kelvin", 6500),
+                completion_callback=self._on_animation_complete,
             )
-            
+
             # Update state to target values immediately (for UI consistency)
             for ct, val in updates.items():
                 self.state.apply_channel_update(ct, val)
@@ -124,13 +131,21 @@ class LightController:
 
         if "rgbww_color" in kwargs:
             r, g, b, cw, ww = kwargs["rgbww_color"]
-            updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b,ChannelType.COLD_WHITE: cw, ChannelType.WARM_WHITE: ww})
+            updates.update(
+                {
+                    ChannelType.RED: r,
+                    ChannelType.GREEN: g,
+                    ChannelType.BLUE: b,
+                    ChannelType.COLD_WHITE: cw,
+                    ChannelType.WARM_WHITE: ww,
+                }
+            )
 
         if "color_temp_kelvin" in kwargs:
             kelvin = kwargs["color_temp_kelvin"]
             self.state.update_color_temp_kelvin(kelvin)
             brightness = kwargs.get("brightness", self.state.brightness)
-            
+
             if brightness is None:
                 brightness = 255
 
@@ -162,23 +177,22 @@ class LightController:
 
     def _capture_current_state(self) -> dict:
         return {
-            'brightness': self.state.brightness,
-            'rgb': self.state.rgb,
-            'cold_white': self.state.cold_white,
-            'warm_white': self.state.warm_white,
-            'color_temp_kelvin': self.state.color_temp_kelvin,
-            'color_temp_dmx': self.state.color_temp_dmx
+            "brightness": self.state.brightness,
+            "rgb": self.state.rgb,
+            "cold_white": self.state.cold_white,
+            "warm_white": self.state.warm_white,
+            "color_temp_kelvin": self.state.color_temp_kelvin,
+            "color_temp_dmx": self.state.color_temp_dmx,
         }
 
     def _save_last_state(self, s: dict):
-        self.state.last_brightness = s['brightness']
-        self.state.last_rgb = s['rgb']
-        self.state.last_cold_white = s['cold_white']
-        self.state.last_warm_white = s['warm_white']
-        self.state.last_color_temp_kelvin = s['color_temp_kelvin']
-        self.state.last_color_temp_dmx = s['color_temp_dmx']
-    
+        self.state.last_brightness = s["brightness"]
+        self.state.last_rgb = s["rgb"]
+        self.state.last_cold_white = s["cold_white"]
+        self.state.last_warm_white = s["warm_white"]
+        self.state.last_color_temp_kelvin = s["color_temp_kelvin"]
+        self.state.last_color_temp_dmx = s["color_temp_dmx"]
+
     def _on_animation_complete(self):
         """Called when an animation completes naturally"""
         self._current_animation_id = None
-    

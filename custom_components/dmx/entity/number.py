@@ -1,8 +1,7 @@
 import logging
 from typing import List
 
-from homeassistant.components.number import NumberMode, \
-    RestoreNumber
+from homeassistant.components.number import NumberMode, RestoreNumber
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
 
@@ -14,9 +13,18 @@ log = logging.getLogger(__name__)
 
 
 class DmxNumberEntity(RestoreNumber):
-    def __init__(self, fixture_name: str, channel_name: str, entity_id_prefix: str | None,
-                 capability: Capability, universe: DmxUniverse, dmx_indexes: List[int], device: DeviceInfo, 
-                 fixture_fingerprint: str, available: bool = True) -> None:
+    def __init__(
+        self,
+        fixture_name: str,
+        channel_name: str,
+        entity_id_prefix: str | None,
+        capability: Capability,
+        universe: DmxUniverse,
+        dmx_indexes: List[int],
+        device: DeviceInfo,
+        fixture_fingerprint: str,
+        available: bool = True,
+    ) -> None:
         super().__init__()
 
         assert capability.dynamic_entities and len(capability.dynamic_entities) == 1
@@ -46,15 +54,12 @@ class DmxNumberEntity(RestoreNumber):
         start_val = self.dynamic_entity.entity_start.value
         end_val = self.dynamic_entity.entity_end.value
 
-        self._attr_native_min_value, self._attr_native_max_value = (
-            sorted((start_val, end_val))
-        )
+        self._attr_native_min_value, self._attr_native_max_value = sorted((start_val, end_val))
 
-        self._attr_native_unit_of_measurement = \
-            self.dynamic_entity.entity_start.unit
+        self._attr_native_unit_of_measurement = self.dynamic_entity.entity_start.unit
 
         possible_dmx_states = pow(2, len(dmx_indexes) * 8)
-        native_value_range = (self._attr_native_max_value - self._attr_native_min_value)
+        native_value_range = self._attr_native_max_value - self._attr_native_min_value
         self._attr_native_step = native_value_range / float(possible_dmx_states)
 
         if capability.menu_click:
@@ -79,7 +84,7 @@ class DmxNumberEntity(RestoreNumber):
             dmx_values = self.dynamic_entity.to_dmx_fine(self._attr_native_value, len(self.dmx_indexes))
             dmx_updates = {idx: dmx_values[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values)}
             await self.universe.update_multiple_values(dmx_updates)
-        elif last_state is not None and last_state.state not in ('unknown', 'unavailable'):
+        elif last_state is not None and last_state.state not in ("unknown", "unavailable"):
             try:
                 # Try to convert the state to a float
                 restored_value = float(last_state.state)
@@ -97,7 +102,7 @@ class DmxNumberEntity(RestoreNumber):
         if not self.available:
             return
 
-        if getattr(self, '_is_updating', False):
+        if getattr(self, "_is_updating", False):
             return
 
         self._attr_attribution = source
@@ -114,7 +119,9 @@ class DmxNumberEntity(RestoreNumber):
     async def async_set_native_value(self, value: float) -> None:
         dmx_values = self.dynamic_entity.to_dmx_fine(value, len(self.dmx_indexes))
 
-        self._attr_native_value = self.dynamic_entity.from_dmx_fine(dmx_values)  # Set to closest value that can be represented through DMX values
+        self._attr_native_value = self.dynamic_entity.from_dmx_fine(
+            dmx_values
+        )  # Set to closest value that can be represented through DMX values
 
         dmx_updates = {}
         for i, dmx_index in enumerate(self.dmx_indexes):

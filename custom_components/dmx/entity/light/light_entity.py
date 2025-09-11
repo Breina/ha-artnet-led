@@ -19,18 +19,18 @@ log = logging.getLogger(__name__)
 
 class DmxLightEntity(LightEntity, RestoreEntity):
     def __init__(
-            self,
-            fixture_name: str,
-            entity_id_prefix: str | None,
-            matrix_key: Optional[str],
-            color_mode: ColorMode,
-            channels: List[ChannelMapping],
-            device: DeviceInfo,
-            universe: DmxUniverse,
-            fixture_fingerprint: str,
-            has_separate_dimmer: bool = False,
-            min_kelvin: int = 2000,
-            max_kelvin: int = 6500,
+        self,
+        fixture_name: str,
+        entity_id_prefix: str | None,
+        matrix_key: Optional[str],
+        color_mode: ColorMode,
+        channels: List[ChannelMapping],
+        device: DeviceInfo,
+        universe: DmxUniverse,
+        fixture_fingerprint: str,
+        has_separate_dimmer: bool = False,
+        min_kelvin: int = 2000,
+        max_kelvin: int = 6500,
     ):
         self._matrix_key = matrix_key
         self._attr_name = f"{fixture_name} Light {matrix_key}" if matrix_key else f"{fixture_name} Light"
@@ -57,7 +57,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         self.channel_map = {ch.channel_type: ch for ch in channels}
         self._state = LightState(color_mode, converter, self.channel_map)
 
-        animation_engine = getattr(universe, 'animation_engine', None)
+        animation_engine = getattr(universe, "animation_engine", None)
         self._controller = LightController(self._state, universe, channels, animation_engine)
 
         self._has_separate_dimmer = has_separate_dimmer
@@ -68,10 +68,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
     def _register_channel_listeners(self, channel_map: Dict[ChannelType, ChannelMapping]):
         for channel_type, channel_data in channel_map.items():
             for dmx_index in channel_data.dmx_indexes:
-                self._universe.register_channel_listener(
-                    dmx_index,
-                    partial(self._handle_channel_update, channel_type)
-                )
+                self._universe.register_channel_listener(dmx_index, partial(self._handle_channel_update, channel_type))
 
     @callback
     def _handle_channel_update(self, channel_type: ChannelType, source: str | None):
@@ -79,7 +76,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         channel_mapping = self.channel_map[channel_type]
         [capability] = channel_mapping.channel.capabilities
-        assert (len(capability.dynamic_entities) == 1)
+        assert len(capability.dynamic_entities) == 1
         dynamic_entity = capability.dynamic_entities[0]
 
         dmx_values = [self._universe.get_channel_value(idx) for idx in channel_mapping.dmx_indexes]
@@ -120,12 +117,12 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
     @property
     def min_color_temp_kelvin(self) -> int:
-        value = getattr(self, '_attr_min_color_temp_kelvin', None)
+        value = getattr(self, "_attr_min_color_temp_kelvin", None)
         return value if value is not None else 2000
 
-    @property 
+    @property
     def max_color_temp_kelvin(self) -> int:
-        value = getattr(self, '_attr_max_color_temp_kelvin', None)
+        value = getattr(self, "_attr_max_color_temp_kelvin", None)
         return value if value is not None else 6500
 
     async def async_turn_on(self, **kwargs: Any):
@@ -175,17 +172,20 @@ class DmxLightEntity(LightEntity, RestoreEntity):
                 self._state.last_color_temp_kelvin = color_temp_kelvin
 
         # For color temp mode without dimmer, restore CW/WW values if available
-        if (self._state.color_mode == ColorMode.COLOR_TEMP and
-                not self._has_separate_dimmer and
-                "brightness" in attrs and ("color_temp_kelvin" in attrs or "color_temp" in attrs)):
+        if (
+            self._state.color_mode == ColorMode.COLOR_TEMP
+            and not self._has_separate_dimmer
+            and "brightness" in attrs
+            and ("color_temp_kelvin" in attrs or "color_temp" in attrs)
+        ):
             # Reconstruct CW/WW values from brightness and color temp
             brightness = attrs["brightness"] or 100
-            
+
             if "color_temp_kelvin" in attrs and attrs["color_temp_kelvin"] is not None:
                 color_temp_kelvin = attrs["color_temp_kelvin"]
             else:
                 color_temp_kelvin = (self.min_color_temp_kelvin + self.max_color_temp_kelvin) / 2
-                
+
             cold, warm = self._state.converter.temp_to_cw_ww(color_temp_kelvin, brightness)
             self._state.cold_white = cold
             self._state.warm_white = warm

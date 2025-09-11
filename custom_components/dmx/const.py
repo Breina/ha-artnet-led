@@ -1,4 +1,4 @@
-DOMAIN = 'dmx'
+DOMAIN = "dmx"
 HASS_DATA_ENTITIES = "entities"
 
 ARTNET_CONTROLLER = "discovered_node"

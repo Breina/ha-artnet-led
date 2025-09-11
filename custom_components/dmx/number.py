@@ -11,15 +11,13 @@ log = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
-        hass: HomeAssistant,
-        config_entry: ConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ):
-    entities = [e
-                for e
-                in hass.data[DOMAIN][config_entry.entry_id][CONF_FIXTURE_ENTITIES]
-                if isinstance(e, NumberEntity)
-                ]
+    entities = [
+        e for e in hass.data[DOMAIN][config_entry.entry_id][CONF_FIXTURE_ENTITIES] if isinstance(e, NumberEntity)
+    ]
 
     log.info(f"Adding {len(entities)} entities...")
     async_add_entities(entities)

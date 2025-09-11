@@ -14,13 +14,13 @@ class ColorSpaceConverter:
     RGB_TO_XYZ_MATRIX = [
         [0.4124564, 0.3575761, 0.1804375],
         [0.2126729, 0.7151522, 0.0721750],
-        [0.0193339, 0.1191920, 0.9503041]
+        [0.0193339, 0.1191920, 0.9503041],
     ]
 
     XYZ_TO_RGB_MATRIX = [
         [3.2404542, -1.5371385, -0.4985314],
         [-0.9692660, 1.8760108, 0.0415560],
-        [0.0556434, -0.2040259, 1.0572252]
+        [0.0556434, -0.2040259, 1.0572252],
     ]
 
     @staticmethod
@@ -234,8 +234,14 @@ class ChannelConverter:
 
         return 0.0, self.min_kelvin
 
-    def rgb_to_channels(self, rgb: Tuple[float, float, float], original_channels: Set[ChannelType], progress: float, current_values: Dict[ChannelType, float],
-                        desired_values: Dict[ChannelType, float]) -> Dict[ChannelType, float]:
+    def rgb_to_channels(
+        self,
+        rgb: Tuple[float, float, float],
+        original_channels: Set[ChannelType],
+        progress: float,
+        current_values: Dict[ChannelType, float],
+        desired_values: Dict[ChannelType, float],
+    ) -> Dict[ChannelType, float]:
         """Convert RGB back to the original channel format."""
         r, g, b = rgb
         result = {}
@@ -244,11 +250,9 @@ class ChannelConverter:
             result[channel] = 0
 
         if {ChannelType.RED, ChannelType.GREEN, ChannelType.BLUE}.issubset(original_channels):
-            result.update({
-                ChannelType.RED: round(r * 255),
-                ChannelType.GREEN: round(g * 255),
-                ChannelType.BLUE: round(b * 255)
-            })
+            result.update(
+                {ChannelType.RED: round(r * 255), ChannelType.GREEN: round(g * 255), ChannelType.BLUE: round(b * 255)}
+            )
 
             # Handle W channel in RGBW
             if ChannelType.WARM_WHITE in original_channels:
@@ -292,7 +296,7 @@ class ChannelConverter:
 
             return {
                 ChannelType.WARM_WHITE: round(total_brightness * warm_ratio),
-                ChannelType.COLD_WHITE: round(total_brightness * cold_ratio)
+                ChannelType.COLD_WHITE: round(total_brightness * cold_ratio),
             }
 
         return {ChannelType.WARM_WHITE: 0, ChannelType.COLD_WHITE: 0}
@@ -307,10 +311,7 @@ class ChannelConverter:
             temp_ratio = (temp - self.min_kelvin) / (self.max_kelvin - self.min_kelvin)
             temp_ratio = max(0.0, min(1.0, temp_ratio))
 
-            return {
-                ChannelType.COLOR_TEMPERATURE: round(temp_ratio * 255),
-                ChannelType.DIMMER: round(brightness * 255)
-            }
+            return {ChannelType.COLOR_TEMPERATURE: round(temp_ratio * 255), ChannelType.DIMMER: round(brightness * 255)}
 
         return {ChannelType.COLOR_TEMPERATURE: 0, ChannelType.DIMMER: 0}
 
@@ -323,8 +324,13 @@ class LightTransitionAnimator:
     Supports various channel types including RGBW, CW/WW combinations, and color temperature controls.
     """
 
-    def __init__(self, current_values: Dict[ChannelType, float], desired_values: Dict[ChannelType, float],
-                 min_kelvin: Optional[int] = None, max_kelvin: Optional[int] = None):
+    def __init__(
+        self,
+        current_values: Dict[ChannelType, float],
+        desired_values: Dict[ChannelType, float],
+        min_kelvin: Optional[int] = None,
+        max_kelvin: Optional[int] = None,
+    ):
         """Initialize the transition animator."""
         self.min_kelvin = min_kelvin or 2700
         self.max_kelvin = max_kelvin or 6500
@@ -341,7 +347,9 @@ class LightTransitionAnimator:
         self.current_luv = self._channels_to_luv(self.current_values)
         self.desired_luv = self._channels_to_luv(self.desired_values)
 
-    def _apply_epsilon_handling(self, current: Dict[ChannelType, float], desired: Dict[ChannelType, float]) -> Tuple[Dict[ChannelType, float], Dict[ChannelType, float]]:
+    def _apply_epsilon_handling(
+        self, current: Dict[ChannelType, float], desired: Dict[ChannelType, float]
+    ) -> Tuple[Dict[ChannelType, float], Dict[ChannelType, float]]:
         """Apply epsilon to prevent zero-state interpolation issues."""
         epsilon = 0.001
 
@@ -368,8 +376,9 @@ class LightTransitionAnimator:
     def _is_pure_ww_cw_transition(self) -> bool:
         """Check if this is a pure WW/CW transition with no RGB channels."""
         original_channels = set(self.current_values.keys()) | set(self.desired_values.keys())
-        return ({ChannelType.WARM_WHITE, ChannelType.COLD_WHITE}.issubset(original_channels) and
-                not any(ch in original_channels for ch in [ChannelType.RED, ChannelType.GREEN, ChannelType.BLUE]))
+        return {ChannelType.WARM_WHITE, ChannelType.COLD_WHITE}.issubset(original_channels) and not any(
+            ch in original_channels for ch in [ChannelType.RED, ChannelType.GREEN, ChannelType.BLUE]
+        )
 
     def _rgb_channels_unchanged(self) -> bool:
         """Check if RGB channels remain the same between current and desired states."""
@@ -407,15 +416,18 @@ class LightTransitionAnimator:
             desired_rgb_channels = {ch: val for ch, val in self.desired_values.items() if ch in rgb_channels}
 
             # Convert to L*u*v* and interpolate
-            current_rgb = self.channel_converter.channels_to_rgb({**current_rgb_channels, ChannelType.WARM_WHITE: 0, ChannelType.COLD_WHITE: 0})
-            desired_rgb = self.channel_converter.channels_to_rgb({**desired_rgb_channels, ChannelType.WARM_WHITE: 0, ChannelType.COLD_WHITE: 0})
+            current_rgb = self.channel_converter.channels_to_rgb(
+                {**current_rgb_channels, ChannelType.WARM_WHITE: 0, ChannelType.COLD_WHITE: 0}
+            )
+            desired_rgb = self.channel_converter.channels_to_rgb(
+                {**desired_rgb_channels, ChannelType.WARM_WHITE: 0, ChannelType.COLD_WHITE: 0}
+            )
 
             current_luv = ColorSpaceConverter.rgb_to_luv(current_rgb)
             desired_luv = ColorSpaceConverter.rgb_to_luv(desired_rgb)
 
             interpolated_luv = tuple(
-                current + (desired - current) * progress
-                for current, desired in zip(current_luv, desired_luv)
+                current + (desired - current) * progress for current, desired in zip(current_luv, desired_luv)
             )
 
             interpolated_rgb = ColorSpaceConverter.luv_to_rgb(interpolated_luv)
@@ -426,7 +438,12 @@ class LightTransitionAnimator:
             result[ChannelType.BLUE] = round(interpolated_rgb[2] * 255)
 
         # Handle white channels with direct interpolation
-        white_channels = {ChannelType.WARM_WHITE, ChannelType.COLD_WHITE, ChannelType.COLOR_TEMPERATURE, ChannelType.DIMMER}
+        white_channels = {
+            ChannelType.WARM_WHITE,
+            ChannelType.COLD_WHITE,
+            ChannelType.COLOR_TEMPERATURE,
+            ChannelType.DIMMER,
+        }
         for channel in white_channels:
             if channel in original_channels:
                 current_val = self.current_values.get(channel, 0)
@@ -458,8 +475,7 @@ class LightTransitionAnimator:
         """Interpolate using L*u*v* color space."""
         # Linear interpolation in L*u*v* space
         interpolated_luv = tuple(
-            current + (desired - current) * progress
-            for current, desired in zip(self.current_luv, self.desired_luv)
+            current + (desired - current) * progress for current, desired in zip(self.current_luv, self.desired_luv)
         )
 
         # Convert back to RGB then to channels
@@ -503,7 +519,7 @@ class LightTransitionAnimator:
 
             return {
                 ChannelType.WARM_WHITE: round(interpolated_brightness * warm_ratio),
-                ChannelType.COLD_WHITE: round(interpolated_brightness * cold_ratio)
+                ChannelType.COLD_WHITE: round(interpolated_brightness * cold_ratio),
             }
 
         return {ChannelType.WARM_WHITE: 0, ChannelType.COLD_WHITE: 0}

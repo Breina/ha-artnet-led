@@ -5,15 +5,28 @@ https://github.com/OpenLightingProject/open-fixture-library/blob/master/docs/cap
 Most arguments, instance attributes and class names are directly mapped to
 values of the fixture format. Therefore, we will excuse the python linter.
 """
+
 from collections.abc import Iterable
 from enum import Enum, auto
 from typing import Callable, List, Any
 
 from custom_components.dmx.fixture import entity
-from custom_components.dmx.fixture.entity import RotationAngle, RotationSpeed, \
-    Brightness, SlotNumber, SwingAngle, Parameter, Percent, VerticalAngle, \
-    HorizontalAngle, Distance, \
-    IrisPercent, Insertion, Entity, ColorHex
+from custom_components.dmx.fixture.entity import (
+    RotationAngle,
+    RotationSpeed,
+    Brightness,
+    SlotNumber,
+    SwingAngle,
+    Parameter,
+    Percent,
+    VerticalAngle,
+    HorizontalAngle,
+    Distance,
+    IrisPercent,
+    Insertion,
+    Entity,
+    ColorHex,
+)
 
 
 # pylint: disable=too-many-lines, too-many-arguments
@@ -25,6 +38,7 @@ class DmxValueResolution(Enum):
     Defines the bit depth of the configured DMX values in the fixture;
     defaultValue, dmxStartValue, dmxEndValue, ...
     """
+
     _8BIT = 1
     _16BIT = 2
     _24BIT = 3
@@ -40,6 +54,7 @@ class MenuClick(Enum):
 
     Names match fixture format exactly.
     """
+
     # pylint: disable=invalid-name
     start = auto()
     center = auto()
@@ -51,6 +66,7 @@ class ShutterEffect(Enum):
     """
     Supported types of shutter effects. Names match fixture format exactly.
     """
+
     # pylint: disable=invalid-name
     Open = auto()
     Closed = auto()
@@ -68,6 +84,7 @@ class SingleColor(Enum):
     """
     Supported types of colors. Names match fixture format exactly.
     """
+
     # pylint: disable=invalid-name
     Red = auto()
     Green = auto()
@@ -88,6 +105,7 @@ class WheelOrSlot(Enum):
     """
     Supported types for wheels/slots. Names match fixture format exactly.
     """
+
     # pylint: disable=invalid-name
     wheel = auto()
     slot = auto()
@@ -97,6 +115,7 @@ class EffectPreset(Enum):
     """
     Supported effects. Names match fixture format exactly.
     """
+
     # pylint: disable=invalid-name
     ColorJump = auto()
     ColorFade = auto()
@@ -106,6 +125,7 @@ class BladePosition(Enum):
     """
     Supported blade positions. Names match fixture format exactly.
     """
+
     # pylint: disable=invalid-name
     Top = auto()
     Right = auto()
@@ -117,13 +137,15 @@ class FogTypeOutput(Enum):
     """
     Supported fog types. Names match fixture format exactly.
     """
+
     # pylint: disable=invalid-name
     Fog = auto()
     Haze = auto()
 
 
-def _make_interpolater(from_range_min: float, from_range_max: float,
-                       to_range_min: float, to_range_max: float) -> Callable[[float], float]:
+def _make_interpolater(
+    from_range_min: float, from_range_max: float, to_range_min: float, to_range_max: float
+) -> Callable[[float], float]:
     if from_range_min == from_range_max:
         return lambda _: to_range_min
 
@@ -143,20 +165,12 @@ class DynamicMapping:
     def __init__(self, range_start: float, range_end: float, dmx_start: int, dmx_end: int):
         super().__init__()
 
-        self.__interpolate_to_dmx = _make_interpolater(
-            range_start, range_end, dmx_start, dmx_end
-        )
-        self.__interpolate_from_dmx = _make_interpolater(
-            dmx_start, dmx_end, range_start, range_end
-        )
+        self.__interpolate_to_dmx = _make_interpolater(range_start, range_end, dmx_start, dmx_end)
+        self.__interpolate_from_dmx = _make_interpolater(dmx_start, dmx_end, range_start, range_end)
 
         range_start, range_end = sorted((range_start, range_end))
-        self.__normalize = _make_interpolater(
-            0, 255, range_start, range_end
-        )
-        self.__unnormalize = _make_interpolater(
-            range_start, range_end, 0, 255
-        )
+        self.__normalize = _make_interpolater(0, 255, range_start, range_end)
+        self.__unnormalize = _make_interpolater(range_start, range_end, 0, 255)
 
     def to_dmx(self, value: float) -> int:
         """
@@ -186,7 +200,7 @@ class DynamicMapping:
         :return: List of DMX values for each channel
         """
         # Calculate the full precision DMX value (0-255, 0-65535, or 0-16777215)
-        max_value = (256 ** num_channels) - 1
+        max_value = (256**num_channels) - 1
         dmx_value = round(self.__interpolate_to_dmx(value) * max_value / 255)
 
         # Split into individual bytes
@@ -214,7 +228,7 @@ class DynamicMapping:
             combined_value |= value << (8 * (num_channels - i - 1))
 
         # Scale to 0-255 range for the interpolation
-        max_value = (256 ** num_channels) - 1
+        max_value = (256**num_channels) - 1
         scaled_value = combined_value * 255 / max_value
 
         # Convert to entity value
@@ -234,12 +248,8 @@ class DynamicEntity(DynamicMapping):
     Entity which uses a DynamicMapping.
     """
 
-    def __init__(self, entity_start: Entity, entity_end: Entity, dmx_start: int,
-                 dmx_end: int):
-        super().__init__(
-            entity_start.value, entity_end.value,
-            dmx_start, dmx_end
-        )
+    def __init__(self, entity_start: Entity, entity_end: Entity, dmx_start: int, dmx_end: int):
+        super().__init__(entity_start.value, entity_end.value, dmx_start, dmx_end)
 
         self.entity_start = entity_start
         self.entity_end = entity_end
@@ -252,13 +262,14 @@ class Capability:
      programs are called capabilities.
     """
 
-    def __init__(self,
-                 dmx_value_resolution: DmxValueResolution,
-                 comment: str | None = None,
-                 dmx_range: [int] = None,
-                 menu_click: MenuClick | None = None,
-                 switch_channels: dict[str, str] | None = None
-                 ):
+    def __init__(
+        self,
+        dmx_value_resolution: DmxValueResolution,
+        comment: str | None = None,
+        dmx_range: [int] = None,
+        menu_click: MenuClick | None = None,
+        switch_channels: dict[str, str] | None = None,
+    ):
         super().__init__()
 
         if dmx_range is None:
@@ -274,10 +285,9 @@ class Capability:
         if self.menu_click:
             self.menu_click_value = {
                 MenuClick.start.name: self.dmx_range_start,
-                MenuClick.center.name: int(
-                    (self.dmx_range_start + self.dmx_range_end) / 2),
+                MenuClick.center.name: int((self.dmx_range_start + self.dmx_range_end) / 2),
                 MenuClick.end.name: self.dmx_range_end,
-                MenuClick.hidden.name: self.dmx_range_start
+                MenuClick.hidden.name: self.dmx_range_start,
             }[menu_click.name]
         else:
             self.menu_click_value = None
@@ -309,20 +319,14 @@ class Capability:
         else:
             assert size == 2
             self.dynamic_entities.append(
-                DynamicEntity(
-                    entities[0], entities[1],
-                    self.dmx_range_start, self.dmx_range_end
-                )
+                DynamicEntity(entities[0], entities[1], self.dmx_range_start, self.dmx_range_end)
             )
 
     def icon(self) -> str:
         return "mdi:percent"
 
     def extra_attributes(self) -> dict[str, Any]:
-        attributes = {
-            "DMX range start": self.dmx_range_start,
-            "DMX range end": self.dmx_range_end
-        }
+        attributes = {"DMX range start": self.dmx_range_start, "DMX range end": self.dmx_range_end}
         if self.comment:
             attributes["Comment"] = self.comment
 
@@ -386,12 +390,15 @@ class ShutterStrobe(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, shutter_effect: ShutterEffect,
-                 sound_controlled: bool = False,
-                 random_timing: bool = False,
-                 speed: List[entity.Speed] | None = None,
-                 duration: List[entity.Time] | None = None,
-                 **kwargs):
+    def __init__(
+        self,
+        shutter_effect: ShutterEffect,
+        sound_controlled: bool = False,
+        random_timing: bool = False,
+        speed: List[entity.Speed] | None = None,
+        duration: List[entity.Time] | None = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.effect = shutter_effect
         self.sound_controlled = sound_controlled
@@ -419,12 +426,13 @@ class ShutterStrobe(Capability):
         return attributes
 
     def __str__(self):
-        return self.args_to_str(self.effect,
-                                "sound controlled" if self.sound_controlled else None,
-                                "random timing" if self.random_timing else None,
-                                self.speed,
-                                self.duration
-                                )
+        return self.args_to_str(
+            self.effect,
+            "sound controlled" if self.sound_controlled else None,
+            "random timing" if self.random_timing else None,
+            self.speed,
+            self.duration,
+        )
 
 
 class StrobeSpeed(Capability):
@@ -471,8 +479,7 @@ class Intensity(Capability):
 
     def __init__(self, brightness: List[Brightness] | None = None, **kwargs):
         super().__init__(**kwargs)
-        self.brightness = brightness or [Brightness("off"),
-                                         Brightness("bright")]
+        self.brightness = brightness or [Brightness("off"), Brightness("bright")]
         self._define_from_entity(self.brightness)
 
     def icon(self) -> str:
@@ -488,12 +495,10 @@ class ColorIntensity(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, color: SingleColor,
-                 brightness: List[Brightness] | None = None, **kwargs):
+    def __init__(self, color: SingleColor, brightness: List[Brightness] | None = None, **kwargs):
         super().__init__(**kwargs)
         self.color = color
-        self.brightness = brightness or [Brightness("off"),
-                                         Brightness("bright")]
+        self.brightness = brightness or [Brightness("off"), Brightness("bright")]
         self._define_from_entity(self.brightness)
 
     def icon(self) -> str:
@@ -514,20 +519,19 @@ class ColorPreset(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 colors: List[List[str]] | None = None,
-                 color_temperature: List[entity.ColorTemperature] | None = None,
-                 **kwargs):
+    def __init__(
+        self,
+        colors: List[List[str]] | None = None,
+        color_temperature: List[entity.ColorTemperature] | None = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.colors = colors
         self.color_temperature = color_temperature
 
         if colors and len(colors) == 2:
             # TODO this isn't ideal, how to map multiple color ranges at once?
-            self._define_from_entity([
-                ColorHex(0, colors[0][0]),
-                ColorHex(100, colors[1][0])
-            ])
+            self._define_from_entity([ColorHex(0, colors[0][0]), ColorHex(100, colors[1][0])])
 
         self._define_from_entity(color_temperature)
 
@@ -544,8 +548,7 @@ class ColorTemperature(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, color_temperature: List[entity.ColorTemperature],
-                 **kwargs):
+    def __init__(self, color_temperature: List[entity.ColorTemperature], **kwargs):
         super().__init__(**kwargs)
         self.color_temperature = color_temperature
         self._define_from_entity(self.color_temperature)
@@ -635,10 +638,7 @@ class PanTiltSpeed(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 speed: List[entity.Speed] | None,
-                 duration: List[entity.Time] | None,
-                 **kwargs):
+    def __init__(self, speed: List[entity.Speed] | None, duration: List[entity.Time] | None, **kwargs):
         super().__init__(**kwargs)
         assert bool(speed) != bool(duration)
         self.speed = speed
@@ -670,8 +670,7 @@ class WheelSlot(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, name: str, slot_number: List[SlotNumber],
-                 wheel: str = None, **kwargs):
+    def __init__(self, name: str, slot_number: List[SlotNumber], wheel: str = None, **kwargs):
         super().__init__(**kwargs)
         self.wheel = wheel or name
         self.slot_number = slot_number
@@ -695,13 +694,16 @@ class WheelShake(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, name: str,
-                 is_shaking: WheelOrSlot = WheelOrSlot.wheel,
-                 wheel: str | List[str] | None = None,
-                 slot_number: List[SlotNumber] | None = None,
-                 shake_speed: List[entity.Speed] | None = None,
-                 shake_angle: List[SwingAngle] | None = None,
-                 **kwargs):
+    def __init__(
+        self,
+        name: str,
+        is_shaking: WheelOrSlot = WheelOrSlot.wheel,
+        wheel: str | List[str] | None = None,
+        slot_number: List[SlotNumber] | None = None,
+        shake_speed: List[entity.Speed] | None = None,
+        shake_angle: List[SwingAngle] | None = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.is_shaking = is_shaking
         self.wheel = wheel or name
@@ -738,8 +740,7 @@ class WheelShake(Capability):
         return attributes
 
     def __str__(self):
-        return self.args_to_str(self.wheel, self.slot_number, self.shake_speed,
-                                self.shake_angle, self.is_shaking)
+        return self.args_to_str(self.wheel, self.slot_number, self.shake_speed, self.shake_angle, self.is_shaking)
 
 
 class WheelSlotRotation(Capability):
@@ -748,12 +749,15 @@ class WheelSlotRotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, name: str,
-                 wheel: str | List[str] | None = None,
-                 slot_number: SlotNumber | None = None,
-                 speed: List[RotationSpeed] | None = None,
-                 angle: List[RotationAngle] | None = None,
-                 **kwargs):
+    def __init__(
+        self,
+        name: str,
+        wheel: str | List[str] | None = None,
+        slot_number: SlotNumber | None = None,
+        speed: List[RotationSpeed] | None = None,
+        angle: List[RotationAngle] | None = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         assert bool(angle) != bool(speed)
         self.wheel = wheel or name
@@ -798,11 +802,14 @@ class WheelRotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, name: str,
-                 wheel: str | List[str] | None = None,
-                 speed: List[RotationSpeed] | None = None,
-                 angle: List[RotationAngle] | None = None,
-                 **kwargs):
+    def __init__(
+        self,
+        name: str,
+        wheel: str | List[str] | None = None,
+        speed: List[RotationSpeed] | None = None,
+        angle: List[RotationAngle] | None = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.wheel = wheel or name
         self.speed = speed
@@ -841,15 +848,17 @@ class Effect(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 effect_name: str | None = None,
-                 effect_preset: EffectPreset | None = None,
-                 speed: List[entity.Speed] | None = None,
-                 duration: List[entity.Time] | None = None,
-                 parameter: List[Parameter] | None = None,
-                 sound_controlled: bool = False,
-                 sound_sensitivity: List[Percent] | None = None,
-                 **kwargs):
+    def __init__(
+        self,
+        effect_name: str | None = None,
+        effect_preset: EffectPreset | None = None,
+        speed: List[entity.Speed] | None = None,
+        duration: List[entity.Time] | None = None,
+        parameter: List[Parameter] | None = None,
+        sound_controlled: bool = False,
+        sound_sensitivity: List[Percent] | None = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
 
         assert effect_name or effect_preset
@@ -903,11 +912,15 @@ class Effect(Capability):
         return attributes
 
     def __str__(self):
-        return self.args_to_str(self.effect_name, self.effect_preset,
-                                self.speed, self.duration, self.parameter,
-                                "sound controlled" if self.sound_controlled else None,
-                                self.sound_sensitivity
-                                )
+        return self.args_to_str(
+            self.effect_name,
+            self.effect_preset,
+            self.speed,
+            self.duration,
+            self.parameter,
+            "sound controlled" if self.sound_controlled else None,
+            self.sound_sensitivity,
+        )
 
 
 class BeamAngle(Capability):
@@ -934,10 +947,12 @@ class BeamPosition(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 horizontal_angle: List[HorizontalAngle] | None = None,
-                 vertical_angle: List[VerticalAngle] | None = None,
-                 **kwargs):
+    def __init__(
+        self,
+        horizontal_angle: List[HorizontalAngle] | None = None,
+        vertical_angle: List[VerticalAngle] | None = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
 
         assert horizontal_angle or vertical_angle
@@ -1097,8 +1112,7 @@ class IrisEffect(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, effect_name: str,
-                 speed: List[entity.Speed] | None = None, **kwargs):
+    def __init__(self, effect_name: str, speed: List[entity.Speed] | None = None, **kwargs):
         super().__init__(**kwargs)
         self.effect_name = effect_name
         self.speed = speed
@@ -1140,8 +1154,7 @@ class FrostEffect(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, effect_name: str,
-                 speed: List[entity.Speed] | None = None, **kwargs):
+    def __init__(self, effect_name: str, speed: List[entity.Speed] | None = None, **kwargs):
         super().__init__(**kwargs)
         self.effect_name = effect_name
         self.speed = speed
@@ -1165,10 +1178,7 @@ class Prism(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 speed: List[RotationSpeed] | None = None,
-                 angle: List[RotationAngle] | None = None,
-                 **kwargs):
+    def __init__(self, speed: List[RotationSpeed] | None = None, angle: List[RotationAngle] | None = None, **kwargs):
         super().__init__(**kwargs)
         assert not (bool(speed) and bool(angle))
         self.speed = speed
@@ -1201,10 +1211,7 @@ class PrismRotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 speed: List[RotationSpeed] | None = None,
-                 angle: List[RotationAngle] | None = None,
-                 **kwargs):
+    def __init__(self, speed: List[RotationSpeed] | None = None, angle: List[RotationAngle] | None = None, **kwargs):
         super().__init__(**kwargs)
         assert bool(speed) != bool(angle)
         self.speed = speed
@@ -1237,10 +1244,7 @@ class BladeInsertion(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 blade: BladePosition | int,
-                 insertion: List[Insertion],
-                 **kwargs):
+    def __init__(self, blade: BladePosition | int, insertion: List[Insertion], **kwargs):
         super().__init__(**kwargs)
         self.blade = blade
         self._define_from_entity(insertion)
@@ -1263,10 +1267,7 @@ class BladeRotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 blade: BladePosition | int,
-                 angle: List[RotationAngle],
-                 **kwargs):
+    def __init__(self, blade: BladePosition | int, angle: List[RotationAngle], **kwargs):
         super().__init__(**kwargs)
         self.blade = blade
         self._define_from_entity(angle)
@@ -1289,9 +1290,7 @@ class BladeSystemRotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 angle: List[RotationAngle],
-                 **kwargs):
+    def __init__(self, angle: List[RotationAngle], **kwargs):
         super().__init__(**kwargs)
         self.angle = angle
         self._define_from_entity(angle)
@@ -1309,10 +1308,9 @@ class Fog(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 fog_type: FogTypeOutput | None = None,
-                 fog_output: List[entity.FogOutput] | None = None,
-                 **kwargs):
+    def __init__(
+        self, fog_type: FogTypeOutput | None = None, fog_output: List[entity.FogOutput] | None = None, **kwargs
+    ):
         super().__init__(**kwargs)
         self.fog_type = fog_type
         self.fog_output = fog_output
@@ -1336,9 +1334,7 @@ class FogOutput(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 fog_output: List[entity.FogOutput],
-                 **kwargs):
+    def __init__(self, fog_output: List[entity.FogOutput], **kwargs):
         super().__init__(**kwargs)
         self.fog_output = fog_output
         self._define_from_entity(fog_output)
@@ -1361,9 +1357,7 @@ class FogType(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 fog_type: FogTypeOutput | None = None,
-                 **kwargs):
+    def __init__(self, fog_type: FogTypeOutput | None = None, **kwargs):
         super().__init__(**kwargs)
         self.fog_type = fog_type
 
@@ -1385,10 +1379,7 @@ class Rotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 speed: List[RotationSpeed] | None = None,
-                 angle: List[RotationAngle] | None = None,
-                 **kwargs):
+    def __init__(self, speed: List[RotationSpeed] | None = None, angle: List[RotationAngle] | None = None, **kwargs):
         super().__init__(**kwargs)
         assert bool(speed) != bool(angle)
         self.speed = speed
@@ -1421,9 +1412,7 @@ class Speed(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 speed: List[entity.Speed],
-                 **kwargs):
+    def __init__(self, speed: List[entity.Speed], **kwargs):
         super().__init__(**kwargs)
         self.speed = speed
         self._define_from_entity(speed)
@@ -1441,9 +1430,7 @@ class Time(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 time: List[entity.Time],
-                 **kwargs):
+    def __init__(self, time: List[entity.Time], **kwargs):
         super().__init__(**kwargs)
         self.time = time
         self._define_from_entity(time)
@@ -1461,10 +1448,7 @@ class Maintenance(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self,
-                 parameter: List[Parameter] | None = None,
-                 hold: entity.Time | None = None,
-                 **kwargs):
+    def __init__(self, parameter: List[Parameter] | None = None, hold: entity.Time | None = None, **kwargs):
         super().__init__(**kwargs)
         self.hold = hold
         self.parameter = parameter
@@ -1490,7 +1474,7 @@ class Generic(Capability):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._define_from_entity([Percent(0, '%'), Percent(100, '%')])
+        self._define_from_entity([Percent(0, "%"), Percent(100, "%")])
 
     def icon(self) -> str:
         return "mdi:dots-horizontal-circle-outline"

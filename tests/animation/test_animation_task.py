@@ -20,11 +20,11 @@ def mock_hass():
 def sample_channels():
     """Fixture providing sample DMX channels"""
     return {
-        'red': Channel(index=1, name="Red", min_value=0, max_value=255),
-        'green': Channel(index=2, name="Green", min_value=0, max_value=255),
-        'blue': Channel(index=3, name="Blue", min_value=0, max_value=255),
-        'dimmer': Channel(index=4, name="Dimmer", min_value=0, max_value=255),
-        'color_temp': Channel(index=5, name="ColorTemp", min_value=0, max_value=255),
+        "red": Channel(index=1, name="Red", min_value=0, max_value=255),
+        "green": Channel(index=2, name="Green", min_value=0, max_value=255),
+        "blue": Channel(index=3, name="Blue", min_value=0, max_value=255),
+        "dimmer": Channel(index=4, name="Dimmer", min_value=0, max_value=255),
+        "color_temp": Channel(index=5, name="ColorTemp", min_value=0, max_value=255),
     }
 
 
@@ -32,10 +32,10 @@ def sample_channels():
 def sample_channel_mappings(sample_channels):
     """Fixture providing sample channel mappings"""
     return [
-        ChannelMapping([1], sample_channels['red'], ChannelType.RED),
-        ChannelMapping([2], sample_channels['green'], ChannelType.GREEN),
-        ChannelMapping([3], sample_channels['blue'], ChannelType.BLUE),
-        ChannelMapping([4], sample_channels['dimmer'], ChannelType.DIMMER),
+        ChannelMapping([1], sample_channels["red"], ChannelType.RED),
+        ChannelMapping([2], sample_channels["green"], ChannelType.GREEN),
+        ChannelMapping([3], sample_channels["blue"], ChannelType.BLUE),
+        ChannelMapping([4], sample_channels["dimmer"], ChannelType.DIMMER),
     ]
 
 
@@ -60,7 +60,7 @@ class TestAnimationTask:
             desired_values=desired_values,
             duration_seconds=2.0,
             min_kelvin=2700,
-            max_kelvin=6500
+            max_kelvin=6500,
         )
 
         assert task.animation_id == "test_anim"
@@ -77,7 +77,7 @@ class TestAnimationTask:
             channel_mappings=sample_channel_mappings,
             current_values={ChannelType.RED: 0},
             desired_values={ChannelType.RED: 255},
-            duration_seconds=1.0
+            duration_seconds=1.0,
         )
 
         # Test initial progress
@@ -101,14 +101,14 @@ class TestAnimationTask:
             channel_mappings=sample_channel_mappings,
             current_values={ChannelType.RED: 0, ChannelType.GREEN: 100},
             desired_values={ChannelType.RED: 255, ChannelType.GREEN: 200},
-            duration_seconds=1.0
+            duration_seconds=1.0,
         )
 
         # Test interpolation through the animator
         initial_values = task.animator.interpolate(0.0)
         mid_values = task.animator.interpolate(0.5)
         final_values = task.animator.interpolate(1.0)
-        
+
         # Check that interpolation produces reasonable values
         assert initial_values[ChannelType.RED] <= mid_values[ChannelType.RED] <= final_values[ChannelType.RED]
         assert initial_values[ChannelType.GREEN] <= mid_values[ChannelType.GREEN] <= final_values[ChannelType.GREEN]
@@ -120,7 +120,7 @@ class TestAnimationTask:
             channel_mappings=sample_channel_mappings,
             current_values={ChannelType.RED: 0, ChannelType.GREEN: 100},
             desired_values={ChannelType.RED: 255, ChannelType.GREEN: 50},
-            duration_seconds=0.1  # Short duration for immediate testing
+            duration_seconds=0.1,  # Short duration for immediate testing
         )
 
         # Get initial frame values
@@ -133,8 +133,6 @@ class TestAnimationTask:
         final_values = task.calculate_frame_values()
         assert final_values[ChannelType.RED] == 255
         assert final_values[ChannelType.GREEN] == 50
-
-
 
 
 if __name__ == "__main__":
@@ -159,7 +157,7 @@ if __name__ == "__main__":
             channel_mappings=mappings,
             current_values={ChannelType.RED: 0, ChannelType.GREEN: 0},
             desired_values={ChannelType.RED: 255, ChannelType.GREEN: 128},
-            animation_duration_seconds=1.0
+            animation_duration_seconds=1.0,
         )
 
         print(f"Created animation: {animation_id}")

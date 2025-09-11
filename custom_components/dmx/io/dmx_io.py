@@ -9,7 +9,16 @@ from custom_components.dmx.server.sacn_server import SacnServer
 
 class DmxUniverse:
 
-    def __init__(self, port_address: PortAddress, controller: ArtNetServer, use_partial_universe: bool = True, sacn_server: Optional[SacnServer] = None, sacn_universe: Optional[int] = None, hass=None, max_fps: int = 30):
+    def __init__(
+        self,
+        port_address: PortAddress,
+        controller: ArtNetServer,
+        use_partial_universe: bool = True,
+        sacn_server: Optional[SacnServer] = None,
+        sacn_universe: Optional[int] = None,
+        hass=None,
+        max_fps: int = 30,
+    ):
         self.port_address = port_address
         self.controller = controller
         self.sacn_server = sacn_server
@@ -25,7 +34,7 @@ class DmxUniverse:
 
         if hass:
             self.animation_engine = DmxAnimationEngine(hass, self, max_fps)
-        
+
         if self.sacn_server and self.sacn_universe:
             self.sacn_server.add_universe(self.sacn_universe)
 
@@ -53,7 +62,9 @@ class DmxUniverse:
             if callback not in self._channel_callbacks[channel]:
                 self._channel_callbacks[channel].append(callback)
 
-    async def update_value(self, channel: int | List[int], value: int, send_immediately: bool = False, source: str | None = None) -> set[Callable[[str | None], None]]:
+    async def update_value(
+        self, channel: int | List[int], value: int, send_immediately: bool = False, source: str | None = None
+    ) -> set[Callable[[str | None], None]]:
         if isinstance(channel, int):
             channels = [channel]
         else:
@@ -87,7 +98,9 @@ class DmxUniverse:
 
         return callbacks_to_call
 
-    async def update_multiple_values(self, updates: Dict[int, int], source: str | None = None, send_update: bool = True) -> None:
+    async def update_multiple_values(
+        self, updates: Dict[int, int], source: str | None = None, send_update: bool = True
+    ) -> None:
         callbacks_to_call = set()
         for channel, value in updates.items():
             callbacks_to_call.update(await self.update_value(channel, value, send_immediately=False, source=source))
@@ -119,15 +132,15 @@ class DmxUniverse:
 
         if not self._channel_values:
             data = bytearray(2)  # Minimum size is 2 bytes
-            
+
             if self.controller:
                 self.controller.send_dmx(self.port_address, data)
-            
+
             # Send via sACN if available
             if self.sacn_server and self.sacn_universe:
                 sacn_data = bytearray([0] + [0] * 24)
                 self.sacn_server.send_dmx_data(self.sacn_universe, sacn_data)
-            
+
             self._changed_channels.clear()
             self._first_send = False
             return
@@ -135,7 +148,11 @@ class DmxUniverse:
         if self.use_partial_universe and not self._first_send and self._changed_channels:
             max_changed_channel = max(self._changed_channels)
 
-            data_length = (max_changed_channel + (2 - (max_changed_channel % 2))) if max_changed_channel % 2 else max_changed_channel
+            data_length = (
+                (max_changed_channel + (2 - (max_changed_channel % 2)))
+                if max_changed_channel % 2
+                else max_changed_channel
+            )
 
             data_length = max(2, data_length)
 
@@ -149,8 +166,8 @@ class DmxUniverse:
 
         if self.controller:
             self.controller.send_dmx(self.port_address, data)
-        
-        # Send via sACN if available  
+
+        # Send via sACN if available
         if self.sacn_server and self.sacn_universe:
             # sACN requires start code + channel data (minimum 25 bytes total)
             sacn_data = bytearray([0] + list(data))  # Add start code

@@ -14,16 +14,8 @@ class TestLightTransitionAnimator(unittest.TestCase):
 
     def test_rgb_basic_interpolation(self):
         """Test basic RGB interpolation."""
-        current = {
-            ChannelType.RED: 255,
-            ChannelType.GREEN: 0,
-            ChannelType.BLUE: 0
-        }
-        desired = {
-            ChannelType.RED: 0,
-            ChannelType.GREEN: 255,
-            ChannelType.BLUE: 0
-        }
+        current = {ChannelType.RED: 255, ChannelType.GREEN: 0, ChannelType.BLUE: 0}
+        desired = {ChannelType.RED: 0, ChannelType.GREEN: 255, ChannelType.BLUE: 0}
 
         animator = LightTransitionAnimator(current, desired)
 
@@ -46,18 +38,8 @@ class TestLightTransitionAnimator(unittest.TestCase):
 
     def test_rgbw_interpolation(self):
         """Test RGBW interpolation with white channel."""
-        current = {
-            ChannelType.RED: 255,
-            ChannelType.GREEN: 0,
-            ChannelType.BLUE: 0,
-            ChannelType.WARM_WHITE: 0
-        }
-        desired = {
-            ChannelType.RED: 0,
-            ChannelType.GREEN: 0,
-            ChannelType.BLUE: 0,
-            ChannelType.WARM_WHITE: 255
-        }
+        current = {ChannelType.RED: 255, ChannelType.GREEN: 0, ChannelType.BLUE: 0, ChannelType.WARM_WHITE: 0}
+        desired = {ChannelType.RED: 0, ChannelType.GREEN: 0, ChannelType.BLUE: 0, ChannelType.WARM_WHITE: 255}
 
         animator = LightTransitionAnimator(current, desired, self.min_kelvin, self.max_kelvin)
 
@@ -79,14 +61,8 @@ class TestLightTransitionAnimator(unittest.TestCase):
 
     def test_warm_cold_white_interpolation(self):
         """Test warm white to cold white interpolation."""
-        current = {
-            ChannelType.WARM_WHITE: 255,
-            ChannelType.COLD_WHITE: 0
-        }
-        desired = {
-            ChannelType.WARM_WHITE: 0,
-            ChannelType.COLD_WHITE: 255
-        }
+        current = {ChannelType.WARM_WHITE: 255, ChannelType.COLD_WHITE: 0}
+        desired = {ChannelType.WARM_WHITE: 0, ChannelType.COLD_WHITE: 255}
 
         animator = LightTransitionAnimator(current, desired, self.min_kelvin, self.max_kelvin)
 
@@ -106,14 +82,8 @@ class TestLightTransitionAnimator(unittest.TestCase):
 
     def test_color_temperature_dimmer_interpolation(self):
         """Test color temperature + dimmer interpolation."""
-        current = {
-            ChannelType.COLOR_TEMPERATURE: 0,  # Warm
-            ChannelType.DIMMER: 255
-        }
-        desired = {
-            ChannelType.COLOR_TEMPERATURE: 255,  # Cold
-            ChannelType.DIMMER: 128
-        }
+        current = {ChannelType.COLOR_TEMPERATURE: 0, ChannelType.DIMMER: 255}  # Warm
+        desired = {ChannelType.COLOR_TEMPERATURE: 255, ChannelType.DIMMER: 128}  # Cold
 
         animator = LightTransitionAnimator(current, desired, self.min_kelvin, self.max_kelvin)
 
@@ -143,11 +113,7 @@ class TestLightTransitionAnimator(unittest.TestCase):
 
     def test_same_values_interpolation(self):
         """Test interpolation when current and desired values are the same."""
-        current = {
-            ChannelType.RED: 128,
-            ChannelType.GREEN: 64,
-            ChannelType.BLUE: 192
-        }
+        current = {ChannelType.RED: 128, ChannelType.GREEN: 64, ChannelType.BLUE: 192}
         desired = current.copy()
 
         animator = LightTransitionAnimator(current, desired)
@@ -179,11 +145,7 @@ class TestLightTransitionAnimator(unittest.TestCase):
     def test_color_space_conversion_consistency(self):
         """Test that L*u*v* color space conversions are consistent."""
         # Test RGB to L*u*v* and back
-        test_channels = {
-            ChannelType.RED: 255,
-            ChannelType.GREEN: 128,
-            ChannelType.BLUE: 64
-        }
+        test_channels = {ChannelType.RED: 255, ChannelType.GREEN: 128, ChannelType.BLUE: 64}
 
         animator = LightTransitionAnimator(test_channels, test_channels)
 
@@ -192,6 +154,7 @@ class TestLightTransitionAnimator(unittest.TestCase):
 
         # Convert to L*u*v* and back using ColorSpaceConverter
         from custom_components.dmx.animation.color_calculator import ColorSpaceConverter
+
         luv = ColorSpaceConverter.rgb_to_luv(rgb)
         rgb_back = ColorSpaceConverter.luv_to_rgb(luv)
 

@@ -9,10 +9,8 @@ from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from custom_components.dmx.entity.light.light_entity import DmxLightEntity
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.entity.select import DmxSelectEntity
-from custom_components.dmx.fixture.capability import ColorIntensity, \
-    SingleColor, Intensity, ColorTemperature
-from custom_components.dmx.fixture.channel import ChannelOffset, \
-    SwitchingChannel, Channel
+from custom_components.dmx.fixture.capability import ColorIntensity, SingleColor, Intensity, ColorTemperature
+from custom_components.dmx.fixture.channel import ChannelOffset, SwitchingChannel, Channel
 from custom_components.dmx.io.dmx_io import DmxUniverse
 from custom_components.dmx.util.fixture_fingerprint import generate_fixture_fingerprint
 
@@ -32,11 +30,15 @@ def __get_channel(source: tuple[int, None | ChannelOffset | SwitchingChannel]) -
         return [source]
 
 
-def __get_all_channels(index_channels: list[tuple[int, None | ChannelOffset | SwitchingChannel]]) -> list[tuple[int, ChannelOffset]]:
+def __get_all_channels(
+    index_channels: list[tuple[int, None | ChannelOffset | SwitchingChannel]],
+) -> list[tuple[int, ChannelOffset]]:
     return [c for channel_sub in index_channels for c in __get_channel(channel_sub)]
 
 
-def __accumulate_light_entities(accumulator: dict[str, list[ChannelMapping]], dmx_channel_indexes: List[int], channel: Channel) -> None:
+def __accumulate_light_entities(
+    accumulator: dict[str, list[ChannelMapping]], dmx_channel_indexes: List[int], channel: Channel
+) -> None:
     assert len(channel.capabilities) == 1
 
     capability = channel.capabilities[0]
@@ -49,7 +51,9 @@ def __accumulate_light_entities(accumulator: dict[str, list[ChannelMapping]], dm
             light_channel = ChannelType.BLUE
         elif capability.color == SingleColor.ColdWhite:
             light_channel = ChannelType.COLD_WHITE
-        elif capability.color == SingleColor.WarmWhite or capability.color == SingleColor.White:  # Treat normal white as Warm white so make logic simpler
+        elif (
+            capability.color == SingleColor.WarmWhite or capability.color == SingleColor.White
+        ):  # Treat normal white as Warm white so make logic simpler
             light_channel = ChannelType.WARM_WHITE
         else:
             return
@@ -73,7 +77,14 @@ def __accumulate_light_entities(accumulator: dict[str, list[ChannelMapping]], dm
         accumulator[channel.matrix_key] = [accumulated_light_channel]
 
 
-def __build_light_entities(name: str, entity_id_prefix: str | None, accumulator: dict[str, list[ChannelMapping]], device: DeviceInfo, universe: DmxUniverse, fixture_fingerprint: str) -> list[Entity]:
+def __build_light_entities(
+    name: str,
+    entity_id_prefix: str | None,
+    accumulator: dict[str, list[ChannelMapping]],
+    device: DeviceInfo,
+    universe: DmxUniverse,
+    fixture_fingerprint: str,
+) -> list[Entity]:
     entities = []
 
     for matrix_key, accumulated_channels in accumulator.items():
@@ -81,19 +92,17 @@ def __build_light_entities(name: str, entity_id_prefix: str | None, accumulator:
         for accumulated_channel in accumulated_channels:
             channel_map[accumulated_channel.channel_type] = accumulated_channel
 
-        has_rgb = (ChannelType.RED in channel_map and
-                   ChannelType.GREEN in channel_map and
-                   ChannelType.BLUE in channel_map)
+        has_rgb = (
+            ChannelType.RED in channel_map and ChannelType.GREEN in channel_map and ChannelType.BLUE in channel_map
+        )
 
-        has_cold_warm = (ChannelType.COLD_WHITE in channel_map and
-                         ChannelType.WARM_WHITE in channel_map)
+        has_cold_warm = ChannelType.COLD_WHITE in channel_map and ChannelType.WARM_WHITE in channel_map
 
         has_color_temp = ChannelType.COLOR_TEMPERATURE in channel_map
 
         has_temp_control = has_cold_warm or has_color_temp
 
-        has_single_white = (ChannelType.COLD_WHITE in channel_map or
-                            ChannelType.WARM_WHITE in channel_map)
+        has_single_white = ChannelType.COLD_WHITE in channel_map or ChannelType.WARM_WHITE in channel_map
 
         has_dimmer = ChannelType.DIMMER in channel_map
 
@@ -128,10 +137,10 @@ def __build_light_entities(name: str, entity_id_prefix: str | None, accumulator:
                         color_temperature: ColorTemperature = channel_temp.channel.capabilities[0]
 
                         min_color_temp_entity, max_color_temp_entity = color_temperature.color_temperature
-                        if min_color_temp_entity.unit == 'K':
+                        if min_color_temp_entity.unit == "K":
                             min_kelvin = min_color_temp_entity.value
 
-                        if max_color_temp_entity.unit == 'K':
+                        if max_color_temp_entity.unit == "K":
                             max_kelvin = max_color_temp_entity.value
 
             elif has_single_white:
@@ -168,10 +177,10 @@ def __build_light_entities(name: str, entity_id_prefix: str | None, accumulator:
                     color_temperature: ColorTemperature = channel_temp.channel.capabilities[0]
 
                     min_color_temp_entity, max_color_temp_entity = color_temperature.color_temperature
-                    if min_color_temp_entity.unit == 'K':
+                    if min_color_temp_entity.unit == "K":
                         min_kelvin = min_color_temp_entity.value
 
-                    if max_color_temp_entity.unit == 'K':
+                    if max_color_temp_entity.unit == "K":
                         max_kelvin = max_color_temp_entity.value
 
         elif has_single_white or has_dimmer:
@@ -191,32 +200,39 @@ def __build_light_entities(name: str, entity_id_prefix: str | None, accumulator:
             # No suitable channels for a light entity
             continue
 
-        entities.append(DmxLightEntity(
-            fixture_name=name,
-            entity_id_prefix=entity_id_prefix,
-            matrix_key=matrix_key,
-            color_mode=color_mode,
-            channels=channels_data,
-            device=device,
-            universe=universe,
-            fixture_fingerprint=fixture_fingerprint,
-            has_separate_dimmer=has_separate_dimmer,
-            min_kelvin=min_kelvin,
-            max_kelvin=max_kelvin,
-        ))
+        entities.append(
+            DmxLightEntity(
+                fixture_name=name,
+                entity_id_prefix=entity_id_prefix,
+                matrix_key=matrix_key,
+                color_mode=color_mode,
+                channels=channels_data,
+                device=device,
+                universe=universe,
+                fixture_fingerprint=fixture_fingerprint,
+                has_separate_dimmer=has_separate_dimmer,
+                min_kelvin=min_kelvin,
+                max_kelvin=max_kelvin,
+            )
+        )
 
     return entities
 
 
-def create_entities(name: str, dmx_start: int, channels: list[None | ChannelOffset | SwitchingChannel], device: DeviceInfo, universe: DmxUniverse, entity_id_prefix: str | None = None, fixture_name: str | None = None, mode_name: str | None = None) -> list[Entity]:
+def create_entities(
+    name: str,
+    dmx_start: int,
+    channels: list[None | ChannelOffset | SwitchingChannel],
+    device: DeviceInfo,
+    universe: DmxUniverse,
+    entity_id_prefix: str | None = None,
+    fixture_name: str | None = None,
+    mode_name: str | None = None,
+) -> list[Entity]:
     entities = []
     lights_accumulator: dict[str, list[ChannelMapping]] = {}
-    
-    fixture_fingerprint = generate_fixture_fingerprint(
-        fixture_name or name, 
-        mode_name or "default", 
-        channels
-    )
+
+    fixture_fingerprint = generate_fixture_fingerprint(fixture_name or name, mode_name or "default", channels)
 
     for channel, group in groupby(__get_all_channels(enumerate(channels)), lambda c: c[1].channel):
         dmx_indexes = []
@@ -229,8 +245,14 @@ def create_entities(name: str, dmx_start: int, channels: list[None | ChannelOffs
         if not channel.has_multiple_capabilities():
             entities.append(
                 DmxNumberEntity(
-                    name, channel.name, entity_id_prefix, channel.capabilities[0], universe,
-                    dmx_indexes, device, fixture_fingerprint
+                    name,
+                    channel.name,
+                    entity_id_prefix,
+                    channel.capabilities[0],
+                    universe,
+                    dmx_indexes,
+                    device,
+                    fixture_fingerprint,
                 )
             )
             __accumulate_light_entities(lights_accumulator, dmx_indexes, channel)
@@ -239,16 +261,30 @@ def create_entities(name: str, dmx_start: int, channels: list[None | ChannelOffs
             assert len(dmx_indexes) == 1
             number_entities = {
                 str(capability): DmxNumberEntity(
-                    name, f"{channel.name} {str(capability)}", entity_id_prefix, capability,
-                    universe, dmx_indexes, device, fixture_fingerprint,
-                    available=False
+                    name,
+                    f"{channel.name} {str(capability)}",
+                    entity_id_prefix,
+                    capability,
+                    universe,
+                    dmx_indexes,
+                    device,
+                    fixture_fingerprint,
+                    available=False,
                 )
                 for capability in channel.capabilities
                 if capability.is_dynamic_entity()
             }
 
             select_entity = DmxSelectEntity(
-                name, channel.name, entity_id_prefix, channel, number_entities, universe, dmx_indexes[0], device, fixture_fingerprint
+                name,
+                channel.name,
+                entity_id_prefix,
+                channel,
+                number_entities,
+                universe,
+                dmx_indexes[0],
+                device,
+                fixture_fingerprint,
             )
 
             entities.append(select_entity)
@@ -258,6 +294,8 @@ def create_entities(name: str, dmx_start: int, channels: list[None | ChannelOffs
         if isinstance(entity, DmxSelectEntity):
             entity.link_switching_entities(entities)
 
-    entities.extend(__build_light_entities(name, entity_id_prefix, lights_accumulator, device, universe, fixture_fingerprint))
+    entities.extend(
+        __build_light_entities(name, entity_id_prefix, lights_accumulator, device, universe, fixture_fingerprint)
+    )
 
     return entities

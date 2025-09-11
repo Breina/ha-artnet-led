@@ -64,21 +64,18 @@ class DmxUniverseSwitch(SwitchEntity):
         for entity in entities:
             # Check if entity belongs to this universe
             entity_universe = None
-            if hasattr(entity, '_universe'):
+            if hasattr(entity, "_universe"):
                 entity_universe = entity._universe
-            elif hasattr(entity, 'universe'):
+            elif hasattr(entity, "universe"):
                 entity_universe = entity.universe
 
             if entity_universe == self._universe:
-                if hasattr(entity, 'available'):
+                if hasattr(entity, "available"):
                     entity.available = available
                     if entity.hass:  # Only update state if entity is added to hass
                         entity.async_write_ha_state()
 
-        log.debug(
-            "Set availability to %s for entities in universe %s",
-            available, self._universe_name
-        )
+        log.debug("Set availability to %s for entities in universe %s", available, self._universe_name)
 
     @property
     def icon(self) -> str:
@@ -87,9 +84,9 @@ class DmxUniverseSwitch(SwitchEntity):
 
 
 async def async_setup_entry(
-        hass: HomeAssistant,
-        config_entry: ConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up DMX universe switches."""
     domain_data = hass.data[DOMAIN][config_entry.entry_id]

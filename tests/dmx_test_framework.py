@@ -12,7 +12,7 @@ from custom_components.dmx.entity.select import DmxSelectEntity
 from custom_components.dmx.io.dmx_io import DmxUniverse
 
 # Ensure custom_components can be imported
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from custom_components.dmx.entity.light.light_entity import DmxLightEntity
 
@@ -126,10 +126,7 @@ class MockHomeAssistant(MagicMock):
         """Wait for all created tasks to complete"""
         if self._tasks:
             try:
-                await asyncio.wait_for(
-                    asyncio.gather(*self._tasks, return_exceptions=True),
-                    timeout=timeout
-                )
+                await asyncio.wait_for(asyncio.gather(*self._tasks, return_exceptions=True), timeout=timeout)
             except asyncio.TimeoutError:
                 # Cancel remaining tasks
                 for task in self._tasks:
@@ -143,7 +140,9 @@ class MockHomeAssistant(MagicMock):
 
 
 def assert_dmx(universe: MockDmxUniverse, channel: int, value: int):
-    assert universe.get_channel_value(channel) == value, f"Channel {channel} value is {universe.get_channel_value(channel)}, expected {value}"
+    assert (
+        universe.get_channel_value(channel) == value
+    ), f"Channel {channel} value is {universe.get_channel_value(channel)}, expected {value}"
 
 
 def assert_dmx_range(universe: MockDmxUniverse, start_channel: int, values: List[int]):

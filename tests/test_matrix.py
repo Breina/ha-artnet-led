@@ -16,10 +16,10 @@ class TestSelectEntity(unittest.TestCase):
 
     def setUp(self):
         self.hass = MockHomeAssistant()
-        self.write_ha_state_patcher = patch('homeassistant.helpers.entity.Entity.async_write_ha_state')
+        self.write_ha_state_patcher = patch("homeassistant.helpers.entity.Entity.async_write_ha_state")
         self.mock_write_ha_state = self.write_ha_state_patcher.start()
 
-        self.schedule_update_patcher = patch('homeassistant.helpers.entity.Entity.async_schedule_update_ha_state')
+        self.schedule_update_patcher = patch("homeassistant.helpers.entity.Entity.async_schedule_update_ha_state")
         self.mock_schedule_update = self.schedule_update_patcher.start()
 
         self.universe = MockDmxUniverse()
@@ -29,10 +29,10 @@ class TestSelectEntity(unittest.TestCase):
         self.schedule_update_patcher.stop()
 
     def test_matrix_abc(self):
-        fixture_path = Path(__file__).parent / 'fixtures' / 'hydrabeam-300-rgbw.json'
+        fixture_path = Path(__file__).parent / "fixtures" / "hydrabeam-300-rgbw.json"
         fixture = parser.parse(str(fixture_path))
-        channels = fixture.select_mode('42ch')
-        entities = delegator.create_entities('Hydrabeam', 1, channels, None, self.universe)
+        channels = fixture.select_mode("42ch")
+        entities = delegator.create_entities("Hydrabeam", 1, channels, None, self.universe)
 
         self.assertEqual([1, 2], get_entity_by_name(entities, "Hydrabeam Pan 1").dmx_indexes)
         self.assertEqual([3, 4], get_entity_by_name(entities, "Hydrabeam Tilt 1").dmx_indexes)
@@ -77,10 +77,10 @@ class TestSelectEntity(unittest.TestCase):
         self.assertEqual([42], get_entity_by_name(entities, "Hydrabeam White 3").dmx_indexes)
 
     def test_matrix_per_pixel(self):
-        fixture_path = Path(__file__).parent / 'fixtures' / 'solaris-flare.json'
+        fixture_path = Path(__file__).parent / "fixtures" / "solaris-flare.json"
         fixture = parser.parse(str(fixture_path))
-        channels = fixture.select_mode('RGBWstrobe12pix')
-        entities = delegator.create_entities('Flare', 1, channels, None, self.universe)
+        channels = fixture.select_mode("RGBWstrobe12pix")
+        entities = delegator.create_entities("Flare", 1, channels, None, self.universe)
 
         self.assertEqual([9], get_entity_by_name(entities, "Flare 12-Pixel 1 Red").dmx_indexes)
         self.assertEqual([10], get_entity_by_name(entities, "Flare 12-Pixel 1 Green").dmx_indexes)

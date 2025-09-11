@@ -1,4 +1,5 @@
 """Rate limiter utility for ArtNet LED integration."""
+
 import asyncio
 import time
 from homeassistant.core import HomeAssistant, callback
@@ -8,11 +9,7 @@ class RateLimiter:
     """Utility class to manage rate limiting for entity updates."""
 
     def __init__(
-            self,
-            hass: HomeAssistant,
-            update_method,
-            update_interval: float = 0.5,
-            force_update_after: float = 2.0
+        self, hass: HomeAssistant, update_method, update_interval: float = 0.5, force_update_after: float = 2.0
     ):
         """Initialize the rate limiter.
 

@@ -27,10 +27,10 @@ class LightState:
         self.last_warm_white = 255
         self.last_color_temp_kelvin = 3000
         self.last_color_temp_dmx = 255
-        
+
         self.rgb = (255, 255, 255)
         self.last_rgb = (255, 255, 255)
-        
+
         # Flag to prevent updating last_* values during animations
         self._preserve_last_values = False
 
@@ -38,14 +38,14 @@ class LightState:
 
         if ChannelType.DIMMER in channels:
             self._channel_handlers[ChannelType.DIMMER] = self._handle_dimmer_update
-            
+
         if ChannelType.RED in channels:
             self._channel_handlers[ChannelType.RED] = lambda v: self._handle_rgb_component_update(0, v)
         if ChannelType.GREEN in channels:
             self._channel_handlers[ChannelType.GREEN] = lambda v: self._handle_rgb_component_update(1, v)
         if ChannelType.BLUE in channels:
             self._channel_handlers[ChannelType.BLUE] = lambda v: self._handle_rgb_component_update(2, v)
-            
+
         if ChannelType.COLD_WHITE in channels:
             self._channel_handlers[ChannelType.COLD_WHITE] = self._handle_cold_white_update
         if ChannelType.WARM_WHITE in channels:
@@ -79,7 +79,7 @@ class LightState:
         if self.color_mode not in [ColorMode.RGB, ColorMode.RGBW, ColorMode.RGBWW]:
             log.warning(f"RGB component update called for non-RGB color mode {self.color_mode}")
             return
-            
+
         new_rgb = list(self.rgb)
         new_rgb[component_index] = value
         self._update_rgb_based_on_color_mode(*new_rgb)
@@ -116,7 +116,7 @@ class LightState:
 
     def _update_on_state_without_dimmer(self):
         if self.color_mode == ColorMode.COLOR_TEMP and self.has_cw_ww():
-            self.is_on = (self.cold_white > 0 or self.warm_white > 0)
+            self.is_on = self.cold_white > 0 or self.warm_white > 0
         elif self.color_mode == ColorMode.RGBWW:
             rgb = self.rgb or (0, 0, 0)
             self.is_on = any(v > 0 for v in (*rgb, self.cold_white, self.warm_white))
@@ -196,7 +196,7 @@ class LightState:
             raise RuntimeError("Shouldn't be able to update RGB if color mode is not RGB, RGBW, or RGBWW.")
 
     def update_cw(self, cw: int):
-        self._update_last_value_if_positive(cw, 'last_cold_white', 'cold_white')
+        self._update_last_value_if_positive(cw, "last_cold_white", "cold_white")
         self.cold_white = cw
 
         if self.color_mode == ColorMode.COLOR_TEMP:
@@ -209,7 +209,7 @@ class LightState:
             raise RuntimeError("Shouldn't be able to update CW if color mode is not COLOR_TEMP, BRIGHTNESS, or RGBWW.")
 
     def update_ww(self, ww: int):
-        self._update_last_value_if_positive(ww, 'last_warm_white', 'warm_white')
+        self._update_last_value_if_positive(ww, "last_warm_white", "warm_white")
 
         if self.color_mode == ColorMode.BRIGHTNESS:
             self.warm_white = ww
@@ -220,7 +220,9 @@ class LightState:
         elif self.color_mode == ColorMode.RGBWW:
             self.update_rgbww(self.rgb[0], self.rgb[1], self.rgb[2], self.cold_white, ww)
         else:
-            raise RuntimeError("Shouldn't be able to update WW if color mode is not COLOR_TEMP, BRIGHTNESS, RGBW or RGBWW.")
+            raise RuntimeError(
+                "Shouldn't be able to update WW if color mode is not COLOR_TEMP, BRIGHTNESS, RGBW or RGBWW."
+            )
 
     def _update_last_value_if_positive(self, value: int, last_attr: str, current_attr: str):
         if value > 0 and not self._preserve_last_values:
@@ -286,9 +288,7 @@ class LightState:
     def is_all_zero(self, has_dimmer: bool) -> bool:
         if has_dimmer:
             return self.brightness == 0
-        return (self.rgb == (0, 0, 0) and
-                self.cold_white == 0 and
-                self.warm_white == 0)
+        return self.rgb == (0, 0, 0) and self.cold_white == 0 and self.warm_white == 0
 
     def _update_brightness_from_channels(self):
         values = []
@@ -316,9 +316,7 @@ class LightState:
 
     def _update_brightness_from_cw_ww(self):
         if self.color_mode == ColorMode.COLOR_TEMP and self.has_cw_ww():
-            brightness, _ = self.converter.cw_ww_to_brightness_temp(
-                self.cold_white, self.warm_white
-            )
+            brightness, _ = self.converter.cw_ww_to_brightness_temp(self.cold_white, self.warm_white)
             self.brightness = brightness
             if brightness > 0 and not self._preserve_last_values:
                 self.last_brightness = brightness

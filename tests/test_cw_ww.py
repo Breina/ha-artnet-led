@@ -19,13 +19,13 @@ class TestRgbwFixture(unittest.TestCase):
 
     def setUp(self):
         self.hass = MockHomeAssistant()
-        self.write_ha_state_patcher = patch('homeassistant.helpers.entity.Entity.async_write_ha_state')
+        self.write_ha_state_patcher = patch("homeassistant.helpers.entity.Entity.async_write_ha_state")
         self.mock_write_ha_state = self.write_ha_state_patcher.start()
 
-        self.schedule_update_patcher = patch('homeassistant.helpers.entity.Entity.async_schedule_update_ha_state')
+        self.schedule_update_patcher = patch("homeassistant.helpers.entity.Entity.async_schedule_update_ha_state")
         self.mock_schedule_update = self.schedule_update_patcher.start()
 
-        fixture_path = Path(__file__).parent / 'fixtures' / 'cw-ww-fader.json'
+        fixture_path = Path(__file__).parent / "fixtures" / "cw-ww-fader.json"
         self.fixture = parser.parse(str(fixture_path))
         self.universe = MockDmxUniverse()
 
@@ -34,12 +34,12 @@ class TestRgbwFixture(unittest.TestCase):
         self.schedule_update_patcher.stop()
 
     def test_8bit_wc_number_updates(self):
-        channels = self.fixture.select_mode('8bit-wc')
-        entities = delegator.create_entities('WC fader', 1, channels, None, self.universe)
+        channels = self.fixture.select_mode("8bit-wc")
+        entities = delegator.create_entities("WC fader", 1, channels, None, self.universe)
 
-        warm_white: DmxNumberEntity = get_entity_by_name(entities, 'WC fader Warm White')
-        cold_white: DmxNumberEntity = get_entity_by_name(entities, 'WC fader Cold White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'WC fader Light')
+        warm_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Warm White")
+        cold_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Cold White")
+        light: DmxLightEntity = get_entity_by_name(entities, "WC fader Light")
 
         asyncio.run(warm_white.async_set_native_value(100))
         asyncio.run(cold_white.async_set_native_value(0))
@@ -67,12 +67,12 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(light.max_color_temp_kelvin, light.color_temp_kelvin)
 
     def test_8bit_wc_light_updates(self):
-        channels = self.fixture.select_mode('8bit-wc')
-        entities = delegator.create_entities('WC fader', 2, channels, None, self.universe)
+        channels = self.fixture.select_mode("8bit-wc")
+        entities = delegator.create_entities("WC fader", 2, channels, None, self.universe)
 
-        warm_white: DmxNumberEntity = get_entity_by_name(entities, 'WC fader Warm White')
-        cold_white: DmxNumberEntity = get_entity_by_name(entities, 'WC fader Cold White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'WC fader Light')
+        warm_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Warm White")
+        cold_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Cold White")
+        light: DmxLightEntity = get_entity_by_name(entities, "WC fader Light")
 
         asyncio.run(light.async_turn_on(brightness=255, color_temp_kelvin=light.min_color_temp_kelvin))
         assert_dmx_range(self.universe, 2, [255, 0])
@@ -96,12 +96,12 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(100, cold_white.native_value)
 
     def test_16bit_cw_number_updates(self):
-        channels = self.fixture.select_mode('16bit-cw')
-        entities = delegator.create_entities('CW fader', 3, channels, None, self.universe)
+        channels = self.fixture.select_mode("16bit-cw")
+        entities = delegator.create_entities("CW fader", 3, channels, None, self.universe)
 
-        warm_white: DmxNumberEntity = get_entity_by_name(entities, 'CW fader Warm White')
-        cold_white: DmxNumberEntity = get_entity_by_name(entities, 'CW fader Cold White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'CW fader Light')
+        warm_white: DmxNumberEntity = get_entity_by_name(entities, "CW fader Warm White")
+        cold_white: DmxNumberEntity = get_entity_by_name(entities, "CW fader Cold White")
+        light: DmxLightEntity = get_entity_by_name(entities, "CW fader Light")
 
         asyncio.run(warm_white.async_set_native_value(100))
         asyncio.run(cold_white.async_set_native_value(0))
@@ -129,12 +129,12 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(light.max_color_temp_kelvin, light.color_temp_kelvin)
 
     def test_16bit_cw_light_updates(self):
-        channels = self.fixture.select_mode('16bit-cw')
-        entities = delegator.create_entities('CW fader', 4, channels, None, self.universe)
+        channels = self.fixture.select_mode("16bit-cw")
+        entities = delegator.create_entities("CW fader", 4, channels, None, self.universe)
 
-        warm_white: DmxNumberEntity = get_entity_by_name(entities, 'CW fader Warm White')
-        cold_white: DmxNumberEntity = get_entity_by_name(entities, 'CW fader Cold White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'CW fader Light')
+        warm_white: DmxNumberEntity = get_entity_by_name(entities, "CW fader Warm White")
+        cold_white: DmxNumberEntity = get_entity_by_name(entities, "CW fader Cold White")
+        light: DmxLightEntity = get_entity_by_name(entities, "CW fader Light")
 
         asyncio.run(light.async_turn_on(brightness=255, color_temp_kelvin=light.min_color_temp_kelvin))
         assert_dmx_range(self.universe, 4, [0, 0, 255, 255])
@@ -153,12 +153,12 @@ class TestRgbwFixture(unittest.TestCase):
         self.assertEqual(100, cold_white.native_value)
 
     def test_turn_on_restore_last_value(self):
-        channels = self.fixture.select_mode('8bit-wc')
-        entities = delegator.create_entities('WC fader', 1, channels, None, self.universe)
+        channels = self.fixture.select_mode("8bit-wc")
+        entities = delegator.create_entities("WC fader", 1, channels, None, self.universe)
 
-        warm_white: DmxNumberEntity = get_entity_by_name(entities, 'WC fader Warm White')
-        cold_white: DmxNumberEntity = get_entity_by_name(entities, 'WC fader Cold White')
-        light: DmxLightEntity = get_entity_by_name(entities, 'WC fader Light')
+        warm_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Warm White")
+        cold_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Cold White")
+        light: DmxLightEntity = get_entity_by_name(entities, "WC fader Light")
 
         asyncio.run(warm_white.async_set_native_value(100))
         asyncio.run(cold_white.async_set_native_value(25))

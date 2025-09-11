@@ -12,14 +12,14 @@ class AnimationTask:
     """Represents a single running animation"""
 
     def __init__(
-            self,
-            animation_id: str,
-            channel_mappings: List[ChannelMapping],
-            current_values: Dict[ChannelType, int],
-            desired_values: Dict[ChannelType, int],
-            duration_seconds: float,
-            min_kelvin: Optional[int] = None,
-            max_kelvin: Optional[int] = None
+        self,
+        animation_id: str,
+        channel_mappings: List[ChannelMapping],
+        current_values: Dict[ChannelType, int],
+        desired_values: Dict[ChannelType, int],
+        duration_seconds: float,
+        min_kelvin: Optional[int] = None,
+        max_kelvin: Optional[int] = None,
     ):
         self.animation_id = animation_id
         self.channel_mappings = channel_mappings

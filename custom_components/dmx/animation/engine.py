@@ -82,11 +82,13 @@ class DmxAnimationEngine:
                 if progress >= 1.0:
                     _LOGGER.debug(f"Animation {animation.animation_id} completed")
                     # Call completion callback if provided
-                    if hasattr(animation, 'completion_callback') and animation.completion_callback:
+                    if hasattr(animation, "completion_callback") and animation.completion_callback:
                         try:
                             animation.completion_callback()
                         except Exception as e:
-                            _LOGGER.error(f"Error calling completion callback for animation {animation.animation_id}: {e}")
+                            _LOGGER.error(
+                                f"Error calling completion callback for animation {animation.animation_id}: {e}"
+                            )
                     break
 
                 elapsed = time.time() - start_time
@@ -104,7 +106,7 @@ class DmxAnimationEngine:
         """Output frame data to DMX universe"""
         if not self.universe:
             return
-        
+
         # Convert ChannelType values to DMX updates
         dmx_updates = {}
         for channel_type, value in frame_values.items():
@@ -117,13 +119,13 @@ class DmxAnimationEngine:
                             [entity] = mapping.channel.capabilities[0].dynamic_entities
                             norm_val = entity.normalize(value)
                             dmx_values = entity.to_dmx_fine(norm_val, len(mapping.dmx_indexes))
-                            
+
                             for i, dmx_index in enumerate(mapping.dmx_indexes):
                                 dmx_updates[dmx_index] = dmx_values[i]
                         except Exception as e:
                             _LOGGER.error(f"Error converting channel {channel_type} value {value} to DMX: {e}")
                         break
-        
+
         # Send DMX updates to universe (non-blocking)
         if dmx_updates:
             self.hass.create_task(self.universe.update_multiple_values(dmx_updates))
@@ -131,14 +133,14 @@ class DmxAnimationEngine:
             _LOGGER.debug(f"No DMX updates generated from frame values: {frame_values}")
 
     def create_animation(
-            self,
-            channel_mappings: List[ChannelMapping],
-            current_values: Dict[ChannelType, int],
-            desired_values: Dict[ChannelType, int],
-            animation_duration_seconds: float,
-            min_kelvin: Optional[int] = None,
-            max_kelvin: Optional[int] = None,
-            completion_callback=None
+        self,
+        channel_mappings: List[ChannelMapping],
+        current_values: Dict[ChannelType, int],
+        desired_values: Dict[ChannelType, int],
+        animation_duration_seconds: float,
+        min_kelvin: Optional[int] = None,
+        max_kelvin: Optional[int] = None,
+        completion_callback=None,
     ) -> str:
         """
         Create and start a new animation.
@@ -153,7 +155,7 @@ class DmxAnimationEngine:
             desired_values=desired_values,
             duration_seconds=animation_duration_seconds,
             min_kelvin=min_kelvin,
-            max_kelvin=max_kelvin
+            max_kelvin=max_kelvin,
         )
         animation.completion_callback = completion_callback
 
@@ -167,8 +169,10 @@ class DmxAnimationEngine:
         animation.task = self.hass.async_create_task(self._run_animation(animation))
         self.active_animations[animation.animation_id] = animation
 
-        _LOGGER.info(f"Created animation {animation.animation_id} controlling "
-                     f"DMX channels: {sorted(animation.controlled_indexes)}")
+        _LOGGER.info(
+            f"Created animation {animation.animation_id} controlling "
+            f"DMX channels: {sorted(animation.controlled_indexes)}"
+        )
 
         return animation.animation_id
 
@@ -181,7 +185,7 @@ class DmxAnimationEngine:
                 animation.task.cancel()
             return True
         return False
-    
+
     def cancel_all_animations(self):
         """Cancel all active animations"""
         for animation_id in list(self.active_animations.keys()):
