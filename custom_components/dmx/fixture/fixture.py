@@ -162,7 +162,7 @@ class Fixture:
         if isinstance(mode_channel.repeat_for, list):
             names = mode_channel.repeat_for
         else:
-            names = list(map(lambda pixel: pixel.name, mode_channel.repeat_for.value(self.matrix)))
+            names = [pixel.name for pixel in mode_channel.repeat_for.value(self.matrix)]
 
         if mode_channel.order is ChannelOrder.perPixel:
             return [

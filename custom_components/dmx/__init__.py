@@ -17,7 +17,7 @@ from homeassistant.helpers import discovery_flow
 from homeassistant.helpers.entity import DeviceInfo, Entity
 from homeassistant.helpers.typing import ConfigType
 
-from custom_components.dmx.const import ARTNET_CONTROLLER, CONF_DATA, CONF_FIXTURE_ENTITIES, DOMAIN, HASS_DATA_ENTITIES
+from custom_components.dmx.const import CONF_FIXTURE_ENTITIES, DOMAIN
 from custom_components.dmx.fixture.delegator import create_entities
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.fixture.parser import parse_async
@@ -130,7 +130,7 @@ def port_address_config(value: Any) -> int:
         try:
             address_ints = list(map(int, address_parts))
         except ValueError as e:
-            raise vol.Invalid(f"Port address '{value}' could not be parsed as numbers because of: '{e}'")
+            raise vol.Invalid(f"Port address '{value}' could not be parsed as numbers because of: '{e}'") from e
 
         universe = address_ints[2] if not universe_only else address_ints[0]
 
@@ -303,12 +303,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
             # Handle unicast addresses if configured
             unicast_addresses = []
-            if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None:
-                if (unicast_yaml := compatibility_yaml.get(CONF_UNICAST_ADDRESSES)) is not None:
-                    for unicast_yaml_item in unicast_yaml:
-                        unicast_addresses.append(
-                            {"host": unicast_yaml_item[CONF_HOST], "port": unicast_yaml_item.get(CONF_PORT, 5568)}
-                        )
+            if (compatibility_yaml := universe_yaml.get(CONF_COMPATIBILITY)) is not None and (
+                unicast_yaml := compatibility_yaml.get(CONF_UNICAST_ADDRESSES)
+            ) is not None:
+                for unicast_yaml_item in unicast_yaml:
+                    unicast_addresses.append(
+                        {"host": unicast_yaml_item[CONF_HOST], "port": unicast_yaml_item.get(CONF_PORT, 5568)}
+                    )
 
             port_address = PortAddress(0, 0, universe_id if universe_id <= 511 else universe_id % 512)
 
@@ -419,8 +420,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
             return DynamicNodeHandler
 
-        DynamicNodeHandler = _get_node_handler()
-        node_handler = DynamicNodeHandler(hass, entry, controller)
+        dynamic_node_handler = _get_node_handler()
+        node_handler = dynamic_node_handler(hass, entry, controller)
 
         def node_new_callback(artpoll_reply: ArtPollReply):
             hass.async_create_task(node_handler.handle_new_node(artpoll_reply))

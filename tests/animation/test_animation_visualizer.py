@@ -25,7 +25,7 @@ CHANNEL_COLORS = {
 
 
 def plot_animation_data(
-    captured_frames, hass, title: str = "DMX Animation Data", y_range: tuple[int, int] = (0, 255), save_path: str = None
+    captured_frames, hass, title: str = "DMX Animation Data", y_range: tuple[int, int] = (0, 255), save_path: str | None = None
 ):
     """
     Create an interactive plot of the captured animation data

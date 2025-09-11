@@ -68,8 +68,6 @@ class DmxAnimationEngine:
         try:
             _LOGGER.debug(f"Starting animation {animation.animation_id} for {animation.duration_seconds}s")
 
-            last_frame_time = time.time()
-
             while not animation.is_cancelled:
                 start_time = time.time()
 

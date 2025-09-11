@@ -96,7 +96,10 @@ class LightController:
             self.state._preserve_last_values = True
 
             log.debug(
-                f"Creating animation with {len(relevant_mappings)} mappings, current: {current_values}, desired: {updates}"
+                "Creating animation with %d mappings, current: %s, desired: %s",
+                len(relevant_mappings),
+                current_values,
+                updates,
             )
             # Create animation with L*U*V* transitions
             self._current_animation_id = self.animation_engine.create_animation(

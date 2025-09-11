@@ -35,7 +35,9 @@ class DmxSelectEntity(SelectEntity):
             self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}_{fixture_fingerprint}"
             self.entity_id = f"select.{self._attr_unique_id}"
         else:
-            self._attr_unique_id = f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
+            self._attr_unique_id = (
+                f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
+            )
 
         self._attr_icon = determine_icon(channel)
 
@@ -67,7 +69,7 @@ class DmxSelectEntity(SelectEntity):
         self.universe = universe
         self.universe.register_channel_listener(dmx_index, self.update_value)
 
-        # TODO /config/custom_components/dmx/entity/select.py:62: RuntimeWarning: coroutine 'DmxUniverse.update_value' was never awaited self.universe.update_value(self.dmx_index, channel.default_value, send_immediately=False)
+        # TODO RuntimeWarning: coroutine 'DmxUniverse.update_value' was never awaited
         self.universe.update_value(self.dmx_index, channel.default_value, send_immediately=False)
         self.update_option_to_dmx_value(channel.default_value)
 
@@ -108,10 +110,7 @@ class DmxSelectEntity(SelectEntity):
         await self._update_current_option_async(option)
 
         capability = self.capability_types[option]
-        if capability.menu_click:
-            dmx_value = capability.menu_click_value
-        else:
-            dmx_value = capability.dmx_range_start
+        dmx_value = capability.menu_click_value if capability.menu_click else capability.dmx_range_start
 
         await self.universe.update_value(self.dmx_index, dmx_value, send_immediately=True)
 

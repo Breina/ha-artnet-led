@@ -36,6 +36,7 @@ from custom_components.dmx.server import (
     PortType,
     StyleCode,
 )
+from custom_components.dmx.server.net_utils import get_default_gateway, get_private_ip
 
 STALE_NODE_CUTOFF_TIME = 10
 
@@ -366,10 +367,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
     def send_reply(self, addr):
         grouped_ports = self.get_grouped_ports()
-        if len(grouped_ports) > 1:
-            bind_index = 1
-        else:
-            bind_index = 0
+        bind_index = 1 if len(grouped_ports) > 1 else 0
 
         log.debug("Sending ArtPollReply!")
         for net, sub_net, ports_chunk in grouped_ports:
@@ -718,10 +716,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
     def handle_trigger(self, trigger: ArtTrigger):
         null_index = trigger.payload.find(b"\x00")
-        if null_index != -1:
-            payload_bytes = trigger.payload[:null_index]
-        else:
-            payload_bytes = trigger.payload
+        payload_bytes = trigger.payload[:null_index] if null_index != -1 else trigger.payload[:null_index]
 
         payload_str = ""
 
@@ -782,5 +777,3 @@ class ArtNetServer(asyncio.DatagramProtocol):
             own_port.port.good_input.data_received = False
             self.update_subscribers()
 
-
-from custom_components.dmx.server.net_utils import get_default_gateway, get_private_ip

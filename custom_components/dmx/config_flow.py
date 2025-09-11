@@ -19,7 +19,10 @@ class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         return self.async_abort(
-            reason="I acknowledge that it's fun to click buttons, but alas, this integration is configured through `configuration.yaml`. Here's how: https://breina.github.io/ha-artnet-led/config/"
+            reason=(
+                "I acknowledge that it's fun to click buttons, but alas, this integration is configured through "
+                "`configuration.yaml`. Here's how: https://breina.github.io/ha-artnet-led/config/"
+            )
         )
 
     async def async_step_import(self, user_input=None):

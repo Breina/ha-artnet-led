@@ -669,7 +669,7 @@ class WheelSlot(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, name: str, slot_number: list[SlotNumber], wheel: str = None, **kwargs):
+    def __init__(self, name: str, slot_number: list[SlotNumber], wheel: str | None = None, **kwargs):
         super().__init__(**kwargs)
         self.wheel = wheel or name
         self.slot_number = slot_number

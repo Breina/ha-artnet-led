@@ -1,4 +1,5 @@
 import math
+from typing import ClassVar
 
 from custom_components.dmx.entity.light import ChannelType
 
@@ -10,17 +11,17 @@ class ColorSpaceConverter:
     XN, YN, ZN = 0.95047, 1.00000, 1.08883
 
     # sRGB transformation matrices
-    RGB_TO_XYZ_MATRIX = [
-        [0.4124564, 0.3575761, 0.1804375],
-        [0.2126729, 0.7151522, 0.0721750],
-        [0.0193339, 0.1191920, 0.9503041],
-    ]
+    RGB_TO_XYZ_MATRIX: ClassVar[tuple[tuple[float, float, float], ...]] = (
+        (0.4124564, 0.3575761, 0.1804375),
+        (0.2126729, 0.7151522, 0.0721750),
+        (0.0193339, 0.1191920, 0.9503041),
+    )
 
-    XYZ_TO_RGB_MATRIX = [
-        [3.2404542, -1.5371385, -0.4985314],
-        [-0.9692660, 1.8760108, 0.0415560],
-        [0.0556434, -0.2040259, 1.0572252],
-    ]
+    XYZ_TO_RGB_MATRIX: ClassVar[tuple[tuple[float, float, float], ...]] = (
+        (3.2404542, -1.5371385, -0.4985314),
+        (-0.9692660, 1.8760108, 0.0415560),
+        (0.0556434, -0.2040259, 1.0572252),
+    )
 
     @staticmethod
     def gamma_correct(value: float) -> float:
@@ -149,17 +150,17 @@ class TemperatureConverter:
     @staticmethod
     def rgb_to_kelvin(rgb: tuple[float, float, float], min_kelvin: float, max_kelvin: float) -> float:
         """Estimate color temperature from RGB values."""
-        r, g, b = rgb
+        r, _, b = rgb
 
-        if r == 0 and g == 0 and b == 0:
+        if r == 0 and b == 0:
             return (min_kelvin + max_kelvin) / 2
 
         # Normalize to prevent issues with very bright or dim colors
-        max_component = max(r, g, b)
+        max_component = max(r, b)
         if max_component == 0:
             return (min_kelvin + max_kelvin) / 2
 
-        r_norm, g_norm, b_norm = r / max_component, g / max_component, b / max_component
+        r_norm, b_norm = r / max_component, b / max_component
 
         # Calculate color temperature using improved heuristic
         if b_norm > 0:
@@ -426,7 +427,8 @@ class LightTransitionAnimator:
             desired_luv = ColorSpaceConverter.rgb_to_luv(desired_rgb)
 
             interpolated_luv = tuple(
-                current + (desired - current) * progress for current, desired in zip(current_luv, desired_luv, strict=False)
+                current + (desired - current) * progress
+                for current, desired in zip(current_luv, desired_luv, strict=False)
             )
 
             interpolated_rgb = ColorSpaceConverter.luv_to_rgb(interpolated_luv)
@@ -474,7 +476,8 @@ class LightTransitionAnimator:
         """Interpolate using L*u*v* color space."""
         # Linear interpolation in L*u*v* space
         interpolated_luv = tuple(
-            current + (desired - current) * progress for current, desired in zip(self.current_luv, self.desired_luv, strict=False)
+            current + (desired - current) * progress
+            for current, desired in zip(self.current_luv, self.desired_luv, strict=False)
         )
 
         # Convert back to RGB then to channels

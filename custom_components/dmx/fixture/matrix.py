@@ -135,7 +135,7 @@ class Matrix:
             return group
 
         if isinstance(ref, list):
-            group = PixelGroup(name, list(map(lambda pixel_name: self[pixel_name], ref)))
+            group = PixelGroup(name, [self[pixel_name] for pixel_name in ref])
             self.pixel_groups[name] = group
             return group
 

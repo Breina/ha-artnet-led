@@ -155,9 +155,9 @@ class TestSacnPacket:
         serialized = packet.serialize()
         deserialized = SacnPacket.deserialize(serialized)
 
-        assert deserialized.options.preview_data == True
-        assert deserialized.options.stream_terminated == True
-        assert deserialized.options.force_synchronization == True
+        assert deserialized.options.preview_data
+        assert deserialized.options.stream_terminated
+        assert deserialized.options.force_synchronization
 
 
 class TestSacnSyncPacket:
@@ -199,13 +199,13 @@ class TestSacnOptions:
     def test_options_defaults(self):
         options = SacnOptions()
 
-        assert options.preview_data == False
-        assert options.stream_terminated == False
-        assert options.force_synchronization == False
+        assert not options.preview_data
+        assert not options.stream_terminated
+        assert not options.force_synchronization
 
     def test_options_custom(self):
         options = SacnOptions(preview_data=True, stream_terminated=True, force_synchronization=True)
 
-        assert options.preview_data == True
-        assert options.stream_terminated == True
-        assert options.force_synchronization == True
+        assert options.preview_data
+        assert options.stream_terminated
+        assert options.force_synchronization

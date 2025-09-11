@@ -35,7 +35,9 @@ class DmxNumberEntity(RestoreNumber):
             self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}_{fixture_fingerprint}"
             self.entity_id = f"number.{self._attr_unique_id}"
         else:
-            self._attr_unique_id = f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
+            self._attr_unique_id = (
+                f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
+            )
 
         self._attr_icon = capability.icon()
         self._attr_extra_state_attributes = capability.extra_attributes()

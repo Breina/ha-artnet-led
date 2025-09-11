@@ -39,9 +39,8 @@ class MockDmxUniverse(DmxUniverse):
         if isinstance(channels, int):
             channels = [channels]
         for channel in channels:
-            if channel in self.channel_callbacks:
-                if callback in self.channel_callbacks[channel]:
-                    self.channel_callbacks[channel].remove(callback)
+            if channel in self.channel_callbacks and callback in self.channel_callbacks[channel]:
+                self.channel_callbacks[channel].remove(callback)
 
     async def update_value(self, channel, value, send_immediately=False, source: str | None = None):
         """Update single value."""
@@ -168,7 +167,7 @@ def assert_dmx_range(universe: MockDmxUniverse, start_channel: int, values: list
         error_msg += f"\nFull range comparison (channels {start_channel}-{start_channel + len(values) - 1}):\n"
         error_msg += f"Expected: {values}\n"
         error_msg += f"Actual:   {actual_values}"
-        assert False, error_msg
+        raise AssertionError(error_msg)
 
 
 def get_entity_by_name(entities: list[Entity], name: str) -> DmxNumberEntity | DmxSelectEntity | DmxLightEntity:

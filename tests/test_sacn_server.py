@@ -15,9 +15,9 @@ class TestSacnServerConfig:
         assert config.source_name == "HA sACN Controller"
         assert config.priority == 100
         assert config.sync_address == 0
-        assert config.enable_per_universe_sync == False
+        assert not config.enable_per_universe_sync
         assert config.multicast_ttl == 64
-        assert config.enable_preview_data == False
+        assert not config.enable_preview_data
         assert len(config.cid) == 16
 
     def test_config_custom(self):
@@ -36,9 +36,9 @@ class TestSacnServerConfig:
         assert config.priority == 150
         assert config.cid == cid
         assert config.sync_address == 100
-        assert config.enable_per_universe_sync == True
+        assert config.enable_per_universe_sync
         assert config.multicast_ttl == 32
-        assert config.enable_preview_data == True
+        assert config.enable_preview_data
 
 
 class TestSacnServer:
@@ -51,7 +51,7 @@ class TestSacnServer:
         return SacnServer(mock_hass)
 
     def test_server_initialization(self, sacn_server):
-        assert sacn_server.running == False
+        assert not sacn_server.running
         assert len(sacn_server.universes) == 0
         assert sacn_server.socket is None
         assert sacn_server.config.source_name == "HA sACN Controller"
@@ -62,25 +62,25 @@ class TestSacnServer:
         mock_socket_class.return_value = mock_socket
 
         sacn_server.start_server()
-        assert sacn_server.running == True
+        assert sacn_server.running
         assert sacn_server.socket == mock_socket
 
         mock_socket.setsockopt.assert_called()
         mock_socket.bind.assert_called_with(("", 0))
 
         sacn_server.stop_server()
-        assert sacn_server.running == False
+        assert not sacn_server.running
         mock_socket.close.assert_called()
 
     def test_universe_management(self, sacn_server):
-        assert sacn_server.add_universe(1) == True
+        assert sacn_server.add_universe(1)
         assert 1 in sacn_server.universes
 
-        assert sacn_server.add_universe(1) == True
+        assert sacn_server.add_universe(1)
         assert len(sacn_server.universes) == 1
 
-        assert sacn_server.add_universe(0) == False
-        assert sacn_server.add_universe(64000) == False
+        assert not sacn_server.add_universe(0)
+        assert not sacn_server.add_universe(64000)
 
         sacn_server.remove_universe(1)
         assert 1 not in sacn_server.universes
@@ -106,8 +106,8 @@ class TestSacnServer:
         assert info["universe_id"] == 5
         assert info["sequence_number"] == 0
         assert info["multicast_address"] == "239.255.0.5"
-        assert info["has_data"] == False
-        assert info["termination_sent"] == False
+        assert not info["has_data"]
+        assert not info["termination_sent"]
 
         assert sacn_server.get_universe_info(999) is None
 
@@ -132,14 +132,14 @@ class TestSacnServer:
         dmx_data = bytearray([0] + [255, 128, 64] + [0] * 509)
 
         result = sacn_server.send_dmx_data(1, dmx_data)
-        assert result == True
+        assert result
 
         await mock_hass.wait_for_all_tasks()
 
         mock_socket.sendto.assert_called()
 
         result = sacn_server.send_dmx_data(999, dmx_data)
-        assert result == False
+        assert not result
 
     @patch("socket.socket")
     def test_termination_packet(self, mock_socket_class, sacn_server):
@@ -155,7 +155,7 @@ class TestSacnServer:
         sacn_server.terminate_universe(1)
 
         assert mock_socket.sendto.call_count == 3
-        assert universe_state.termination_sent == True
+        assert universe_state.termination_sent
 
     @patch("socket.socket")
     def test_sync_packet(self, mock_socket_class, sacn_server):

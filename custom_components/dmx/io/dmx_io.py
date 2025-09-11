@@ -65,10 +65,8 @@ class DmxUniverse:
     async def update_value(
         self, channel: int | list[int], value: int, send_immediately: bool = False, source: str | None = None
     ) -> set[Callable[[str | None], None]]:
-        if isinstance(channel, int):
-            channels = [channel]
-        else:
-            channels = channel
+
+        channels = [channel] if isinstance(channel, int) else channel
 
         callbacks_to_call = set()
         changed_channels = []

@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import List
 
 from custom_components.dmx.fixture.channel import Channel
 

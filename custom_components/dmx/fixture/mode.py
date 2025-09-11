@@ -15,8 +15,8 @@ class ChannelOrder(Enum):
     """
 
     # pylint: disable=invalid-name
-    perPixel = auto()
-    perChannel = auto()
+    perPixel = auto()  # noqa: N815
+    perChannel = auto()  # noqa: N815
 
 
 def matrix_pixel_order(axis0: int, axis1: int, axis2: int):
@@ -41,16 +41,16 @@ class RepeatFor(Enum):
     """
 
     # pylint: disable=invalid-name
-    eachPixelABC = member(
+    eachPixelABC = member(  # noqa: N815
         functools.partial(lambda matrix: [matrix[name] for name in sorted(matrix.pixels_by_name.keys())])
     )
-    eachPixelXYZ = member(functools.partial(matrix_pixel_order(0, 1, 2)))
-    eachPixelXZY = member(functools.partial(matrix_pixel_order(0, 2, 1)))
-    eachPixelYXZ = member(functools.partial(matrix_pixel_order(1, 0, 2)))
-    eachPixelYZX = member(functools.partial(matrix_pixel_order(1, 2, 0)))
-    eachPixelZXY = member(functools.partial(matrix_pixel_order(2, 0, 1)))
-    eachPixelZYX = member(functools.partial(matrix_pixel_order(2, 1, 0)))
-    eachPixelGroup = member(
+    eachPixelXYZ = member(functools.partial(matrix_pixel_order(0, 1, 2)))  # noqa: N815
+    eachPixelXZY = member(functools.partial(matrix_pixel_order(0, 2, 1)))  # noqa: N815
+    eachPixelYXZ = member(functools.partial(matrix_pixel_order(1, 0, 2)))  # noqa: N815
+    eachPixelYZX = member(functools.partial(matrix_pixel_order(1, 2, 0)))  # noqa: N815
+    eachPixelZXY = member(functools.partial(matrix_pixel_order(2, 0, 1)))  # noqa: N815
+    eachPixelZYX = member(functools.partial(matrix_pixel_order(2, 1, 0)))  # noqa: N815
+    eachPixelGroup = member(  # noqa: N815
         functools.partial(
             lambda matrix: [
                 pixel for name in sorted(matrix.pixel_groups.keys()) for pixel in matrix.pixel_groups[name].pixels

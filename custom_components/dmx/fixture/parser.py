@@ -385,11 +385,8 @@ def __parse_mode_channel(mode_channel: None | str | dict) -> None | str | Matrix
         raise FixtureConfigurationError(f"Unknown insert mode: {insert}")
 
     repeat_for_json = mode_channel["repeatFor"]
-    if isinstance(repeat_for_json, str):
-        repeat_for = RepeatFor[repeat_for_json]
-    else:
-        # It's a list of strings otherwise
-        repeat_for = repeat_for_json
+
+    repeat_for = RepeatFor[repeat_for_json] if isinstance(repeat_for_json, str) else repeat_for_json # It's a list of strings otherwise
 
     channel_order = ChannelOrder[mode_channel["channelOrder"]]
     template_channels = mode_channel["templateChannels"]

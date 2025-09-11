@@ -3,7 +3,6 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 CLIENT_VERSION = 1
 
@@ -394,11 +393,11 @@ class ArtBase:
     def deserialize(self, packet: bytearray) -> int:
         packet_header, index = self._consume_str(packet, 0, 8)
         if packet_header != "Art-Net":
-            raise SerializationException(f'Not a valid packet, expected "Art-Net", but is "{packet_header}"')
+            raise SerializationError(f'Not a valid packet, expected "Art-Net", but is "{packet_header}"')
 
         opcode, index = self._consume_int_lsb(packet, index)
         if opcode != self.__opcode.value:
-            raise SerializationException(f"Expected this packet to have opcode {self.__opcode}, but was {opcode}")
+            raise SerializationError(f"Expected this packet to have opcode {self.__opcode}, but was {opcode}")
 
         return index
 
@@ -423,21 +422,21 @@ class ArtBase:
     @staticmethod
     def _consume_int_lsb(packet: bytearray, index: int) -> (int, int):
         if len(packet) < (index + 2):
-            raise SerializationException(f"Not enough bytes in packet: {bytes(packet).hex()}")
+            raise SerializationError(f"Not enough bytes in packet: {bytes(packet).hex()}")
         [lsb, msb] = packet[index : index + 2]
         return (msb << 8) | lsb, index + 2
 
     @staticmethod
     def _consume_int_msb(packet: bytearray, index: int) -> (int, int):
         if len(packet) < (index + 2):
-            raise SerializationException(f"Not enough bytes in packet: {bytes(packet).hex()}")
+            raise SerializationError(f"Not enough bytes in packet: {bytes(packet).hex()}")
         [msb, lsb] = packet[index : index + 2]
         return (msb << 8) | lsb, index + 2
 
     @staticmethod
     def _consume_hex_number_lsb(packet: bytearray, index: int) -> (int, int):
         if len(packet) < (index + 2):
-            raise SerializationException(f"Not enough bytes in packet: {bytes(packet).hex()}")
+            raise SerializationError(f"Not enough bytes in packet: {bytes(packet).hex()}")
         lower = hex(packet[index])[2:].zfill(2)
         upper = hex(packet[index + 1])[2:].zfill(2)
         return int(upper + lower, 16), index + 2
@@ -445,7 +444,7 @@ class ArtBase:
     @staticmethod
     def _consume_hex_number_msb(packet: bytearray, index: int) -> (int, int):
         if len(packet) < (index + 2):
-            raise SerializationException(f"Not enough bytes in packet: {bytes(packet).hex()}")
+            raise SerializationError(f"Not enough bytes in packet: {bytes(packet).hex()}")
         upper = hex(packet[index])[2:].zfill(2)
         lower = hex(packet[index + 1])[2:].zfill(2)
         return int(upper + lower, 16), index + 2
@@ -613,7 +612,7 @@ class ArtPoll(ArtBase):
             index += 1
             self.__target_port_top.port_address, index = self._consume_int_msb(packet, index)
             self.__target_port_bottom.port_address, index = self._consume_int_msb(packet, index)
-        except SerializationException as e:
+        except SerializationError as e:
             log.exception(e)
 
         return index
@@ -879,7 +878,7 @@ class ArtPollReply(ArtBase):
             self.default_resp_uid, index = self._take(packet, 6, index)
 
             index += 15
-        except SerializationException as e:
+        except SerializationError as e:
             log.exception(e)
         return index
 
@@ -925,7 +924,7 @@ class ArtIpProg(ArtBase):
             index = super().deserialize(packet)
             self.protocol_version, index = self._consume_int_msb(packet, index)
             if self.protocol_version != 14:
-                raise SerializationException("Protocol is not 14!")
+                raise SerializationError("Protocol is not 14!")
 
             index += 2
             self.command.flags, index = self._pop(packet, index)
@@ -936,7 +935,7 @@ class ArtIpProg(ArtBase):
             self.prog_gateway, index = self._take(packet, 4, index)
 
             index += 4
-        except SerializationException as e:
+        except SerializationError as e:
             log.exception(e)
 
         return index
@@ -983,7 +982,7 @@ class ArtIpProgReply(ArtBase):
             index = super().deserialize(packet)
             self.protocol_version, index = self._consume_int_msb(packet, index)
             if self.protocol_version != 14:
-                raise SerializationException("Protocol is not 14!")
+                raise SerializationError("Protocol is not 14!")
 
             index += 4
             self.prog_ip, index = self._take(packet, 4, index)
@@ -997,7 +996,7 @@ class ArtIpProgReply(ArtBase):
             self.prog_gateway, index = self._take(packet, 4, index)
 
             index += 2
-        except SerializationException as e:
+        except SerializationError as e:
             log.exception(e)
 
         return index
@@ -1075,7 +1074,7 @@ class ArtAddress(ArtBase):
             index = super().deserialize(packet)
             self.protocol_version, index = self._consume_int_msb(packet, index)
             if self.protocol_version != 14:
-                raise SerializationException("Protocol is not 14!")
+                raise SerializationError("Protocol is not 14!")
 
             self.net_switch, self.net_action, index = self.__consume_value_and_action(packet, index)
             self.bind_index, index, self._pop(packet, index)
@@ -1088,7 +1087,7 @@ class ArtAddress(ArtBase):
 
             command_byte, index = self._pop(packet, index)
             self.command, self.command_port_index = ArtAddressCommand.decode_with_port_index(command_byte)
-        except SerializationException as e:
+        except SerializationError as e:
             log.exception(e)
 
         return index
@@ -1158,7 +1157,7 @@ class ArtDiagData(ArtBase):
             index = super().deserialize(packet)
             self.protocol_version, index = self._consume_int_msb(packet, index)
             if self.protocol_version != 14:
-                raise SerializationException("Protocol is not 14!")
+                raise SerializationError("Protocol is not 14!")
             index += 1
             diag_priority_byte, index = self._pop(packet, index)
             self.diag_priority = DiagnosticsPriority(diag_priority_byte)
@@ -1166,7 +1165,7 @@ class ArtDiagData(ArtBase):
             index += 1
             text_length, index = self._consume_int_msb(packet, index)
             self.text, index = self._consume_str(packet, index, text_length + 1)
-        except SerializationException as e:
+        except SerializationError as e:
             log.exception(e)
 
         return index
@@ -1216,7 +1215,7 @@ class ArtTimeCode(ArtBase):
             index = super().deserialize(packet)
             self.protocol_version, index = self._consume_int_msb(packet, index)
             if self.protocol_version != 14:
-                raise SerializationException("Protocol is not 14!")
+                raise SerializationError("Protocol is not 14!")
             index += 2
             self.frames, index = self._pop(packet, index)
             self.seconds, index = self._pop(packet, index)
@@ -1225,7 +1224,7 @@ class ArtTimeCode(ArtBase):
 
             type_bytes, index = self._pop(packet, index)
             self.type = TimeCodeType(type_bytes)
-        except SerializationException as e:
+        except SerializationError as e:
             log.exception(e)
 
         return index
@@ -1253,12 +1252,12 @@ class ArtCommand(ArtBase):
             index = super().deserialize(packet)
             self.protocol_version, index = self._consume_int_msb(packet, index)
             if self.protocol_version != 14:
-                raise SerializationException("Protocol is not 14!")
+                raise SerializationError("Protocol is not 14!")
 
             self.esta, index = self._consume_int_msb(packet, index)
             self.command, index = self._consume_str(packet, index, 512)
 
-        except SerializationException as e:
+        except SerializationError as e:
             log.exception(e)
 
         return index
@@ -1300,7 +1299,7 @@ class ArtTrigger(ArtBase):
             index += 2
             self.oem, index = self._consume_hex_number_msb(packet, index)
             if self.protocol_version != 14:
-                raise SerializationException("Protocol is not 14!")
+                raise SerializationError("Protocol is not 14!")
 
             self.key, index = self._pop(packet, index)
             self.sub_key, index = self._pop(packet, index)
@@ -1309,7 +1308,7 @@ class ArtTrigger(ArtBase):
                 log.warning(f"Warning: Trigger key range undefined for OEM '{self.oem}', key '{self.key}'")
 
             self.payload, index = self._take(packet, 512, index)
-        except SerializationException as e:
+        except SerializationError as e:
             log.exception(e)
 
         return index
@@ -1368,13 +1367,13 @@ class ArtDmx(ArtBase):
 
             data_length, index = self._consume_int_msb(packet, index)
             self.data, index = self._take(packet, data_length, index)
-        except SerializationException as e:
+        except SerializationError as e:
             log.exception(e)
 
         return index
 
 
-class SerializationException(Exception):
+class SerializationError(Exception):
 
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
