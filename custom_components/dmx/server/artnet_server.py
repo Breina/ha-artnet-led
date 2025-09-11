@@ -10,8 +10,8 @@ from socket import socket
 from typing import Any
 
 from homeassistant.core import HomeAssistant
-from netifaces import AF_INET
 
+# AF_INET imported from _socket above for socket usage
 from custom_components.dmx.const import HA_OEM
 from custom_components.dmx.server import (
     ArtBase,
@@ -264,7 +264,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
     def get_grouped_ports(self) -> [(int, int, [[Port]])]:
         # Sort the ports by their net and subnet
-        net_sub = set(map(lambda p: (p.net, p.sub_net), self.own_port_addresses))
+        net_sub = {(p.net, p.sub_net) for p in self.own_port_addresses}
         grouped_list = [
             [ns[0], ns[1], [p.universe for p in self.own_port_addresses if (p.net, p.sub_net) == ns]] for ns in net_sub
         ]
@@ -275,7 +275,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
             # Put the Port as value, instead of just universe number
             gli[2] = [
-                list(map(lambda u: self.own_port_addresses[PortAddress(gli[0], gli[1], u)].port, chunked_universe))
+                [self.own_port_addresses[PortAddress(gli[0], gli[1], u)].port for u in chunked_universe]
                 for chunked_universe in chunked_universes
             ]
 
@@ -283,7 +283,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
     def start_server(self):
         loop = self.__hass.loop
-        server_event = loop.create_datagram_endpoint(lambda: self, local_addr=("0.0.0.0", ARTNET_PORT))
+        server_event = loop.create_datagram_endpoint(lambda: self, local_addr=("0.0.0.0", ARTNET_PORT))  # noqa: S104
 
         self.status_message = "Starting server on port 6454..."
 
@@ -357,7 +357,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
     def send_diagnostics(
         self,
-        addr: str = None,
+        addr: str | None = None,
         diagnostics_priority=DiagnosticsPriority.DP_MED,
         diagnostics_mode=DiagnosticsMode.BROADCAST,
     ):
@@ -663,7 +663,11 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
         new_addresses = node.get_addresses()
         log.debug(
-            f"Addresses of the node at {inet_ntoa(source_ip)}@{bind_index}: {new_addresses}, old addresses were: {old_addresses}"
+            "Addresses of the node at %s@%d: %s, old addresses were: %s",
+            inet_ntoa(source_ip),
+            bind_index,
+            new_addresses,
+            old_addresses,
         )
         addresses_to_remove = old_addresses - new_addresses
 
@@ -716,7 +720,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
     def handle_trigger(self, trigger: ArtTrigger):
         null_index = trigger.payload.find(b"\x00")
-        payload_bytes = trigger.payload[:null_index] if null_index != -1 else trigger.payload[:null_index]
+        payload_bytes = trigger.payload[:null_index] if null_index != -1 else trigger.payload
 
         payload_str = ""
 
@@ -740,7 +744,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             {"oem": trigger.oem, "key": trigger.key, "sub_key": trigger.sub_key, "payload": payload_str},
         )
 
-    def handle_dmx(self, dmx: ArtDmx, sender_addr: tuple[str, int] = None):
+    def handle_dmx(self, dmx: ArtDmx, sender_addr: tuple[str, int] | None = None):
         own_port = self.own_port_addresses.get(dmx.port_address)
         if not own_port:
             log.debug(f"Received ArtDmx for port address that we don't care about: {dmx.port_address}")
@@ -760,7 +764,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             sender_ip = sender_addr[0]
             sender_ip_bytes = inet_aton(sender_ip)
 
-            for (ip_bytes, bind_index), node in self.nodes_by_ip.items():
+            for (ip_bytes, _), node in self.nodes_by_ip.items():
                 if ip_bytes == sender_ip_bytes:
                     sender_node_name = node.name
                     break

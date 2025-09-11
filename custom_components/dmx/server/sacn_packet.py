@@ -124,10 +124,10 @@ class SacnPacket:
 
         offset = 0
 
-        preamble_size = struct.unpack(">H", packet[offset : offset + 2])[0]
+        _preamble_size = struct.unpack(">H", packet[offset : offset + 2])[0]
         offset += 2
 
-        postamble_size = struct.unpack(">H", packet[offset : offset + 2])[0]
+        _postamble_size = struct.unpack(">H", packet[offset : offset + 2])[0]
         offset += 2
 
         acn_pid = packet[offset : offset + 12]
@@ -136,7 +136,7 @@ class SacnPacket:
         offset += 12
 
         root_flength = struct.unpack(">H", packet[offset : offset + 2])[0]
-        root_length = root_flength & 0x0FFF
+        _root_length = root_flength & 0x0FFF
         offset += 2
 
         root_vector = struct.unpack(">I", packet[offset : offset + 4])[0]
@@ -148,7 +148,7 @@ class SacnPacket:
         offset += 16
 
         framing_flength = struct.unpack(">H", packet[offset : offset + 2])[0]
-        framing_length = framing_flength & 0x0FFF
+        _framing_length = framing_flength & 0x0FFF
         offset += 2
 
         framing_vector = struct.unpack(">I", packet[offset : offset + 4])[0]
@@ -163,7 +163,7 @@ class SacnPacket:
         priority = struct.unpack(">B", packet[offset : offset + 1])[0]
         offset += 1
 
-        reserved = struct.unpack(">H", packet[offset : offset + 2])[0]
+        _reserved = struct.unpack(">H", packet[offset : offset + 2])[0]
         offset += 2
 
         sequence_number = struct.unpack(">B", packet[offset : offset + 1])[0]
@@ -181,7 +181,7 @@ class SacnPacket:
         offset += 2
 
         dmp_flength = struct.unpack(">H", packet[offset : offset + 2])[0]
-        dmp_length = dmp_flength & 0x0FFF
+        _dmp_length = dmp_flength & 0x0FFF
         offset += 2
 
         dmp_vector = struct.unpack(">B", packet[offset : offset + 1])[0]
@@ -189,13 +189,13 @@ class SacnPacket:
             raise ValueError(f"Invalid DMP vector: {dmp_vector}")
         offset += 1
 
-        address_type_data_type = struct.unpack(">B", packet[offset : offset + 1])[0]
+        _address_type_data_type = struct.unpack(">B", packet[offset : offset + 1])[0]
         offset += 1
 
-        first_property_address = struct.unpack(">H", packet[offset : offset + 2])[0]
+        _first_property_address = struct.unpack(">H", packet[offset : offset + 2])[0]
         offset += 2
 
-        address_increment = struct.unpack(">H", packet[offset : offset + 2])[0]
+        _address_increment = struct.unpack(">H", packet[offset : offset + 2])[0]
         offset += 2
 
         property_value_count = struct.unpack(">H", packet[offset : offset + 2])[0]

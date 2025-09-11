@@ -91,7 +91,8 @@ async def cleanup_obsolete_entities(
 
                     if device_matches:
                         log.debug(
-                            f"Marking entity for removal: {entity.entity_id} (device: {device_name}, old fingerprint: {old_fingerprint})"
+                            f"Marking entity for removal: {entity.entity_id} "
+                            f"(device: {device_name}, old fingerprint: {old_fingerprint})"
                         )
                         obsolete_entities.append(entity)
                         break

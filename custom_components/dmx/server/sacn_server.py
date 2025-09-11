@@ -98,7 +98,7 @@ class SacnServer:
         self.running = False
         log.info("sACN server stopped")
 
-    def add_universe(self, universe_id: int, unicast_addresses: list = None) -> bool:
+    def add_universe(self, universe_id: int, unicast_addresses: list | None = None) -> bool:
         if not (1 <= universe_id <= 63999):
             log.error(f"Invalid universe ID: {universe_id}. Must be 1-63999")
             return False
@@ -183,10 +183,12 @@ class SacnServer:
                     self.socket.sendto, packet_bytes, (unicast_addr["host"], unicast_addr["port"])
                 )
 
-            log.debug(
-                f"Sent sACN data to universe {universe_id} ({multicast_addr})"
-                f"{' + ' + str(len(universe_state.unicast_addresses)) + ' unicast' if universe_state.unicast_addresses else ''}"
+            unicast_info = (
+                f" + {len(universe_state.unicast_addresses)} unicast"
+                if universe_state.unicast_addresses
+                else ""
             )
+            log.debug(f"Sent sACN data to universe {universe_id} ({multicast_addr}){unicast_info}")
 
             universe_state.increment_sequence()
             universe_state.last_data = dmx_data.copy()
@@ -263,7 +265,7 @@ class SacnServer:
         }
 
     def get_all_universes(self) -> dict[int, dict]:
-        return {uid: self.get_universe_info(uid) for uid in self.universes.keys()}
+        return {uid: self.get_universe_info(uid) for uid in self.universes}
 
 
 class SacnReceiver(asyncio.DatagramProtocol):
@@ -375,7 +377,7 @@ async def create_sacn_receiver(
 
     loop = hass.loop
     try:
-        transport, protocol = await loop.create_datagram_endpoint(lambda: receiver, local_addr=("0.0.0.0", SACN_PORT))
+        transport, _ = await loop.create_datagram_endpoint(lambda: receiver, local_addr=("0.0.0.0", SACN_PORT))  # noqa: S104
 
         # Set socket options for multicast reception
         sock = transport.get_extra_info("socket")

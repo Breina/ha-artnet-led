@@ -167,10 +167,7 @@ class Matrix:
                 stop = exact
             elif "n" in constraint:
                 step = int(constraint[: constraint.index("n")])
-                if "+" in constraint:
-                    start = int(constraint[constraint.index("+") + 1 :]) - 1
-                else:
-                    start = step - 1
+                start = int(constraint[constraint.index("+") + 1 :]) - 1 if "+" in constraint else step - 1
             else:
                 raise FixtureConfigurationError(f"Wtf is this kind of pixel group: {constraint}")
 

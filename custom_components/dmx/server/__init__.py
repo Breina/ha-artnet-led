@@ -255,7 +255,7 @@ class Port:
     rdm_enabled: bool = False
     output_continuous: bool = True
 
-    last_input_seen: datetime = datetime.datetime.now()
+    last_input_seen: datetime.datetime = field(default_factory=datetime.datetime.now)
 
     @property
     def port_types_flags(self) -> int:
@@ -320,19 +320,22 @@ class ArtIpProgCommand:
 class ArtAddressCommand(Enum):
     # @formatter:off
     AC_NONE = 0x00  # No action
-    AC_CANCEL_MERGE = 0x01  # If Node is currently in merge mode, cancel merge mode upon receipt of next ArtDmx packet. See discussion of merge mode operation.
+    AC_CANCEL_MERGE = 0x01  # If Node is currently in merge mode, cancel merge mode upon receipt of next ArtDmx packet.
+                            # See discussion of merge mode operation.
     AC_LED_NORMAL = 0x02  # The front panel indicators of the Node operate normally.
     AC_LED_MUTE = 0x03  # The front panel indicators of the Node are disabled and switched off.
-    AC_LED_LOCATE = 0x04  # Rapid flashing of the Node’s front panel indicators. It is intended as an outlet identifier for large installations.
-    AC_RESET_RX_FLAGS = 0x05  # Resets the Node’s Sip, Text, Test and data error flags. If an output short is being flagged, forces the test to re-run.
+    AC_LED_LOCATE = 0x04  # Rapid flashing of the Node's front panel indicators.
+                          # It is intended as an outlet identifier for large installations.
+    AC_RESET_RX_FLAGS = 0x05  # Resets the Node's Sip, Text, Test and data error flags.
+                              # If an output short is being flagged, forces the test to re-run.
     AC_ANALYSIS_ON = 0x06  # Enable analysis and debugging mode.
     AC_ANALYSIS_OFF = 0x07  # Disable analysis and debugging mode.
 
     # Failsafe configuration commands: These settings should be retained by the node during power cycling.
     AC_FAIL_HOLD = 0x08  # Set the node to hold last state in the event of loss of network data.
-    AC_FAIL_ZERO = 0x09  # Set the node’s outputs to zero in the event of loss of network data.
-    AC_FAIL_FULL = 0x0A  # Set the node’s outputs to full in the event of loss of network data.
-    AC_FAIL_SCENE = 0x0B  # Set the node’s outputs to play the failsafescene in the event of loss of network data.
+    AC_FAIL_ZERO = 0x09  # Set the node's outputs to zero in the event of loss of network data.
+    AC_FAIL_FULL = 0x0A  # Set the node's outputs to full in the event of loss of network data.
+    AC_FAIL_SCENE = 0x0B  # Set the node's outputs to play the failsafescene in the event of loss of network data.
     AC_FAIL_RECORD = 0x0C  # Record the current output state as the failsafescene.
 
     # Node configuration commands: Note that Ltp / Htp settings should be retained by the node during power cycling.
@@ -634,7 +637,7 @@ class ArtPollReply(ArtBase):
         short_name: str = "HA ArtNet",
         long_name: str = "HomeAssistant ArtNet controller",
         node_report: str = "",
-        ports: list[Port] = [],
+        ports: list[Port] | None = None,
         acn_priority: int = 100,
         sw_macro_bitmap: int = 0,
         sw_remote_bitmap: int = 0,
@@ -677,9 +680,9 @@ class ArtPollReply(ArtBase):
 
         self.node_report = node_report
 
-        assert len(ports) <= 4
-        self.ports = ports
-        for i in range(4 - len(ports)):
+        self.ports = ports if ports is not None else []
+        assert len(self.ports) <= 4
+        for _ in range(4 - len(self.ports)):
             self.ports.append(Port())
 
         self.acn_priority = acn_priority
@@ -788,7 +791,7 @@ class ArtPollReply(ArtBase):
         )
         packet.append(status2)
 
-        packet.extend(map(lambda p: p.good_output_b, self.ports))
+        packet.extend(p.good_output_b for p in self.ports)
 
         status3 = (
             (self.failsafe_state.value << 6)
@@ -888,7 +891,7 @@ class ArtIpProg(ArtBase):
     def __init__(
         self,
         protocol_version: int = PROTOCOL_VERSION,
-        command: ArtIpProgCommand = ArtIpProgCommand(),
+        command: ArtIpProgCommand | None = None,
         prog_ip: bytes = bytes([0x00] * 4),
         prog_subnet: bytes = bytes([0x00] * 4),
         prog_gateway: bytes = bytes([0x00] * 4),
@@ -900,7 +903,7 @@ class ArtIpProg(ArtBase):
         assert prog_gateway.__len__() == 4
 
         self.protocol_version = protocol_version
-        self.command = command
+        self.command = command if command is not None else ArtIpProgCommand()
         self.prog_ip = prog_ip
         self.prog_subnet = prog_subnet
         self.prog_gateway = prog_gateway
@@ -1118,9 +1121,9 @@ class ArtAddress(ArtBase):
 
     @staticmethod
     def __consume_sw_in_out(packet: bytearray, index: int) -> (list[int], list[ValueAction], int):
-        sw_action = list(map(lambda i: ArtAddress.__consume_value_and_action(packet, index + i), range(4)))
-        sws = list(map(lambda sw_a: sw_a[0], sw_action))
-        actions = list(map(lambda sw_a: sw_a[1], sw_action))
+        sw_action = [ArtAddress.__consume_value_and_action(packet, index + i) for i in range(4)]
+        sws = [sw_a[0] for sw_a in sw_action]
+        actions = [sw_a[1] for sw_a in sw_action]
         return sws, actions, index + 4
 
 
@@ -1321,7 +1324,7 @@ class ArtDmx(ArtBase):
         protocol_version: int = PROTOCOL_VERSION,
         sequence_number: int = 0,
         physical: int = 0,
-        port_address: PortAddress = PortAddress(0, 0, 0),
+        port_address: PortAddress | None = None,
         data: bytearray = [0x00] * 2,
     ) -> None:
         super().__init__(opcode=OpCode.OP_OUTPUT_DMX),
@@ -1334,7 +1337,7 @@ class ArtDmx(ArtBase):
         assert 0 <= physical <= 3
         self.physical = physical
 
-        self.port_address = port_address
+        self.port_address = port_address if port_address is not None else PortAddress(0, 0, 0)
 
         assert len(data) <= 512
         self.data = data

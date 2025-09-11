@@ -69,11 +69,10 @@ class DmxUniverseSwitch(SwitchEntity):
             elif hasattr(entity, "universe"):
                 entity_universe = entity.universe
 
-            if entity_universe == self._universe:
-                if hasattr(entity, "available"):
-                    entity.available = available
-                    if entity.hass:  # Only update state if entity is added to hass
-                        entity.async_write_ha_state()
+            if entity_universe == self._universe and hasattr(entity, "available"):
+                entity.available = available
+                if entity.hass:  # Only update state if entity is added to hass
+                    entity.async_write_ha_state()
 
         log.debug("Set availability to %s for entities in universe %s", available, self._universe_name)
 

@@ -29,7 +29,7 @@ def generate_fixture_fingerprint(
     # Build a serializable representation of the channel structure
     channel_data = {"fixture_name": fixture_name, "mode_name": mode_name, "channels": []}
 
-    for i, channel in enumerate(channels):
+    for _, channel in enumerate(channels):
         if channel is None:
             channel_data["channels"].append(None)
         elif isinstance(channel, ChannelOffset):
@@ -39,7 +39,7 @@ def generate_fixture_fingerprint(
 
     # Create hash from the serialized data
     serialized = json.dumps(channel_data, sort_keys=True)
-    hash_obj = hashlib.md5(serialized.encode("utf-8"))
+    hash_obj = hashlib.md5(serialized.encode("utf-8"))  # noqa: S324
     return hash_obj.hexdigest()[:8]
 
 

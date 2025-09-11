@@ -25,7 +25,11 @@ CHANNEL_COLORS = {
 
 
 def plot_animation_data(
-    captured_frames, hass, title: str = "DMX Animation Data", y_range: tuple[int, int] = (0, 255), save_path: str | None = None
+    captured_frames,
+    hass,
+    title: str = "DMX Animation Data",
+    y_range: tuple[int, int] = (0, 255),
+    save_path: str | None = None,
 ):
     """
     Create an interactive plot of the captured animation data
@@ -49,7 +53,6 @@ def plot_animation_data(
 
     # Extract timestamps and convert to relative time
     start_time = captured_frames[0][0]
-    times = [(frame[0] - start_time) for frame in captured_frames]
 
     # Group data by channel type
     channel_data = {}

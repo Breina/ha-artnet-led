@@ -168,7 +168,7 @@ class DmxUniverse:
         # Send via sACN if available
         if self.sacn_server and self.sacn_universe:
             # sACN requires start code + channel data (minimum 25 bytes total)
-            sacn_data = bytearray([0] + list(data))  # Add start code
+            sacn_data = bytearray([0, *data])  # Add start code
             if len(sacn_data) < 25:
                 sacn_data.extend([0] * (25 - len(sacn_data)))
             self.sacn_server.send_dmx_data(self.sacn_universe, sacn_data)

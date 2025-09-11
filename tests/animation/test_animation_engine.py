@@ -126,7 +126,7 @@ class TestDmxAnimationEngine:
 
         with patch("builtins.print"):  # Suppress output
             # Start RGB animation
-            rgb_anim = animation_engine.create_animation(
+            _rgb_anim = animation_engine.create_animation(
                 channel_mappings=rgb_mappings,
                 current_values={ChannelType.RED: 0, ChannelType.GREEN: 0, ChannelType.BLUE: 0},
                 desired_values={ChannelType.RED: 255, ChannelType.GREEN: 255, ChannelType.BLUE: 255},
@@ -134,7 +134,7 @@ class TestDmxAnimationEngine:
             )
 
             # Start dimmer animation (no conflict)
-            dimmer_anim = animation_engine.create_animation(
+            _dimmer_anim = animation_engine.create_animation(
                 channel_mappings=dimmer_mappings,
                 current_values={ChannelType.DIMMER: 0},
                 desired_values={ChannelType.DIMMER: 255},

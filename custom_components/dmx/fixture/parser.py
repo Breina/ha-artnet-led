@@ -187,9 +187,15 @@ def __parse_channels(
     for name, channel_json in available_channels_json.items():
         dmx_value_resolution_str = channel_json.get("dmxValueResolution")
         if dmx_value_resolution_str:
-            dmx_value_resolution = [
-                dvr for dvr in DmxValueResolution if dvr.name.endswith(dmx_value_resolution_str.upper())
-            ][0]
+            try:
+                dmx_value_resolution = next(
+                    dvr for dvr in DmxValueResolution if dvr.name.endswith(dmx_value_resolution_str.upper())
+                )
+            except StopIteration:
+                raise FixtureConfigurationError(
+                    f"Invalid dmxValueResolution '{dmx_value_resolution_str}'. "
+                    "Must be one of: 8bit, 16bit, 24bit"
+                ) from None
         else:
             # Underscore is because we can't start with a number, not because we want to protect it.
             # noinspection PyProtectedMember
@@ -263,7 +269,8 @@ def __parse_capability(channel: Channel, capability_json: dict, config_url: str 
         # Spec is defined in camelCase, but Python likes parameters in snake_case.
         arg_name = underscore_pattern.sub("_", key).lower()
 
-        # Bundle the _start and _end capabilities into a list. This reduces the amount of variables we have to write in capabilities.py.
+        # Bundle the _start and _end capabilities into a list.
+        # This reduces the amount of variables we have to write in capabilities.py.
         is_combined = False
         is_start = arg_name.endswith("_start")
         if is_start or arg_name.endswith("_end"):
@@ -312,16 +319,16 @@ def __extract_value_type(name: str, value_json, is_combined: bool, params: Mappi
         type_annotation = type_annotation.__args__[0]
 
     # Unwrap if type is a list and indicate to wrap the value if it's not already
-    if typing.get_origin(type_annotation) == list:
+    if typing.get_origin(type_annotation) is list:
         type_annotation = type_annotation.__args__[0]
         should_wrap = not is_combined
 
     if isinstance(value_json, list):
         # If type is List[List[str]], then unwrap the second time
-        if typing.get_origin(type_annotation) == list:
+        if typing.get_origin(type_annotation) is list:
             type_annotation = type_annotation.__args__[0]
 
-        value = list(map(lambda val: __extract_single_value(val, type_annotation), value_json))
+        value = [__extract_single_value(val, type_annotation) for val in value_json]
     else:
         value = __extract_single_value(value_json, type_annotation)
 
@@ -386,7 +393,8 @@ def __parse_mode_channel(mode_channel: None | str | dict) -> None | str | Matrix
 
     repeat_for_json = mode_channel["repeatFor"]
 
-    repeat_for = RepeatFor[repeat_for_json] if isinstance(repeat_for_json, str) else repeat_for_json # It's a list of strings otherwise
+    # It's either a string enum or a list of strings
+    repeat_for = RepeatFor[repeat_for_json] if isinstance(repeat_for_json, str) else repeat_for_json
 
     channel_order = ChannelOrder[mode_channel["channelOrder"]]
     template_channels = mode_channel["templateChannels"]
