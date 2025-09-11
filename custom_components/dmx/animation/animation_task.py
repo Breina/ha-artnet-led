@@ -1,6 +1,5 @@
 import logging
 import time
-from typing import Dict, List, Optional, Set
 
 from custom_components.dmx.animation.color_calculator import LightTransitionAnimator
 from custom_components.dmx.entity.light import ChannelMapping, ChannelType
@@ -14,12 +13,12 @@ class AnimationTask:
     def __init__(
         self,
         animation_id: str,
-        channel_mappings: List[ChannelMapping],
-        current_values: Dict[ChannelType, int],
-        desired_values: Dict[ChannelType, int],
+        channel_mappings: list[ChannelMapping],
+        current_values: dict[ChannelType, int],
+        desired_values: dict[ChannelType, int],
         duration_seconds: float,
-        min_kelvin: Optional[int] = None,
-        max_kelvin: Optional[int] = None,
+        min_kelvin: int | None = None,
+        max_kelvin: int | None = None,
     ):
         self.animation_id = animation_id
         self.channel_mappings = channel_mappings
@@ -29,7 +28,7 @@ class AnimationTask:
 
         self.task = None
 
-        self.controlled_indexes: Set[int] = set()
+        self.controlled_indexes: set[int] = set()
         for mapping in channel_mappings:
             self.controlled_indexes.update(mapping.dmx_indexes)
 
@@ -44,7 +43,7 @@ class AnimationTask:
         progress = min(elapsed / self.duration_seconds, 1.0)
         return progress
 
-    def calculate_frame_values(self) -> Dict[ChannelType, int]:
+    def calculate_frame_values(self) -> dict[ChannelType, int]:
         """Calculate the current frame values based on animation progress"""
         progress = self.get_progress()
 

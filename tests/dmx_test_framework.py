@@ -1,10 +1,8 @@
 import asyncio
 import os
 import sys
-from typing import List, Dict, Set
 from unittest.mock import MagicMock
 
-import pytest
 from homeassistant.helpers.entity import Entity
 
 from custom_components.dmx.entity.number import DmxNumberEntity
@@ -49,9 +47,9 @@ class MockDmxUniverse(DmxUniverse):
         """Update single value."""
         if isinstance(channel, int):
             channel = [channel]
-        await self.update_multiple_values({ch: value for ch in channel}, source)
+        await self.update_multiple_values(dict.fromkeys(channel, value), source)
 
-    async def update_multiple_values(self, updates: Dict[int, int], source: str | None = None, send_update=True):
+    async def update_multiple_values(self, updates: dict[int, int], source: str | None = None, send_update=True):
         """Update multiple values.
         :param send_update:
         """
@@ -104,7 +102,7 @@ class MockHomeAssistant(MagicMock):
         self.bus.async_fire = MagicMock()
         self.bus.async_listen = MagicMock()
         self.bus.async_listen_once = MagicMock()
-        self._tasks: Set[asyncio.Task] = set()
+        self._tasks: set[asyncio.Task] = set()
         self._task_results = []
 
     async def async_add_executor_job(self, func, *args, **kwargs):
@@ -127,7 +125,7 @@ class MockHomeAssistant(MagicMock):
         if self._tasks:
             try:
                 await asyncio.wait_for(asyncio.gather(*self._tasks, return_exceptions=True), timeout=timeout)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Cancel remaining tasks
                 for task in self._tasks:
                     if not task.done():
@@ -145,7 +143,7 @@ def assert_dmx(universe: MockDmxUniverse, channel: int, value: int):
     ), f"Channel {channel} value is {universe.get_channel_value(channel)}, expected {value}"
 
 
-def assert_dmx_range(universe: MockDmxUniverse, start_channel: int, values: List[int]):
+def assert_dmx_range(universe: MockDmxUniverse, start_channel: int, values: list[int]):
     """Assert a range of DMX values starting from a specific channel.
 
     Args:
@@ -173,7 +171,7 @@ def assert_dmx_range(universe: MockDmxUniverse, start_channel: int, values: List
         assert False, error_msg
 
 
-def get_entity_by_name(entities: List[Entity], name: str) -> DmxNumberEntity | DmxSelectEntity | DmxLightEntity:
+def get_entity_by_name(entities: list[Entity], name: str) -> DmxNumberEntity | DmxSelectEntity | DmxLightEntity:
     found = next((entity for entity in entities if entity._attr_name == name), None)
     assert found, f"{name} entity not found, valid names are: {[e._attr_name for e in entities]}"
     found.hass = MagicMock()

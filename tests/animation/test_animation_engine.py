@@ -5,7 +5,7 @@ import pytest
 
 from custom_components.dmx.animation import Channel
 from custom_components.dmx.animation.engine import DmxAnimationEngine
-from custom_components.dmx.entity.light import ChannelType, ChannelMapping
+from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from tests.dmx_test_framework import MockHomeAssistant
 
 

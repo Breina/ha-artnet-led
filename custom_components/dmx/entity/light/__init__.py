@@ -17,6 +17,6 @@ class ChannelType(Enum):
 
 @dataclass
 class ChannelMapping:
-    dmx_indexes: List[int]
+    dmx_indexes: list[int]
     channel: Channel
     channel_type: ChannelType

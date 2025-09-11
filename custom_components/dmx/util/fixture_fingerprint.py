@@ -4,14 +4,13 @@ Fixture fingerprinting utility to detect meaningful changes in fixture configura
 
 import hashlib
 import json
-from typing import Union, List, Optional
 
-from custom_components.dmx.fixture.channel import Channel, ChannelOffset, SwitchingChannel
 from custom_components.dmx.fixture.capability import Capability
+from custom_components.dmx.fixture.channel import Channel, ChannelOffset, SwitchingChannel
 
 
 def generate_fixture_fingerprint(
-    fixture_name: str, mode_name: str, channels: List[Union[None, ChannelOffset, SwitchingChannel]]
+    fixture_name: str, mode_name: str, channels: list[None | ChannelOffset | SwitchingChannel]
 ) -> str:
     """
     Generate a fingerprint for a specific fixture mode configuration.

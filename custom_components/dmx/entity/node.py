@@ -1,22 +1,22 @@
 import asyncio
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import DeviceInfo
 
 from custom_components.dmx import ArtPollReply
 from custom_components.dmx.server import (
-    StyleCode,
-    IndicatorState,
     BootProcess,
     FailsafeState,
+    IndicatorState,
     PortAddressProgrammingAuthority,
+    StyleCode,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -124,7 +124,7 @@ class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
         return self._connected
 
     @property
-    def extra_state_attributes(self) -> Dict[str, Any]:
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
         attrs = {
             "IP address": self._ip_address,
@@ -229,7 +229,7 @@ class ArtNetRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
         return self._supports_rdm
 
     @property
-    def extra_state_attributes(self) -> Dict[str, Any]:
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
         return {
             "Supports RDM through Art-Net": self._supports_rdm_through_artnet,
@@ -265,7 +265,7 @@ class ArtNetDHCPBinarySensor(ArtNetEntity, BinarySensorEntity):
         return self._dhcp_configured
 
     @property
-    def extra_state_attributes(self) -> Dict[str, Any]:
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
         return {
             "DHCP capable": self._dhcp_capable,
@@ -346,7 +346,7 @@ class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
         return self._is_available
 
     @property
-    def extra_state_attributes(self) -> Dict[str, Any]:
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
         return {
             "Includes DMX512 test packets": self._includes_dmx512_test_packets,
@@ -432,7 +432,7 @@ class ArtNetPortOutputBinarySensor(ArtNetEntity, BinarySensorEntity):
         return self._is_available
 
     @property
-    def extra_state_attributes(self) -> Dict[str, Any]:
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
         return {
             "Includes DMX512 test packets": self._includes_dmx512_test_packets,

@@ -35,7 +35,7 @@ class DmxSelectEntity(SelectEntity):
             self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}_{fixture_fingerprint}"
             self.entity_id = f"select.{self._attr_unique_id}"
         else:
-            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
+            self._attr_unique_id = f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
 
         self._attr_icon = determine_icon(channel)
 

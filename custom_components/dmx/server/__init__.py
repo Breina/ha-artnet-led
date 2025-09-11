@@ -457,8 +457,8 @@ class ArtBase:
         packet.extend(map(ord, padded_text))
 
     @staticmethod
-    def _consume_str(packet: bytearray, index: int, length: int) -> (Optional[str], int):
-        decoded_str: Optional[str] = None
+    def _consume_str(packet: bytearray, index: int, length: int) -> (str | None, int):
+        decoded_str: str | None = None
         raw_string_from_packet = packet[index : index + length]
 
         # assume the data is ascii
@@ -485,13 +485,13 @@ class ArtBase:
         # check if decoding has failed
         if decoded_str is None:
             log.error(
-                "Unable to convert bytes to string: {raw_hex}".format(raw_hex=bytes(raw_string_from_packet).hex())
+                f"Unable to convert bytes to string: {bytes(raw_string_from_packet).hex()}"
             )
 
         return decoded_str, index + length
 
     @staticmethod
-    def _decode_bytes(byte_str: bytearray) -> Optional[str]:
+    def _decode_bytes(byte_str: bytearray) -> str | None:
         for encoding in ArtBase.__ENCODINGS__:
             try:
                 decoded_str = byte_str.decode(encoding)

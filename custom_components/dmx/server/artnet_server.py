@@ -3,38 +3,38 @@ import datetime
 import logging
 import random
 import uuid
-from asyncio import transports, Task
+from _socket import AF_INET, IPPROTO_UDP, SO_BROADCAST, SOCK_DGRAM, SOL_SOCKET, inet_aton, inet_ntoa
+from asyncio import Task, transports
 from dataclasses import dataclass, field
 from socket import socket
-from typing import Any, Union
+from typing import Any
 
-from _socket import SO_BROADCAST, AF_INET, SOCK_DGRAM, SOL_SOCKET, IPPROTO_UDP, inet_aton, inet_ntoa
 from homeassistant.core import HomeAssistant
 from netifaces import AF_INET
 
 from custom_components.dmx.const import HA_OEM
 from custom_components.dmx.server import (
-    OpCode,
     ArtBase,
+    ArtCommand,
+    ArtDiagData,
+    ArtDmx,
+    ArtIpProgReply,
     ArtPoll,
     ArtPollReply,
-    PortAddress,
-    IndicatorState,
-    PortAddressProgrammingAuthority,
+    ArtTimeCode,
+    ArtTrigger,
     BootProcess,
-    NodeReport,
-    Port,
-    PortType,
-    StyleCode,
-    FailsafeState,
     DiagnosticsMode,
     DiagnosticsPriority,
-    ArtIpProgReply,
-    ArtDiagData,
-    ArtTimeCode,
-    ArtCommand,
-    ArtTrigger,
-    ArtDmx,
+    FailsafeState,
+    IndicatorState,
+    NodeReport,
+    OpCode,
+    Port,
+    PortAddress,
+    PortAddressProgrammingAuthority,
+    PortType,
+    StyleCode,
 )
 
 STALE_NODE_CUTOFF_TIME = 10
@@ -208,7 +208,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
         self._update_status_message()
         self.update_subscribers()
 
-    def get_port_bounds(self) -> Union[tuple[PortAddress, PortAddress], None]:
+    def get_port_bounds(self) -> tuple[PortAddress, PortAddress] | None:
         port_addresses = self.own_port_addresses.keys()
         if not port_addresses:
             return None
@@ -236,7 +236,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
                 if self.uptime() > 3:
                     own_port: OwnPort = self.own_port_addresses.get(port_address, None)
                     if own_port and own_port.data:
-                        log.info(f"Since we have data on that node already, let's send an update immediately to it!")
+                        log.info("Since we have data on that node already, let's send an update immediately to it!")
                         self.send_dmx(port_address, own_port.data)
 
         else:
@@ -783,4 +783,4 @@ class ArtNetServer(asyncio.DatagramProtocol):
             self.update_subscribers()
 
 
-from custom_components.dmx.server.net_utils import get_private_ip, get_default_gateway
+from custom_components.dmx.server.net_utils import get_default_gateway, get_private_ip

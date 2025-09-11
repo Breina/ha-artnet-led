@@ -1,16 +1,15 @@
 from dataclasses import dataclass
 from itertools import groupby
-from typing import List, Union
 
 from homeassistant.components.light import ColorMode
-from homeassistant.helpers.entity import Entity, DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, Entity
 
 from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from custom_components.dmx.entity.light.light_entity import DmxLightEntity
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.entity.select import DmxSelectEntity
-from custom_components.dmx.fixture.capability import ColorIntensity, SingleColor, Intensity, ColorTemperature
-from custom_components.dmx.fixture.channel import ChannelOffset, SwitchingChannel, Channel
+from custom_components.dmx.fixture.capability import ColorIntensity, ColorTemperature, Intensity, SingleColor
+from custom_components.dmx.fixture.channel import Channel, ChannelOffset, SwitchingChannel
 from custom_components.dmx.io.dmx_io import DmxUniverse
 from custom_components.dmx.util.fixture_fingerprint import generate_fixture_fingerprint
 
@@ -37,7 +36,7 @@ def __get_all_channels(
 
 
 def __accumulate_light_entities(
-    accumulator: dict[str, list[ChannelMapping]], dmx_channel_indexes: List[int], channel: Channel
+    accumulator: dict[str, list[ChannelMapping]], dmx_channel_indexes: list[int], channel: Channel
 ) -> None:
     assert len(channel.capabilities) == 1
 
@@ -262,7 +261,7 @@ def create_entities(
             number_entities = {
                 str(capability): DmxNumberEntity(
                     name,
-                    f"{channel.name} {str(capability)}",
+                    f"{channel.name} {capability!s}",
                     entity_id_prefix,
                     capability,
                     universe,

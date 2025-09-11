@@ -1,6 +1,6 @@
 import socket
 
-from netifaces import gateways, AF_INET
+from netifaces import AF_INET, gateways
 
 
 def get_default_gateway():

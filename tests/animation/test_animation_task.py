@@ -1,12 +1,10 @@
-import asyncio
 import time
-from unittest.mock import patch
 
 import pytest
 
 from custom_components.dmx.animation import Channel
 from custom_components.dmx.animation.engine import AnimationTask, DmxAnimationEngine
-from custom_components.dmx.entity.light import ChannelType, ChannelMapping
+from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from tests.dmx_test_framework import MockHomeAssistant
 
 

@@ -1,7 +1,9 @@
 import struct
 import uuid
+
 import pytest
-from custom_components.dmx.server.sacn_packet import SacnPacket, SacnSyncPacket, SacnOptions
+
+from custom_components.dmx.server.sacn_packet import SacnOptions, SacnPacket, SacnSyncPacket
 
 
 class TestSacnPacket:

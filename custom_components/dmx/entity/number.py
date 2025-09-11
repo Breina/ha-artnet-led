@@ -1,12 +1,11 @@
 import logging
-from typing import List
 
 from homeassistant.components.number import NumberMode, RestoreNumber
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
 
 from custom_components.dmx import DOMAIN
-from custom_components.dmx.fixture.capability import DynamicEntity, Capability
+from custom_components.dmx.fixture.capability import Capability, DynamicEntity
 from custom_components.dmx.io.dmx_io import DmxUniverse
 
 log = logging.getLogger(__name__)
@@ -20,7 +19,7 @@ class DmxNumberEntity(RestoreNumber):
         entity_id_prefix: str | None,
         capability: Capability,
         universe: DmxUniverse,
-        dmx_indexes: List[int],
+        dmx_indexes: list[int],
         device: DeviceInfo,
         fixture_fingerprint: str,
         available: bool = True,
@@ -36,7 +35,7 @@ class DmxNumberEntity(RestoreNumber):
             self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}_{fixture_fingerprint}"
             self.entity_id = f"number.{self._attr_unique_id}"
         else:
-            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
+            self._attr_unique_id = f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
 
         self._attr_icon = capability.icon()
         self._attr_extra_state_attributes = capability.extra_attributes()

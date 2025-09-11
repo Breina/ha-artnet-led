@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import time
-from typing import Dict, List, Optional
 
 from homeassistant.core import HomeAssistant
 
@@ -19,8 +18,8 @@ class DmxAnimationEngine:
         self.universe = universe
         self.max_fps = max_fps
         self.frame_interval = 1.0 / max_fps
-        self.active_animations: Dict[str, AnimationTask] = {}
-        self.dmx_channel_owners: Dict[int, str] = {}  # Maps DMX index to animation_id
+        self.active_animations: dict[str, AnimationTask] = {}
+        self.dmx_channel_owners: dict[int, str] = {}  # Maps DMX index to animation_id
         self._animation_counter = 0
 
     def _generate_animation_id(self) -> str:
@@ -102,7 +101,7 @@ class DmxAnimationEngine:
         finally:
             self._cleanup_animation(animation.animation_id)
 
-    def _output_frame(self, frame_values: Dict[ChannelType, int]):
+    def _output_frame(self, frame_values: dict[ChannelType, int]):
         """Output frame data to DMX universe"""
         if not self.universe:
             return
@@ -134,12 +133,12 @@ class DmxAnimationEngine:
 
     def create_animation(
         self,
-        channel_mappings: List[ChannelMapping],
-        current_values: Dict[ChannelType, int],
-        desired_values: Dict[ChannelType, int],
+        channel_mappings: list[ChannelMapping],
+        current_values: dict[ChannelType, int],
+        desired_values: dict[ChannelType, int],
         animation_duration_seconds: float,
-        min_kelvin: Optional[int] = None,
-        max_kelvin: Optional[int] = None,
+        min_kelvin: int | None = None,
+        max_kelvin: int | None = None,
         completion_callback=None,
     ) -> str:
         """
@@ -195,6 +194,6 @@ class DmxAnimationEngine:
         """Get the number of currently active animations"""
         return len(self.active_animations)
 
-    def get_controlled_channels(self) -> Dict[int, str]:
+    def get_controlled_channels(self) -> dict[int, str]:
         """Get a mapping of DMX channels to their controlling animation IDs"""
         return self.dmx_channel_owners.copy()

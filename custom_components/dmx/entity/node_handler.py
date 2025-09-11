@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Dict, Any
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -9,26 +9,25 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import async_get_platforms
 from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 
-from custom_components.dmx import ArtPollReply, DOMAIN, Node
+from custom_components.dmx import DOMAIN, ArtPollReply, Node
 from custom_components.dmx.const import CONF_NODE_ENTITIES
-from custom_components.dmx.server import StyleCode
 from custom_components.dmx.entity.node import (
-    ArtNetOnlineBinarySensor,
-    ArtNetIndicatorStateSensor,
+    ArtNetACNPrioritySensor,
     ArtNetBootProcessSensor,
-    ArtNetRDMBinarySensor,
     ArtNetDHCPBinarySensor,
     ArtNetFailsafeStateSensor,
-    ArtNetACNPrioritySensor,
+    ArtNetIndicatorStateSensor,
     ArtNetNodeReportSensor,
+    ArtNetOnlineBinarySensor,
     ArtNetPortAddressProgrammingAuthoritySensor,
     ArtNetPortInputBinarySensor,
-    ArtNetPortUniverseSensor,
-    ArtNetPortOutputBinarySensor,
     ArtNetPortMergeModeSelect,
-    ArtNetPortSACNBinarySensor,
-    ArtNetPortRDMBinarySensor,
+    ArtNetPortOutputBinarySensor,
     ArtNetPortOutputModeSensor,
+    ArtNetPortRDMBinarySensor,
+    ArtNetPortSACNBinarySensor,
+    ArtNetPortUniverseSensor,
+    ArtNetRDMBinarySensor,
 )
 
 log = logging.getLogger(__name__)
@@ -42,7 +41,7 @@ class DynamicNodeHandler:
         self.hass = hass
         self.entry = entry
         self.controller = controller
-        self.discovered_nodes: Dict[str, Any] = {}  # Track discovered nodes by IP
+        self.discovered_nodes: dict[str, Any] = {}  # Track discovered nodes by IP
 
     async def handle_new_node(self, artpoll_reply: ArtPollReply) -> None:
         """Handle a newly discovered ArtNet node."""

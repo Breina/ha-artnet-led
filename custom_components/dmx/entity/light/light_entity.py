@@ -1,8 +1,8 @@
 import logging
 from functools import partial
-from typing import Optional, List, Dict, Tuple, Any
+from typing import Any
 
-from homeassistant.components.light import LightEntity, ColorMode, LightEntityFeature, ATTR_TRANSITION
+from homeassistant.components.light import ATTR_TRANSITION, ColorMode, LightEntity, LightEntityFeature
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -22,9 +22,9 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         self,
         fixture_name: str,
         entity_id_prefix: str | None,
-        matrix_key: Optional[str],
+        matrix_key: str | None,
         color_mode: ColorMode,
-        channels: List[ChannelMapping],
+        channels: list[ChannelMapping],
         device: DeviceInfo,
         universe: DmxUniverse,
         fixture_fingerprint: str,
@@ -39,7 +39,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
             self._attr_unique_id = f"{base_id}_{fixture_fingerprint}"
             self.entity_id = f"light.{self._attr_unique_id}"
         else:
-            self._attr_unique_id = f"{DOMAIN}_{str(universe.port_address)}_{fixture_name}_{fixture_fingerprint}"
+            self._attr_unique_id = f"{DOMAIN}_{universe.port_address!s}_{fixture_name}_{fixture_fingerprint}"
             if matrix_key:
                 self._attr_unique_id = f"{self._attr_unique_id}_{matrix_key}"
 
@@ -65,7 +65,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         self._register_channel_listeners(self.channel_map)
 
-    def _register_channel_listeners(self, channel_map: Dict[ChannelType, ChannelMapping]):
+    def _register_channel_listeners(self, channel_map: dict[ChannelType, ChannelMapping]):
         for channel_type, channel_data in channel_map.items():
             for dmx_index in channel_data.dmx_indexes:
                 self._universe.register_channel_listener(dmx_index, partial(self._handle_channel_update, channel_type))
@@ -100,15 +100,15 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         return self._state.brightness
 
     @property
-    def rgb_color(self) -> Tuple[int, int, int]:
+    def rgb_color(self) -> tuple[int, int, int]:
         return self._state.rgb
 
     @property
-    def rgbw_color(self) -> Optional[Tuple[int, int, int, int]]:
+    def rgbw_color(self) -> tuple[int, int, int, int] | None:
         return self._state.rgbw_color if self._state.color_mode in (ColorMode.RGBW, ColorMode.RGBWW) else None
 
     @property
-    def rgbww_color(self) -> Optional[Tuple[int, int, int, int, int]]:
+    def rgbww_color(self) -> tuple[int, int, int, int, int] | None:
         return self._state.rgbww_color if self._state.color_mode == ColorMode.RGBWW else None
 
     @property

@@ -1,5 +1,4 @@
 import math
-from typing import Dict, Optional, Tuple, Set
 
 from custom_components.dmx.entity.light import ChannelType
 
@@ -34,7 +33,7 @@ class ColorSpaceConverter:
         return 12.92 * value if value <= 0.0031308 else 1.055 * (value ** (1 / 2.4)) - 0.055
 
     @classmethod
-    def rgb_to_xyz(cls, rgb: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    def rgb_to_xyz(cls, rgb: tuple[float, float, float]) -> tuple[float, float, float]:
         """Convert RGB to XYZ color space using sRGB matrix."""
         r, g, b = [cls.gamma_correct(c) for c in rgb]
 
@@ -46,7 +45,7 @@ class ColorSpaceConverter:
         return (x, y, z)
 
     @classmethod
-    def xyz_to_rgb(cls, xyz: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    def xyz_to_rgb(cls, xyz: tuple[float, float, float]) -> tuple[float, float, float]:
         """Convert XYZ to RGB color space."""
         x, y, z = xyz
 
@@ -58,7 +57,7 @@ class ColorSpaceConverter:
         return tuple(max(0.0, min(1.0, cls.inverse_gamma_correct(c))) for c in (r, g, b))
 
     @classmethod
-    def xyz_to_luv(cls, xyz: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    def xyz_to_luv(cls, xyz: tuple[float, float, float]) -> tuple[float, float, float]:
         """Convert XYZ to L*u*v* color space."""
         x, y, z = xyz
 
@@ -81,7 +80,7 @@ class ColorSpaceConverter:
         return (l_star, u_star, v_star)
 
     @classmethod
-    def luv_to_xyz(cls, luv: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    def luv_to_xyz(cls, luv: tuple[float, float, float]) -> tuple[float, float, float]:
         """Convert L*u*v* to XYZ color space."""
         l_star, u_star, v_star = luv
 
@@ -110,12 +109,12 @@ class ColorSpaceConverter:
         return (x, y, z)
 
     @classmethod
-    def rgb_to_luv(cls, rgb: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    def rgb_to_luv(cls, rgb: tuple[float, float, float]) -> tuple[float, float, float]:
         """Convert RGB to L*u*v* color space."""
         return cls.xyz_to_luv(cls.rgb_to_xyz(rgb))
 
     @classmethod
-    def luv_to_rgb(cls, luv: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    def luv_to_rgb(cls, luv: tuple[float, float, float]) -> tuple[float, float, float]:
         """Convert L*u*v* to RGB color space."""
         return cls.xyz_to_rgb(cls.luv_to_xyz(luv))
 
@@ -124,7 +123,7 @@ class TemperatureConverter:
     """Handles color temperature conversions."""
 
     @staticmethod
-    def kelvin_to_rgb(kelvin: float) -> Tuple[float, float, float]:
+    def kelvin_to_rgb(kelvin: float) -> tuple[float, float, float]:
         """Convert color temperature in Kelvin to RGB values (0-1 range)."""
         temp = kelvin / 100.0
 
@@ -148,7 +147,7 @@ class TemperatureConverter:
         return (r, g, b)
 
     @staticmethod
-    def rgb_to_kelvin(rgb: Tuple[float, float, float], min_kelvin: float, max_kelvin: float) -> float:
+    def rgb_to_kelvin(rgb: tuple[float, float, float], min_kelvin: float, max_kelvin: float) -> float:
         """Estimate color temperature from RGB values."""
         r, g, b = rgb
 
@@ -186,7 +185,7 @@ class ChannelConverter:
         self.min_kelvin = min_kelvin
         self.max_kelvin = max_kelvin
 
-    def channels_to_rgb(self, channels: Dict[ChannelType, float]) -> Tuple[float, float, float]:
+    def channels_to_rgb(self, channels: dict[ChannelType, float]) -> tuple[float, float, float]:
         """Convert various channel types to RGB values (0-1 range)."""
         r = channels.get(ChannelType.RED, 0) / 255.0
         g = channels.get(ChannelType.GREEN, 0) / 255.0
@@ -208,7 +207,7 @@ class ChannelConverter:
 
         return (min(1.0, r), min(1.0, g), min(1.0, b))
 
-    def _calculate_white_contribution(self, channels: Dict[ChannelType, float]) -> Tuple[float, float]:
+    def _calculate_white_contribution(self, channels: dict[ChannelType, float]) -> tuple[float, float]:
         """Calculate white light contribution and temperature."""
         if ChannelType.WARM_WHITE in channels and ChannelType.COLD_WHITE in channels:
             warm = channels[ChannelType.WARM_WHITE] / 255.0
@@ -236,12 +235,12 @@ class ChannelConverter:
 
     def rgb_to_channels(
         self,
-        rgb: Tuple[float, float, float],
-        original_channels: Set[ChannelType],
+        rgb: tuple[float, float, float],
+        original_channels: set[ChannelType],
         progress: float,
-        current_values: Dict[ChannelType, float],
-        desired_values: Dict[ChannelType, float],
-    ) -> Dict[ChannelType, float]:
+        current_values: dict[ChannelType, float],
+        desired_values: dict[ChannelType, float],
+    ) -> dict[ChannelType, float]:
         """Convert RGB back to the original channel format."""
         r, g, b = rgb
         result = {}
@@ -280,7 +279,7 @@ class ChannelConverter:
 
         return result
 
-    def _rgb_to_ww_cw(self, rgb: Tuple[float, float, float]) -> Dict[ChannelType, float]:
+    def _rgb_to_ww_cw(self, rgb: tuple[float, float, float]) -> dict[ChannelType, float]:
         """Convert RGB to warm white / cold white values."""
         r, g, b = rgb
         brightness = (r + g + b) / 3
@@ -301,7 +300,7 @@ class ChannelConverter:
 
         return {ChannelType.WARM_WHITE: 0, ChannelType.COLD_WHITE: 0}
 
-    def _rgb_to_color_temp(self, rgb: Tuple[float, float, float]) -> Dict[ChannelType, float]:
+    def _rgb_to_color_temp(self, rgb: tuple[float, float, float]) -> dict[ChannelType, float]:
         """Convert RGB to color temperature + dimmer values."""
         r, g, b = rgb
         brightness = (r + g + b) / 3
@@ -326,10 +325,10 @@ class LightTransitionAnimator:
 
     def __init__(
         self,
-        current_values: Dict[ChannelType, float],
-        desired_values: Dict[ChannelType, float],
-        min_kelvin: Optional[int] = None,
-        max_kelvin: Optional[int] = None,
+        current_values: dict[ChannelType, float],
+        desired_values: dict[ChannelType, float],
+        min_kelvin: int | None = None,
+        max_kelvin: int | None = None,
     ):
         """Initialize the transition animator."""
         self.min_kelvin = min_kelvin or 2700
@@ -348,12 +347,12 @@ class LightTransitionAnimator:
         self.desired_luv = self._channels_to_luv(self.desired_values)
 
     def _apply_epsilon_handling(
-        self, current: Dict[ChannelType, float], desired: Dict[ChannelType, float]
-    ) -> Tuple[Dict[ChannelType, float], Dict[ChannelType, float]]:
+        self, current: dict[ChannelType, float], desired: dict[ChannelType, float]
+    ) -> tuple[dict[ChannelType, float], dict[ChannelType, float]]:
         """Apply epsilon to prevent zero-state interpolation issues."""
         epsilon = 0.001
 
-        def all_zero(d: Dict[ChannelType, float]) -> bool:
+        def all_zero(d: dict[ChannelType, float]) -> bool:
             return all(v == 0 for v in d.values())
 
         # Only apply epsilon handling when one state is completely zero
@@ -368,7 +367,7 @@ class LightTransitionAnimator:
 
         return current, desired
 
-    def _channels_to_luv(self, channels: Dict[ChannelType, float]) -> Tuple[float, float, float]:
+    def _channels_to_luv(self, channels: dict[ChannelType, float]) -> tuple[float, float, float]:
         """Convert channel values to L*u*v* color space."""
         rgb = self.channel_converter.channels_to_rgb(channels)
         return ColorSpaceConverter.rgb_to_luv(rgb)
@@ -388,7 +387,7 @@ class LightTransitionAnimator:
                 return False
         return True
 
-    def interpolate(self, progress: float) -> Dict[ChannelType, float]:
+    def interpolate(self, progress: float) -> dict[ChannelType, float]:
         """Calculate interpolated values at given progress (0.0 to 1.0)."""
         progress = max(0.0, min(1.0, progress))
 
@@ -401,7 +400,7 @@ class LightTransitionAnimator:
             # For mixed RGB + white channel transitions, interpolate separately
             return self._interpolate_mixed_channels(progress)
 
-    def _interpolate_mixed_channels(self, progress: float) -> Dict[ChannelType, float]:
+    def _interpolate_mixed_channels(self, progress: float) -> dict[ChannelType, float]:
         """Interpolate RGB and white channels separately to avoid color space corruption."""
         result = {}
         original_channels = set(self.current_values.keys()) | set(self.desired_values.keys())
@@ -427,7 +426,7 @@ class LightTransitionAnimator:
             desired_luv = ColorSpaceConverter.rgb_to_luv(desired_rgb)
 
             interpolated_luv = tuple(
-                current + (desired - current) * progress for current, desired in zip(current_luv, desired_luv)
+                current + (desired - current) * progress for current, desired in zip(current_luv, desired_luv, strict=False)
             )
 
             interpolated_rgb = ColorSpaceConverter.luv_to_rgb(interpolated_luv)
@@ -459,7 +458,7 @@ class LightTransitionAnimator:
 
         return result
 
-    def _interpolate_channels_direct(self, progress: float) -> Dict[ChannelType, float]:
+    def _interpolate_channels_direct(self, progress: float) -> dict[ChannelType, float]:
         """Direct interpolation of channel values without color space conversion."""
         result = {}
         original_channels = set(self.current_values.keys()) | set(self.desired_values.keys())
@@ -471,11 +470,11 @@ class LightTransitionAnimator:
 
         return result
 
-    def _interpolate_luv(self, progress: float) -> Dict[ChannelType, float]:
+    def _interpolate_luv(self, progress: float) -> dict[ChannelType, float]:
         """Interpolate using L*u*v* color space."""
         # Linear interpolation in L*u*v* space
         interpolated_luv = tuple(
-            current + (desired - current) * progress for current, desired in zip(self.current_luv, self.desired_luv)
+            current + (desired - current) * progress for current, desired in zip(self.current_luv, self.desired_luv, strict=False)
         )
 
         # Convert back to RGB then to channels
@@ -486,7 +485,7 @@ class LightTransitionAnimator:
             interpolated_rgb, original_channels, progress, self.current_values, self.desired_values
         )
 
-    def _interpolate_ww_cw_direct(self, progress: float) -> Dict[ChannelType, float]:
+    def _interpolate_ww_cw_direct(self, progress: float) -> dict[ChannelType, float]:
         """Direct interpolation for pure WW/CW transitions."""
         current_ww = self.current_values.get(ChannelType.WARM_WHITE, 0)
         current_cw = self.current_values.get(ChannelType.COLD_WHITE, 0)

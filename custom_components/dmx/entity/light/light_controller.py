@@ -1,9 +1,9 @@
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Any
 
 from homeassistant.components.light import ATTR_TRANSITION
 
-from custom_components.dmx.entity.light import ChannelType, ChannelMapping
+from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from custom_components.dmx.entity.light.light_state import LightState
 from custom_components.dmx.io.dmx_io import DmxUniverse
 
@@ -15,7 +15,7 @@ class LightController:
         self,
         state: LightState,
         universe: DmxUniverse,
-        channel_mappings: Optional[List[ChannelMapping]] = None,
+        channel_mappings: list[ChannelMapping] | None = None,
         animation_engine=None,
     ):
         self.state = state
@@ -23,7 +23,7 @@ class LightController:
         self.channel_mappings = channel_mappings
         self.animation_engine = animation_engine
         self.is_updating = False
-        self._current_animation_id: Optional[str] = None
+        self._current_animation_id: str | None = None
 
     async def turn_on(self, **kwargs):
         self.state.is_on = True
@@ -38,7 +38,7 @@ class LightController:
         transition = kwargs.get(ATTR_TRANSITION)
         await self._apply_updates(updates, transition)
 
-    async def turn_off(self, transition: Optional[float] = None):
+    async def turn_off(self, transition: float | None = None):
         self.state.is_on = False
         preserved = self._capture_current_state()
         updates = {}
@@ -55,7 +55,7 @@ class LightController:
         await self._apply_updates(updates, transition)
         self._save_last_state(preserved)
 
-    async def _apply_updates(self, updates: Dict[ChannelType, int], transition: Optional[float] = None):
+    async def _apply_updates(self, updates: dict[ChannelType, int], transition: float | None = None):
         if self._current_animation_id and self.animation_engine:
             self.animation_engine.cancel_animation(self._current_animation_id)
             self._current_animation_id = None
@@ -73,7 +73,7 @@ class LightController:
             return
 
         current_values = {}
-        for channel_type in updates.keys():
+        for channel_type in updates:
             current_entity_value = 0
             dmx_values = []
             for mapping in self.channel_mappings:
@@ -89,7 +89,7 @@ class LightController:
 
             current_values[channel_type] = int(current_entity_value)
 
-        relevant_mappings = [mapping for mapping in self.channel_mappings if mapping.channel_type in updates.keys()]
+        relevant_mappings = [mapping for mapping in self.channel_mappings if mapping.channel_type in updates]
 
         if relevant_mappings:
             # Preserve last_* values during animation to prevent animation frames from corrupting them
@@ -113,7 +113,7 @@ class LightController:
             for ct, val in updates.items():
                 self.state.apply_channel_update(ct, val)
 
-    def _collect_updates_from_kwargs(self, kwargs: Dict[str, Any]) -> Dict[ChannelType, int]:
+    def _collect_updates_from_kwargs(self, kwargs: dict[str, Any]) -> dict[ChannelType, int]:
         updates = {}
 
         if "brightness" in kwargs:
@@ -157,7 +157,7 @@ class LightController:
 
         return updates
 
-    def _restore_previous_state(self) -> Dict[ChannelType, int]:
+    def _restore_previous_state(self) -> dict[ChannelType, int]:
         updates = {}
         if self.state.has_channel(ChannelType.DIMMER):
             updates[ChannelType.DIMMER] = self.state.last_brightness

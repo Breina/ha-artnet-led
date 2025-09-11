@@ -3,13 +3,13 @@ import logging
 import socket
 import struct
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Dict, Set, Callable, Optional
 
 from homeassistant.core import HomeAssistant
 
-from custom_components.dmx.server.sacn_packet import SacnPacket, SacnSyncPacket, SacnOptions, SACN_PORT
 from custom_components.dmx.server import PortAddress
+from custom_components.dmx.server.sacn_packet import SACN_PORT, SacnOptions, SacnPacket, SacnSyncPacket
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 class SacnServerConfig:
     source_name: str = "HA sACN Controller"
     priority: int = 100
-    cid: Optional[bytes] = None
+    cid: bytes | None = None
     sync_address: int = 0
     enable_per_universe_sync: bool = False
     multicast_ttl: int = 64
@@ -32,8 +32,8 @@ class SacnServerConfig:
 @dataclass
 class UniverseState:
     sequence_number: int = 0
-    last_data: Optional[bytearray] = None
-    send_task: Optional[asyncio.Task] = None
+    last_data: bytearray | None = None
+    send_task: asyncio.Task | None = None
     termination_sent: bool = False
     unicast_addresses: list = field(default_factory=list)
 
@@ -56,13 +56,13 @@ class SacnServer:
         self.hass = hass
         self.config = config or SacnServerConfig()
 
-        self.universes: Dict[int, UniverseState] = {}
-        self.socket: Optional[socket.socket] = None
+        self.universes: dict[int, UniverseState] = {}
+        self.socket: socket.socket | None = None
         self.running = False
 
         # Callbacks
-        self.universe_added_callback: Optional[Callable[[int], None]] = None
-        self.universe_removed_callback: Optional[Callable[[int], None]] = None
+        self.universe_added_callback: Callable[[int], None] | None = None
+        self.universe_removed_callback: Callable[[int], None] | None = None
 
         log.info(f"sACN Server initialized with source name: {self.config.source_name}")
 
@@ -249,7 +249,7 @@ class SacnServer:
         except Exception as e:
             log.error(f"Error sending sACN sync packet: {e}")
 
-    def get_universe_info(self, universe_id: int) -> Optional[Dict]:
+    def get_universe_info(self, universe_id: int) -> dict | None:
         if universe_id not in self.universes:
             return None
 
@@ -262,18 +262,18 @@ class SacnServer:
             "termination_sent": state.termination_sent,
         }
 
-    def get_all_universes(self) -> Dict[int, Dict]:
+    def get_all_universes(self) -> dict[int, dict]:
         return {uid: self.get_universe_info(uid) for uid in self.universes.keys()}
 
 
 class SacnReceiver(asyncio.DatagramProtocol):
     def __init__(
-        self, hass: HomeAssistant, data_callback: Optional[Callable] = None, own_source_name: Optional[str] = None
+        self, hass: HomeAssistant, data_callback: Callable | None = None, own_source_name: str | None = None
     ):
         self.hass = hass
         self.data_callback = data_callback
-        self.transport: Optional[asyncio.DatagramTransport] = None
-        self.subscribed_universes: Set[int] = set()
+        self.transport: asyncio.DatagramTransport | None = None
+        self.subscribed_universes: set[int] = set()
         self.own_source_name = own_source_name
 
     def connection_made(self, transport: asyncio.DatagramTransport):
@@ -283,7 +283,7 @@ class SacnReceiver(asyncio.DatagramProtocol):
         for universe_id in self.subscribed_universes:
             self._join_multicast_group(universe_id)
 
-    def connection_lost(self, exc: Optional[Exception]):
+    def connection_lost(self, exc: Exception | None):
         log.info("sACN receiver connection lost")
         self.transport = None
 
@@ -369,7 +369,7 @@ class SacnReceiver(asyncio.DatagramProtocol):
 
 
 async def create_sacn_receiver(
-    hass: HomeAssistant, data_callback: Optional[Callable] = None, own_source_name: Optional[str] = None
+    hass: HomeAssistant, data_callback: Callable | None = None, own_source_name: str | None = None
 ) -> SacnReceiver:
     receiver = SacnReceiver(hass, data_callback, own_source_name)
 

@@ -8,7 +8,7 @@ from copy import deepcopy
 from custom_components.dmx.fixture.channel import Channel, ChannelOffset, SwitchingChannel
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
 from custom_components.dmx.fixture.matrix import Matrix
-from custom_components.dmx.fixture.mode import Mode, MatrixChannelInsertBlock, ChannelOrder
+from custom_components.dmx.fixture.mode import ChannelOrder, MatrixChannelInsertBlock, Mode
 from custom_components.dmx.fixture.wheel import Wheel
 
 PIXEL_KEY = "$pixelKey"

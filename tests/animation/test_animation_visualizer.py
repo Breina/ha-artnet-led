@@ -1,10 +1,9 @@
 import time
-from typing import Dict, Tuple
 
 import pytest
 
 from custom_components.dmx.animation.engine import DmxAnimationEngine
-from custom_components.dmx.entity.light import ChannelType, ChannelMapping
+from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from tests.dmx_test_framework import MockHomeAssistant
 
 
@@ -26,7 +25,7 @@ CHANNEL_COLORS = {
 
 
 def plot_animation_data(
-    captured_frames, hass, title: str = "DMX Animation Data", y_range: Tuple[int, int] = (0, 255), save_path: str = None
+    captured_frames, hass, title: str = "DMX Animation Data", y_range: tuple[int, int] = (0, 255), save_path: str = None
 ):
     """
     Create an interactive plot of the captured animation data
@@ -96,7 +95,7 @@ async def test_rgb_fade_animation(mock_hass):
     """Test RGB color fade with visualization"""
     captured_frames = []
 
-    def capture_output_frame(frame_values: Dict[ChannelType, int]):
+    def capture_output_frame(frame_values: dict[ChannelType, int]):
         timestamp = time.time()
         captured_frames.append((timestamp, frame_values.copy()))
 
@@ -161,7 +160,7 @@ async def test_ww_cw_fade_animation(mock_hass):
     """Test RGB color fade with visualization"""
     captured_frames = []
 
-    def capture_output_frame(frame_values: Dict[ChannelType, int]):
+    def capture_output_frame(frame_values: dict[ChannelType, int]):
         timestamp = time.time()
         captured_frames.append((timestamp, frame_values.copy()))
 
@@ -226,7 +225,7 @@ async def test_rgbww_fade_animation(mock_hass):
     """Test RGB color fade with visualization"""
     captured_frames = []
 
-    def capture_output_frame(frame_values: Dict[ChannelType, int]):
+    def capture_output_frame(frame_values: dict[ChannelType, int]):
         timestamp = time.time()
         captured_frames.append((timestamp, frame_values.copy()))
 

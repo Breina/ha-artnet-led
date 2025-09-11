@@ -1,20 +1,19 @@
 import asyncio
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import homeassistant.helpers.device_registry
 
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.entity.select import DmxSelectEntity
-from custom_components.dmx.fixture import parser, delegator
+from custom_components.dmx.fixture import delegator, parser
 from tests.dmx_test_framework import (
     MockDmxUniverse,
-    get_entity_by_name,
     MockHomeAssistant,
     assert_dmx,
     assert_dmx_range,
+    get_entity_by_name,
 )
 
 device_info_mock = MagicMock()

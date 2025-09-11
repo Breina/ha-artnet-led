@@ -1,16 +1,15 @@
 import logging
-from typing import Tuple, Dict
 
 from homeassistant.components.light import ColorMode
 
-from custom_components.dmx.entity.light import ChannelType, ChannelMapping
+from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from custom_components.dmx.entity.light.color_converter import ColorConverter
 
 log = logging.getLogger(__name__)
 
 
 class LightState:
-    def __init__(self, color_mode: ColorMode, converter: ColorConverter, channels: Dict[ChannelType, ChannelMapping]):
+    def __init__(self, color_mode: ColorMode, converter: ColorConverter, channels: dict[ChannelType, ChannelMapping]):
         self.color_mode = color_mode
         self.converter = converter
         self.channels = channels
@@ -133,8 +132,8 @@ class LightState:
         else:
             self.is_on = self.brightness > 0
 
-    def get_scaled_brightness_updates(self, new_brightness: int) -> Dict[ChannelType, int]:
-        updates: Dict[ChannelType, int] = {}
+    def get_scaled_brightness_updates(self, new_brightness: int) -> dict[ChannelType, int]:
+        updates: dict[ChannelType, int] = {}
 
         if self._has_dimmer():
             updates[ChannelType.DIMMER] = new_brightness
@@ -169,7 +168,7 @@ class LightState:
 
         return updates
 
-    def get_dmx_updates(self, values: Dict[ChannelType, int]) -> Dict[int, int]:
+    def get_dmx_updates(self, values: dict[ChannelType, int]) -> dict[int, int]:
         updates = {}
         for channel_type, val in values.items():
             if channel_type not in self.channels:
@@ -327,21 +326,21 @@ class LightState:
             self.update_color_temp_kelvin(color_temp_kelvin)
 
     @property
-    def rgbw_color(self) -> Tuple[int, int, int, int]:
+    def rgbw_color(self) -> tuple[int, int, int, int]:
         rgb = self.rgb or (0, 0, 0)
         return (*rgb, self.warm_white)
 
     @property
-    def rgbww_color(self) -> Tuple[int, int, int, int, int]:
+    def rgbww_color(self) -> tuple[int, int, int, int, int]:
         rgb = self.rgb or (0, 0, 0)
         return (*rgb, self.cold_white, self.warm_white)
 
     @property
-    def last_rgbw_color(self) -> Tuple[int, int, int, int]:
+    def last_rgbw_color(self) -> tuple[int, int, int, int]:
         last_rgb = self.last_rgb or (0, 0, 0)
         return (*last_rgb, self.last_cold_white)
 
     @property
-    def last_rgbww_color(self) -> Tuple[int, int, int, int, int]:
+    def last_rgbww_color(self) -> tuple[int, int, int, int, int]:
         last_rgb = self.last_rgb or (0, 0, 0)
         return (*last_rgb, self.last_cold_white, self.last_warm_white)

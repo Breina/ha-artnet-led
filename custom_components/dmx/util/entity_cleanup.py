@@ -3,9 +3,9 @@ Entity cleanup utility for handling fixture configuration changes.
 """
 
 import logging
-from typing import Dict, Set
-from homeassistant.core import HomeAssistant
+
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from custom_components.dmx.const import DOMAIN
@@ -16,7 +16,7 @@ CONF_FINGERPRINTS = "fixture_fingerprints"
 
 
 async def cleanup_obsolete_entities(
-    hass: HomeAssistant, config_entry: ConfigEntry, current_fingerprints: Dict[str, str]
+    hass: HomeAssistant, config_entry: ConfigEntry, current_fingerprints: dict[str, str]
 ) -> None:
     """
     Clean up entities from fixtures that have changed configuration.
@@ -85,8 +85,8 @@ async def cleanup_obsolete_entities(
                         unique_id_lower.startswith(device_name_lower)
                         or
                         # Contains device name after domain and universe
-                        f"{DOMAIN}_" in unique_id_lower
-                        and device_name_lower in unique_id_lower
+                        (f"{DOMAIN}_" in unique_id_lower
+                        and device_name_lower in unique_id_lower)
                     )
 
                     if device_matches:
@@ -107,7 +107,7 @@ async def cleanup_obsolete_entities(
 
 
 async def store_fixture_fingerprints(
-    hass: HomeAssistant, config_entry: ConfigEntry, fingerprints: Dict[str, str]
+    hass: HomeAssistant, config_entry: ConfigEntry, fingerprints: dict[str, str]
 ) -> None:
     """
     Store fixture fingerprints in config entry data for future comparison.

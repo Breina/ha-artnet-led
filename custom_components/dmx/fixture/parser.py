@@ -19,15 +19,15 @@ from enum import EnumType
 from types import MappingProxyType, UnionType
 from typing import Union
 
-from custom_components.dmx.fixture import OFL_URL, wheel, capability
+from custom_components.dmx.fixture import OFL_URL, capability, wheel
 from custom_components.dmx.fixture.capability import Capability, MenuClick
 from custom_components.dmx.fixture.channel import Channel, DmxValueResolution
 from custom_components.dmx.fixture.entity import Entity
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.fixture.matrix import matrix_from_pixel_count, matrix_from_pixel_names
-from custom_components.dmx.fixture.mode import MatrixChannelInsertBlock, RepeatFor, ChannelOrder, Mode
-from custom_components.dmx.fixture.wheel import WheelSlot, Wheel
+from custom_components.dmx.fixture.mode import ChannelOrder, MatrixChannelInsertBlock, Mode, RepeatFor
+from custom_components.dmx.fixture.wheel import Wheel, WheelSlot
 
 underscore_pattern = re.compile(r"(?<!^)(?=[A-Z])")
 entity_value = re.compile(r"([-\d.]*)(.*)")
@@ -112,7 +112,7 @@ def __parse_fixture(fixture_json: dict) -> Fixture:
     if help_wanted:
         if config_url:
             log.warning(
-                f"HELP WANTED: Looks like the fixture over at %s/%s/%s could use some love: %s.",
+                "HELP WANTED: Looks like the fixture over at %s/%s/%s could use some love: %s.",
                 OFL_URL,
                 manufacturer_key,
                 fixture_key,
@@ -248,7 +248,7 @@ def __parse_capability(channel: Channel, capability_json: dict, config_url: str 
         if key == "helpWanted":
             if config_url:
                 log.warning(
-                    f"HELP WANTED: Channel '%s' of fixture over at %s could use some love: %s",
+                    "HELP WANTED: Channel '%s' of fixture over at %s could use some love: %s",
                     channel.name,
                     config_url,
                     value_json,

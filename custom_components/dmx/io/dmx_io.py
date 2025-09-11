@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Callable, Dict, Optional
+from collections.abc import Callable
 
 from custom_components.dmx.animation.engine import DmxAnimationEngine
 from custom_components.dmx.server import PortAddress
@@ -14,8 +14,8 @@ class DmxUniverse:
         port_address: PortAddress,
         controller: ArtNetServer,
         use_partial_universe: bool = True,
-        sacn_server: Optional[SacnServer] = None,
-        sacn_universe: Optional[int] = None,
+        sacn_server: SacnServer | None = None,
+        sacn_universe: int | None = None,
         hass=None,
         max_fps: int = 30,
     ):
@@ -44,14 +44,14 @@ class DmxUniverse:
     def is_output_enabled(self) -> bool:
         return self._output_enabled
 
-    def set_constant_value(self, channels: List[int], value: int) -> None:
+    def set_constant_value(self, channels: list[int], value: int) -> None:
 
         for ch in channels:
             self._constant_values[ch] = value
             self._channel_values[ch] = value
             self._changed_channels.add(ch)
 
-    def register_channel_listener(self, channels: int | List[int], callback: Callable[[str | None], None]) -> None:
+    def register_channel_listener(self, channels: int | list[int], callback: Callable[[str | None], None]) -> None:
         if isinstance(channels, int):
             channels = [channels]
 
@@ -63,7 +63,7 @@ class DmxUniverse:
                 self._channel_callbacks[channel].append(callback)
 
     async def update_value(
-        self, channel: int | List[int], value: int, send_immediately: bool = False, source: str | None = None
+        self, channel: int | list[int], value: int, send_immediately: bool = False, source: str | None = None
     ) -> set[Callable[[str | None], None]]:
         if isinstance(channel, int):
             channels = [channel]
@@ -99,7 +99,7 @@ class DmxUniverse:
         return callbacks_to_call
 
     async def update_multiple_values(
-        self, updates: Dict[int, int], source: str | None = None, send_update: bool = True
+        self, updates: dict[int, int], source: str | None = None, send_update: bool = True
     ) -> None:
         callbacks_to_call = set()
         for channel, value in updates.items():

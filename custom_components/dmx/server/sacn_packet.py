@@ -1,8 +1,6 @@
 import struct
 import uuid
 from dataclasses import dataclass, field
-from typing import Optional
-
 
 SACN_PORT = 5568
 ACN_PACKET_IDENTIFIER = b"\x41\x53\x43\x2d\x45\x31\x2e\x31\x37\x00\x00\x00"

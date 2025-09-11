@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.dmx.const import DOMAIN, CONF_FIXTURE_ENTITIES
+from custom_components.dmx.const import CONF_FIXTURE_ENTITIES, DOMAIN
 from custom_components.dmx.io.dmx_io import DmxUniverse
 
 log = logging.getLogger(__name__)
