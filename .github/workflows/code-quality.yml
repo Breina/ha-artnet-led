@@ -31,7 +31,7 @@ jobs:
       run: black --check .
 
     - name: Run MyPy (type check)
-      run: mypy custom_components/dmx
+      run: mypy --config-file=pyproject.toml custom_components/dmx
 
     - name: Run tests
       run: |
