@@ -18,6 +18,7 @@ dev = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
+    "netifaces",
     "homeassistant-stubs",
 ]
 
