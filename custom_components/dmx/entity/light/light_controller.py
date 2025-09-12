@@ -68,7 +68,7 @@ class LightController:
             self.state._preserve_last_values = False
             for ct, val in updates.items():
                 self.state.apply_channel_update(ct, val)
-            dmx_updates = self.state.get_dmx_updates(updates)
+            dmx_updates = self.state.get_dmx_updates(updates)  # type: ignore[arg-type]
             await self.universe.update_multiple_values(dmx_updates)
             return
 
@@ -155,7 +155,7 @@ class LightController:
                 brightness = 255
 
             if self.state.has_channel(ChannelType.COLOR_TEMPERATURE):
-                updates[ChannelType.COLOR_TEMPERATURE] = self.state.color_temp_dmx
+                updates[ChannelType.COLOR_TEMPERATURE] = self.state.color_temp_dmx  # type: ignore[assignment]
             elif self.state.has_cw_ww():
                 cw, ww = self.state.converter.temp_to_cw_ww(kelvin, brightness)
                 updates.update({ChannelType.COLD_WHITE: cw, ChannelType.WARM_WHITE: ww})
@@ -176,7 +176,7 @@ class LightController:
         if self.state.has_channel(ChannelType.WARM_WHITE):
             updates[ChannelType.WARM_WHITE] = self.state.last_warm_white
         if self.state.has_channel(ChannelType.COLOR_TEMPERATURE):
-            updates[ChannelType.COLOR_TEMPERATURE] = self.state.last_color_temp_dmx
+            updates[ChannelType.COLOR_TEMPERATURE] = self.state.last_color_temp_dmx  # type: ignore[assignment]
 
         return updates
 
