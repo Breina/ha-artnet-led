@@ -3,6 +3,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import ClassVar
 
 CLIENT_VERSION = 1
 
@@ -383,7 +384,7 @@ class TimeCodeType(Enum):
 
 
 class ArtBase:
-    __ENCODINGS__: list[str] = ["utf-8", "ascii", "latin-1", "cp1252"]
+    __ENCODINGS__: ClassVar[list[str]] = ["utf-8", "ascii", "latin-1", "cp1252"]
 
     def __init__(self, opcode: OpCode) -> None:
         super().__init__()
@@ -623,7 +624,7 @@ class ArtPoll(ArtBase):
 class ArtPollReply(ArtBase):
     def __init__(
         self,
-        source_ip: bytearray = bytearray([0x00] * 4),
+        source_ip: bytearray | None = None,
         firmware_version: int = 0,
         net_switch: int = 0,
         sub_switch: int = 0,
@@ -641,8 +642,8 @@ class ArtPollReply(ArtBase):
         sw_macro_bitmap: int = 0,
         sw_remote_bitmap: int = 0,
         style: StyleCode = StyleCode.ST_CONTROLLER,
-        mac_address: bytearray = bytearray([0] * 6),
-        bind_ip: bytearray = bytearray([0] * 4),
+        mac_address: bytearray | None = None,
+        bind_ip: bytearray | None = None,
         bind_index: int = 1,
         supports_web_browser_configuration: bool = False,
         dhcp_configured: bool = False,
@@ -657,6 +658,13 @@ class ArtPollReply(ArtBase):
         supports_switching_port_direction: bool = False,
     ) -> None:
         super().__init__(opcode=OpCode.OP_POLL_REPLY)
+
+        if source_ip is None:
+            source_ip = bytearray([0x00] * 4)
+        if mac_address is None:
+            mac_address = bytearray([0] * 6)
+        if bind_ip is None:
+            bind_ip = bytearray([0] * 4)
 
         assert source_ip.__len__() == 4
         self.source_ip = source_ip
@@ -896,11 +904,18 @@ class ArtIpProg(ArtBase):
         self,
         protocol_version: int = PROTOCOL_VERSION,
         command: ArtIpProgCommand | None = None,
-        prog_ip: bytearray = bytearray([0x00] * 4),
-        prog_subnet: bytearray = bytearray([0x00] * 4),
-        prog_gateway: bytearray = bytearray([0x00] * 4),
+        prog_ip: bytearray | None = None,
+        prog_subnet: bytearray | None = None,
+        prog_gateway: bytearray | None = None,
     ) -> None:
         super().__init__(OpCode.OP_IP_PROG)
+
+        if prog_ip is None:
+            prog_ip = bytearray([0x00] * 4)
+        if prog_subnet is None:
+            prog_subnet = bytearray([0x00] * 4)
+        if prog_gateway is None:
+            prog_gateway = bytearray([0x00] * 4)
 
         assert prog_ip.__len__() == 4
         assert prog_subnet.__len__() == 4
@@ -953,12 +968,19 @@ class ArtIpProgReply(ArtBase):
     def __init__(
         self,
         protocol_version: int = PROTOCOL_VERSION,
-        prog_ip: bytearray = bytearray([0x00] * 4),
-        prog_subnet: bytearray = bytearray([0x00] * 4),
-        prog_gateway: bytearray = bytearray([0x00] * 4),
+        prog_ip: bytearray | None = None,
+        prog_subnet: bytearray | None = None,
+        prog_gateway: bytearray | None = None,
         dhcp_enabled: bool = False,
     ) -> None:
         super().__init__(OpCode.OP_IP_PROG_REPLY)
+
+        if prog_ip is None:
+            prog_ip = bytearray([0x00] * 4)
+        if prog_subnet is None:
+            prog_subnet = bytearray([0x00] * 4)
+        if prog_gateway is None:
+            prog_gateway = bytearray([0x00] * 4)
 
         assert prog_ip.__len__() == 4
         assert prog_subnet.__len__() == 4
@@ -1277,9 +1299,13 @@ class ArtTrigger(ArtBase):
         oem: int = 0xFFFF,
         key: int = 0,
         sub_key: int = 0,
-        payload: bytearray = bytearray([0x00] * 512),
+        payload: bytearray | None = None,
     ) -> None:
         super().__init__(opcode=OpCode.OP_TRIGGER)
+
+        if payload is None:
+            payload = bytearray([0x00] * 512)
+
         self.protocol_version = protocol_version
         self.oem = oem
         self.key = key
@@ -1329,9 +1355,12 @@ class ArtDmx(ArtBase):
         sequence_number: int = 0,
         physical: int = 0,
         port_address: PortAddress | None = None,
-        data: bytearray = bytearray([0x00] * 2),
+        data: bytearray | None = None,
     ) -> None:
         super().__init__(opcode=OpCode.OP_OUTPUT_DMX)
+
+        if data is None:
+            data = bytearray([0x00] * 2)
 
         self.protocol_version = protocol_version
 

@@ -253,9 +253,7 @@ class ChannelConverter:
             result[channel] = 0.0
 
         if {ChannelType.RED, ChannelType.GREEN, ChannelType.BLUE}.issubset(original_channels):
-            result.update(
-                {ChannelType.RED: r * 255, ChannelType.GREEN: g * 255, ChannelType.BLUE: b * 255}
-            )
+            result.update({ChannelType.RED: r * 255, ChannelType.GREEN: g * 255, ChannelType.BLUE: b * 255})
 
             # Handle W channel in RGBW
             if ChannelType.WARM_WHITE in original_channels:
@@ -314,10 +312,7 @@ class ChannelConverter:
             temp_ratio = (temp - self.min_kelvin) / (self.max_kelvin - self.min_kelvin)
             temp_ratio = max(0.0, min(1.0, temp_ratio))
 
-            return {
-                ChannelType.COLOR_TEMPERATURE: temp_ratio * 255, 
-                ChannelType.DIMMER: brightness * 255
-            }
+            return {ChannelType.COLOR_TEMPERATURE: temp_ratio * 255, ChannelType.DIMMER: brightness * 255}
 
         return {ChannelType.COLOR_TEMPERATURE: 0.0, ChannelType.DIMMER: 0.0}
 

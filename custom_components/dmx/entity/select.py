@@ -36,7 +36,8 @@ class DmxSelectEntity(SelectEntity):
             self.entity_id = f"select.{self._attr_unique_id}"
         else:
             self._attr_unique_id = (
-                f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
+                f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_"
+                f"{channel_name.lower()}_{fixture_fingerprint}"
             )
 
         self._attr_icon = determine_icon(channel)
@@ -100,7 +101,9 @@ class DmxSelectEntity(SelectEntity):
             log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
 
     def update_option_to_dmx_value(self, value: int) -> None:
-        capability: list[Capability] = [capability for capability in self.capability_types.values() if capability.is_applicable(value)]
+        capability: list[Capability] = [
+            capability for capability in self.capability_types.values() if capability.is_applicable(value)
+        ]
         if not any(capability):
             raise FixtureConfigurationError(f"Fixture {self._attr_name} received an invalid DMX value: " f"{value}")
 
@@ -111,7 +114,9 @@ class DmxSelectEntity(SelectEntity):
         await self._update_current_option_async(option)
 
         capability = self.capability_types[option]
-        dmx_value: int = capability.menu_click_value if capability.menu_click_value is not None else capability.dmx_range_start
+        dmx_value: int = (
+            capability.menu_click_value if capability.menu_click_value is not None else capability.dmx_range_start
+        )
 
         await self.universe.update_value(self.dmx_index, dmx_value, send_immediately=True)
 

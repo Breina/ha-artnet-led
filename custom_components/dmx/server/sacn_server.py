@@ -55,9 +55,10 @@ class SacnServer:
 
     def __init__(self, hass: HomeAssistant, config: SacnServerConfig | None = None) -> None:
         import uuid
+
         self.hass = hass
         self.config = config or SacnServerConfig()
-        
+
         # Ensure we have a valid CID
         if self.config.cid is None:
             self.config.cid = uuid.uuid4().bytes
@@ -198,12 +199,10 @@ class SacnServer:
                 if self.socket is not None:
                     await self.hass.async_add_executor_job(
                         self.socket.sendto, packet_bytes, (unicast_addr["host"], unicast_addr["port"])
-                )
+                    )
 
             unicast_info = (
-                f" + {len(universe_state.unicast_addresses)} unicast"
-                if universe_state.unicast_addresses
-                else ""
+                f" + {len(universe_state.unicast_addresses)} unicast" if universe_state.unicast_addresses else ""
             )
             log.debug(f"Sent sACN data to universe {universe_id} ({multicast_addr}){unicast_info}")
 
@@ -291,7 +290,10 @@ class SacnServer:
 
 class SacnReceiver(asyncio.DatagramProtocol):
     def __init__(
-        self, hass: HomeAssistant, data_callback: Callable[[PortAddress, bytearray, str], None] | None = None, own_source_name: str | None = None
+        self,
+        hass: HomeAssistant,
+        data_callback: Callable[[PortAddress, bytearray, str], None] | None = None,
+        own_source_name: str | None = None,
     ) -> None:
         self.hass = hass
         self.data_callback = data_callback
@@ -392,13 +394,17 @@ class SacnReceiver(asyncio.DatagramProtocol):
 
 
 async def create_sacn_receiver(
-    hass: HomeAssistant, data_callback: Callable[[PortAddress, bytearray, str], None] | None = None, own_source_name: str | None = None
+    hass: HomeAssistant,
+    data_callback: Callable[[PortAddress, bytearray, str], None] | None = None,
+    own_source_name: str | None = None,
 ) -> SacnReceiver:
     receiver = SacnReceiver(hass, data_callback, own_source_name)
 
     loop = hass.loop
     try:
-        transport, _ = await loop.create_datagram_endpoint(lambda: receiver, local_addr=("0.0.0.0", SACN_PORT))  # noqa: S104
+        transport, _ = await loop.create_datagram_endpoint(
+            lambda: receiver, local_addr=("0.0.0.0", SACN_PORT)  # noqa: S104
+        )
 
         # Set socket options for multicast reception
         sock = transport.get_extra_info("socket")

@@ -5,8 +5,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.dmx.const import DOMAIN
-from custom_components.dmx.const import CONF_FIXTURE_ENTITIES
+from custom_components.dmx.const import CONF_FIXTURE_ENTITIES, DOMAIN
 
 log = logging.getLogger(__name__)
 

@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 
@@ -115,10 +116,7 @@ class DmxAnimationEngine:
                         try:
                             # Convert to DMX values using the mapping
                             capabilities = mapping.channel.capabilities
-                            if isinstance(capabilities, list):
-                                first_capability = capabilities[0]
-                            else:
-                                first_capability = capabilities
+                            first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
                             [entity] = first_capability.dynamic_entities
                             norm_val = entity.normalize(value)
                             dmx_values = entity.to_dmx_fine(norm_val, len(mapping.dmx_indexes))

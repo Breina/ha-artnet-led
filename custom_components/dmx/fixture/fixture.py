@@ -68,11 +68,8 @@ class Fixture:
             dest[fine_channel_alias] = ChannelOffset(channel, byte_offset)
 
         capabilities = channel.capabilities
-        if isinstance(capabilities, list):
-            capability_list = capabilities
-        else:
-            capability_list = [capabilities]
-        
+        capability_list = capabilities if isinstance(capabilities, list) else [capabilities]
+
         for capability in capability_list:
             for switch_channel_key, switch_channel_value in capability.switch_channels.items():
                 if switch_channel_key not in switching_dest:
@@ -206,11 +203,8 @@ class Fixture:
             fine_channel_alias.replace(PIXEL_KEY, new_name) for fine_channel_alias in copy.fine_channel_aliases
         ]
         capabilities = copy.capabilities
-        if isinstance(capabilities, list):
-            capability_list = capabilities
-        else:
-            capability_list = [capabilities]
-        
+        capability_list = capabilities if isinstance(capabilities, list) else [capabilities]
+
         for capability in capability_list:
             capability.switch_channels = {
                 switchingChannel.replace(PIXEL_KEY, new_name): referenced_channel.replace(PIXEL_KEY, new_name)

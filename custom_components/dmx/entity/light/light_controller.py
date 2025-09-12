@@ -83,10 +83,7 @@ class LightController:
 
                     # Convert DMX values to entity value using the dynamic entity
                     capabilities = mapping.channel.capabilities
-                    if isinstance(capabilities, list):
-                        first_capability = capabilities[0]
-                    else:
-                        first_capability = capabilities
+                    first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
                     [dynamic_entity] = first_capability.dynamic_entities
                     normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
                     current_entity_value = int(dynamic_entity.unnormalize(normalized_value))

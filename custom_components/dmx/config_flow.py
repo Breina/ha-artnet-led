@@ -1,4 +1,5 @@
 """Config flow to configure DMX."""
+
 from typing import Any
 
 from homeassistant import config_entries

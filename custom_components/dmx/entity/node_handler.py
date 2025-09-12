@@ -6,13 +6,10 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import async_get_platforms, EntityPlatform
+from homeassistant.helpers.entity_platform import EntityPlatform, async_get_platforms
 from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 
-from custom_components.dmx.const import DOMAIN
-from custom_components.dmx.server import ArtPollReply
-from custom_components.dmx.server.artnet_server import Node
-from custom_components.dmx.const import CONF_NODE_ENTITIES
+from custom_components.dmx.const import CONF_NODE_ENTITIES, DOMAIN
 from custom_components.dmx.entity.node import (
     ArtNetACNPrioritySensor,
     ArtNetBootProcessSensor,
@@ -31,6 +28,8 @@ from custom_components.dmx.entity.node import (
     ArtNetPortUniverseSensor,
     ArtNetRDMBinarySensor,
 )
+from custom_components.dmx.server import ArtPollReply
+from custom_components.dmx.server.artnet_server import Node
 
 log = logging.getLogger(__name__)
 

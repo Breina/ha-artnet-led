@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from itertools import groupby
-from typing import Any
 
 from homeassistant.components.light import ColorMode
 from homeassistant.helpers.entity import DeviceInfo, Entity
@@ -138,15 +137,12 @@ def __build_light_entities(
                     channels_data.append(channel_temp)
 
                     capabilities = channel_temp.channel.capabilities
-                    if isinstance(capabilities, list):
-                        first_capability = capabilities[0]
-                    else:
-                        first_capability = capabilities
-                    
+                    first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
+
                     if isinstance(first_capability, ColorTemperature):
                         color_temperature: ColorTemperature = first_capability
 
-                        min_color_temp_entity, max_color_temp_entity = color_temperature_2.color_temperature
+                        min_color_temp_entity, max_color_temp_entity = color_temperature.color_temperature
                         if min_color_temp_entity.unit == "K":
                             min_kelvin = int(min_color_temp_entity.value)
 
@@ -184,11 +180,8 @@ def __build_light_entities(
                 channels_data.append(channel_temp)
 
                 capabilities = channel_temp.channel.capabilities
-                if isinstance(capabilities, list):
-                    first_capability = capabilities[0]
-                else:
-                    first_capability = capabilities
-                
+                first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
+
                 if isinstance(first_capability, ColorTemperature):
                     color_temperature_2: ColorTemperature = first_capability
 
@@ -200,7 +193,7 @@ def __build_light_entities(
                         max_kelvin = int(max_color_temp_entity.value)
 
         elif has_single_white or has_dimmer:
-            color_mode = ColorMode.BRIGHTNESS
+            color_mode = ColorMode(ColorMode.BRIGHTNESS)
 
             if has_dimmer:
                 has_separate_dimmer = True

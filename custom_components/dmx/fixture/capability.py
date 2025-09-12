@@ -1177,7 +1177,9 @@ class Prism(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
         assert not (bool(speed) and bool(angle))
         self.speed = speed
@@ -1210,7 +1212,9 @@ class PrismRotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
         assert bool(speed) != bool(angle)
         self.speed = speed
@@ -1378,7 +1382,9 @@ class Rotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
         assert bool(speed) != bool(angle)
         self.speed = speed
@@ -1447,7 +1453,9 @@ class Maintenance(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, parameter: list[Parameter] | None = None, hold: entity.Time | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, parameter: list[Parameter] | None = None, hold: entity.Time | None = None, **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
         self.hold = hold
         self.parameter = parameter

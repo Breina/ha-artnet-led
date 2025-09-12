@@ -76,7 +76,7 @@ def _serialize_channel(channel: Channel) -> dict[str, Any]:
         "highlight_value": channel.highlight_value,
         "constant": channel.constant,
         "capabilities": [
-            _serialize_capability(cap) 
+            _serialize_capability(cap)
             for cap in (channel.capabilities if isinstance(channel.capabilities, list) else [channel.capabilities])
         ],
     }
@@ -89,7 +89,9 @@ def _serialize_capability(capability: Capability) -> dict[str, Any]:
         "dmx_range_start": capability.dmx_range_start,
         "dmx_range_end": capability.dmx_range_end,
         "menu_click": (
-            capability.menu_click.name if capability.menu_click and hasattr(capability.menu_click, "name") else str(capability.menu_click)
+            capability.menu_click.name
+            if capability.menu_click and hasattr(capability.menu_click, "name")
+            else str(capability.menu_click)
         ),
         "menu_click_value": capability.menu_click_value,
         "switch_channels": capability.switch_channels,

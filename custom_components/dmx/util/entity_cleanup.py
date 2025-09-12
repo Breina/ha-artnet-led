@@ -85,8 +85,7 @@ async def cleanup_obsolete_entities(
                         unique_id_lower.startswith(device_name_lower)
                         or
                         # Contains device name after domain and universe
-                        (f"{DOMAIN}_" in unique_id_lower
-                        and device_name_lower in unique_id_lower)
+                        (f"{DOMAIN}_" in unique_id_lower and device_name_lower in unique_id_lower)
                     )
 
                     if device_matches:

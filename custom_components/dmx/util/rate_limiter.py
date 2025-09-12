@@ -11,7 +11,11 @@ class RateLimiter:
     """Utility class to manage rate limiting for entity updates."""
 
     def __init__(
-        self, hass: HomeAssistant, update_method: Callable[[], None], update_interval: float = 0.5, force_update_after: float = 2.0
+        self,
+        hass: HomeAssistant,
+        update_method: Callable[[], None],
+        update_interval: float = 0.5,
+        force_update_after: float = 2.0,
     ) -> None:
         """Initialize the rate limiter.
 

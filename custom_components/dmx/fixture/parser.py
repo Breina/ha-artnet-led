@@ -15,9 +15,10 @@ import json
 import logging
 import re
 import typing
+from collections.abc import Callable
 from enum import EnumType
 from types import MappingProxyType, UnionType
-from typing import Any, Callable, Union
+from typing import Any, Union
 
 from custom_components.dmx.fixture import OFL_URL, capability, wheel
 from custom_components.dmx.fixture.capability import Capability, DmxValueResolution, MenuClick
@@ -195,8 +196,7 @@ def __parse_channels(
                 )
             except StopIteration:
                 raise FixtureConfigurationError(
-                    f"Invalid dmxValueResolution '{dmx_value_resolution_str}'. "
-                    "Must be one of: 8bit, 16bit, 24bit"
+                    f"Invalid dmxValueResolution '{dmx_value_resolution_str}'. " "Must be one of: 8bit, 16bit, 24bit"
                 ) from None
         else:
             # Underscore is because we can't start with a number, not because we want to protect it.
@@ -308,7 +308,9 @@ def __parse_capability(channel: Channel, capability_json: dict[str, Any], config
     return capability_obj(*args, **kwargs)
 
 
-def __extract_value_type(name: str, value_json: Any, is_combined: bool, params: MappingProxyType[str, inspect.Parameter]) -> Any:
+def __extract_value_type(
+    name: str, value_json: Any, is_combined: bool, params: MappingProxyType[str, inspect.Parameter]
+) -> Any:
     param = params[name]
     type_annotation = param.annotation
 
@@ -405,7 +407,9 @@ def __parse_mode_channel(mode_channel: None | str | dict[str, Any]) -> None | st
     repeat_for_json = mode_channel["repeatFor"]
 
     # It's either a string enum or a list of strings
-    repeat_for: RepeatFor | list[str] = RepeatFor[repeat_for_json] if isinstance(repeat_for_json, str) else repeat_for_json
+    repeat_for: RepeatFor | list[str] = (
+        RepeatFor[repeat_for_json] if isinstance(repeat_for_json, str) else repeat_for_json
+    )
 
     channel_order = ChannelOrder[mode_channel["channelOrder"]]
     template_channels = mode_channel["templateChannels"]

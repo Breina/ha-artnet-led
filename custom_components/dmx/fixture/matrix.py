@@ -5,7 +5,6 @@ templating channels.
 
 import re
 from dataclasses import dataclass
-from functools import reduce
 from typing import Any
 
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
@@ -138,7 +137,8 @@ class Matrix:
 
             # Filter out None pixels and apply pattern matching, ensuring we get list[Pixel]
             filtered_pixels: list[Pixel] = [
-                pixel for pixel in flat_pixels 
+                pixel
+                for pixel in flat_pixels
                 if pixel is not None and all(pixel.match(pattern) for pattern in patterns)
             ]
 
@@ -226,7 +226,7 @@ def matrix_from_pixel_names(pixels: list[list[list[str | None]]]) -> Matrix:
 
     # Create new matrix with proper typing to avoid in-place modification issues
     pixel_matrix: list[list[list[Pixel | None]]] = []
-    
+
     for z in range(z_size):
         z_plane: list[list[Pixel | None]] = []
         for y in range(y_size):

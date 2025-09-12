@@ -176,10 +176,7 @@ class LightState:
 
             mapping = self.channels[channel_type]
             capabilities = mapping.channel.capabilities
-            if isinstance(capabilities, list):
-                first_capability = capabilities[0]
-            else:
-                first_capability = capabilities
+            first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
             [entity] = first_capability.dynamic_entities
             norm_val = entity.normalize(val)
             dmx_values = entity.to_dmx_fine(norm_val, len(mapping.dmx_indexes))

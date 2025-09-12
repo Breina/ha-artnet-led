@@ -46,7 +46,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         self._attr_device_info = device
         self._attr_color_mode = color_mode
         self._attr_supported_color_modes = {color_mode}
-        self._attr_supported_features = LightEntityFeature.TRANSITION
+        self._attr_supported_features = LightEntityFeature(LightEntityFeature.TRANSITION)
 
         if self.supported_color_modes and ColorMode.COLOR_TEMP in self.supported_color_modes:
             self._attr_min_color_temp_kelvin = min_kelvin
@@ -76,10 +76,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         channel_mapping = self.channel_map[channel_type]
         capabilities = channel_mapping.channel.capabilities
-        if isinstance(capabilities, list):
-            capability = capabilities[0]
-        else:
-            capability = capabilities
+        capability = capabilities[0] if isinstance(capabilities, list) else capabilities
         assert len(capability.dynamic_entities) == 1
         dynamic_entity = capability.dynamic_entities[0]
 

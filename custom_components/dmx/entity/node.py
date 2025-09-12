@@ -10,8 +10,8 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import DeviceInfo, Entity
 
-from custom_components.dmx.server import ArtPollReply
 from custom_components.dmx.server import (
+    ArtPollReply,
     BootProcess,
     FailsafeState,
     IndicatorState,
@@ -72,7 +72,8 @@ class ArtNetEntity(Entity):
 
             if new_source_ip != self._source_ip or new_bind_index != self._bind_index:
                 _LOGGER.debug(
-                    f"Entity {self._attr_unique_id} rejected update from IP={new_source_ip}, bind_index={new_bind_index} "
+                    f"Entity {self._attr_unique_id} rejected update from "
+                    f"IP={new_source_ip}, bind_index={new_bind_index}"
                     f"(expected IP={self._source_ip}, bind_index={self._bind_index})"
                 )
                 return False
@@ -163,7 +164,7 @@ class ArtNetIndicatorStateSensor(ArtNetEntity, SensorEntity):
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_icon = "mdi:lightbulb"
         self._attr_options = [member.name for member in IndicatorState]
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update indicator state from ArtPollReply."""
@@ -194,7 +195,7 @@ class ArtNetBootProcessSensor(ArtNetEntity, SensorEntity):
         )
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = [member.name for member in BootProcess]
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update boot process from ArtPollReply."""
@@ -224,7 +225,7 @@ class ArtNetRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
             "rdm_support",
             device_info,
         )
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update RDM values from ArtPollReply."""
@@ -260,7 +261,7 @@ class ArtNetDHCPBinarySensor(ArtNetEntity, BinarySensorEntity):
             art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} DHCP", "dhcp", device_info
         )
         self._attr_icon = "mdi:network"
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update DHCP values from ArtPollReply."""
@@ -319,7 +320,7 @@ class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
         )
         self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
         self._attr_icon = "mdi:arrow-down-bold"
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update input values from ArtPollReply."""
@@ -405,7 +406,7 @@ class ArtNetPortOutputBinarySensor(ArtNetEntity, BinarySensorEntity):
         )
         self._attr_icon = "mdi:arrow-up-bold"
         self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update output values from ArtPollReply."""
@@ -480,7 +481,7 @@ class ArtNetPortMergeModeSelect(ArtNetEntity, BinarySensorEntity):
             device_info,
         )
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update merge mode from ArtPollReply."""
@@ -536,7 +537,7 @@ class ArtNetPortSACNBinarySensor(ArtNetEntity, BinarySensorEntity):
             device_info,
         )
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update sACN mode from ArtPollReply."""
@@ -586,7 +587,7 @@ class ArtNetPortRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
             device_info,
         )
         self._attr_device_class = BinarySensorDeviceClass.RUNNING
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update RDM status from ArtPollReply."""
@@ -637,7 +638,7 @@ class ArtNetPortOutputModeSensor(ArtNetEntity, SensorEntity):
         )
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = ["Continuous", "Non-continuous"]
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update output mode from ArtPollReply."""
@@ -667,7 +668,9 @@ class ArtNetPortOutputModeSensor(ArtNetEntity, SensorEntity):
 class ArtNetPortUniverseSensor(ArtNetEntity, SensorEntity):
     """Representation of an ArtNet port universe number."""
 
-    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo, port_index: int, is_input: bool = True) -> None:
+    def __init__(
+        self, art_poll_reply: ArtPollReply, device_info: DeviceInfo, port_index: int, is_input: bool = True
+    ) -> None:
         """Initialize the sensor."""
         self.port_index = port_index
         self.is_input = is_input
@@ -730,7 +733,7 @@ class ArtNetFailsafeStateSensor(ArtNetEntity, SensorEntity):
         )
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = [member.name for member in FailsafeState]
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update failsafe state from ArtPollReply."""
@@ -759,7 +762,7 @@ class ArtNetACNPrioritySensor(ArtNetEntity, SensorEntity):
             "acn_priority",
             device_info,
         )
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update ACN priority from ArtPollReply."""
@@ -788,7 +791,7 @@ class ArtNetNodeReportSensor(ArtNetEntity, SensorEntity):
             "node_report",
             device_info,
         )
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update node report from ArtPollReply."""
@@ -819,7 +822,7 @@ class ArtNetPortAddressProgrammingAuthoritySensor(ArtNetEntity, SensorEntity):
         )
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = [member.name for member in PortAddressProgrammingAuthority]
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_entity_category = EntityCategory(EntityCategory.DIAGNOSTIC)
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
         """Update port address programming authority from ArtPollReply."""

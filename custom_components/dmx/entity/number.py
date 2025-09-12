@@ -1,9 +1,8 @@
 import logging
 
-from homeassistant.components.number import NumberMode, NumberExtraStoredData, RestoreNumber
+from homeassistant.components.number import NumberExtraStoredData, NumberMode, RestoreNumber
 from homeassistant.core import State, callback
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.restore_state import RestoreStateData
 
 from custom_components.dmx.const import DOMAIN
 from custom_components.dmx.fixture.capability import Capability, DynamicEntity
@@ -37,7 +36,8 @@ class DmxNumberEntity(RestoreNumber):
             self.entity_id = f"number.{self._attr_unique_id}"
         else:
             self._attr_unique_id = (
-                f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_{channel_name.lower()}_{fixture_fingerprint}"
+                f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_"
+                f"{channel_name.lower()}_{fixture_fingerprint}"
             )
 
         self._attr_icon = capability.icon()
@@ -84,7 +84,9 @@ class DmxNumberEntity(RestoreNumber):
             self._attr_native_value = last_number.native_value
             # Update the DMX values to match the restored state
             dmx_values: list[int] = self.dynamic_entity.to_dmx_fine(self._attr_native_value, len(self.dmx_indexes))
-            dmx_updates: dict[int, int] = {idx: dmx_values[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values)}
+            dmx_updates: dict[int, int] = {
+                idx: dmx_values[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values)
+            }
             await self.universe.update_multiple_values(dmx_updates)
         elif last_state is not None and last_state.state not in ("unknown", "unavailable"):
             try:
@@ -93,8 +95,12 @@ class DmxNumberEntity(RestoreNumber):
                 if self._attr_native_min_value <= restored_value <= self._attr_native_max_value:
                     self._attr_native_value = restored_value
                     # Update the DMX values to match the restored state
-                    dmx_values_2: list[int] = self.dynamic_entity.to_dmx_fine(self._attr_native_value, len(self.dmx_indexes))
-                    dmx_updates_2: dict[int, int] = {idx: dmx_values_2[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values_2)}
+                    dmx_values_2: list[int] = self.dynamic_entity.to_dmx_fine(
+                        self._attr_native_value, len(self.dmx_indexes)
+                    )
+                    dmx_updates_2: dict[int, int] = {
+                        idx: dmx_values_2[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values_2)
+                    }
                     await self.universe.update_multiple_values(dmx_updates_2)
             except (ValueError, TypeError):
                 pass
