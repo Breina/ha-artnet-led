@@ -19,7 +19,7 @@ class WheelSlot:
     umbrella.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
 
@@ -29,7 +29,7 @@ class Open(WheelSlot):
     Class name matches the fixture format exactly.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Open"
 
 
@@ -39,7 +39,7 @@ class Closed(WheelSlot):
     Class name matches the fixture format exactly.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Closed"
 
 
@@ -54,14 +54,14 @@ class Color(WheelSlot):
         name: str | None = None,
         colors: list[str] | None = None,
         color_temperature: entity.ColorTemperature | None = None,
-    ):
+    ) -> None:
         super().__init__()
         assert not colors or len(colors) >= 1
         self.name = name
         self.color = colors
         self.color_temperature = color_temperature
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.name:
             return self.name
         if self.color_temperature:
@@ -77,12 +77,12 @@ class Gobo(WheelSlot):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, name: str | None, resource: str | None):
+    def __init__(self, name: str | None, resource: str | None) -> None:
         super().__init__()
         self.name = name
         self.resource = resource
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name or self.resource or "Gobo"
 
 
@@ -92,13 +92,13 @@ class Prism(WheelSlot):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, name: str | None, facets: int | None = None):
+    def __init__(self, name: str | None, facets: int | None = None) -> None:
         super().__init__()
-        assert facets >= 2
+        assert facets is None or facets >= 2
         self.name = name
         self.facets = facets
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name or "Prism"
 
 
@@ -108,11 +108,11 @@ class Iris(WheelSlot):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, open_percent: IrisPercent | None = None):
+    def __init__(self, open_percent: IrisPercent | None = None) -> None:
         super().__init__()
         self.iris_percent = open_percent
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.iris_percent:
             return f"Iris {self.iris_percent}"
         return "Iris"
@@ -124,11 +124,11 @@ class Frost(WheelSlot):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, frost_intensity: Percent | None = None):
+    def __init__(self, frost_intensity: Percent | None = None) -> None:
         super().__init__()
         self.frost_intensity = frost_intensity
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.frost_intensity:
             return f"Frost {self.frost_intensity}"
         return "Frost"
@@ -140,11 +140,11 @@ class AnimationGoboStart(WheelSlot):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         super().__init__()
         self.name = name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name or "AnimationGoboStart"
 
 
@@ -154,7 +154,7 @@ class AnimationGoboEnd(WheelSlot):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "AnimationGoboEnd"
 
 
@@ -163,15 +163,15 @@ class Wheel:
     The Wheel model class, containing all of its wheel slots.
     """
 
-    def __init__(self, name: str, slots: list[WheelSlot], direction: str | None = None):
+    def __init__(self, name: str, slots: list[WheelSlot], direction: str | None = None) -> None:
         assert len(slots) >= 2
 
         self.name = name
         self.direction = direction
         self.slots = slots
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}: {self.slots}"

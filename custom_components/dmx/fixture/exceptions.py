@@ -11,7 +11,7 @@ class FixtureConfigurationError(IntegrationError):
     This is open-fixture-format related, not user-related.
     """
 
-    def __init__(self, msg: str, *args):
+    def __init__(self, msg: str, *args: object) -> None:
         super().__init__(*args)
         self.msg = msg
 

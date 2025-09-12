@@ -6,7 +6,7 @@ Most arguments, instance attributes and class names are directly mapped to
 values of the fixture format. Therefore, we will excuse the python linter.
 """
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from enum import Enum, auto
 from typing import Any
 
@@ -161,7 +161,7 @@ class DynamicMapping:
     Maps one range to another range by linear interpolation.
     """
 
-    def __init__(self, range_start: float, range_end: float, dmx_start: int, dmx_end: int):
+    def __init__(self, range_start: float, range_end: float, dmx_start: int, dmx_end: int) -> None:
         super().__init__()
 
         self.__interpolate_to_dmx = _make_interpolater(range_start, range_end, dmx_start, dmx_end)
@@ -233,12 +233,12 @@ class DynamicMapping:
         # Convert to entity value
         return self.__interpolate_from_dmx(scaled_value)
 
-    def normalize(self, value: int):
+    def normalize(self, value: int | float) -> float:
         assert 0 <= value <= 255
 
         return self.__normalize(value)
 
-    def unnormalize(self, value: float):
+    def unnormalize(self, value: float) -> float:
         return self.__unnormalize(value)
 
 
@@ -247,7 +247,7 @@ class DynamicEntity(DynamicMapping):
     Entity which uses a DynamicMapping.
     """
 
-    def __init__(self, entity_start: Entity, entity_end: Entity, dmx_start: int, dmx_end: int):
+    def __init__(self, entity_start: Entity, entity_end: Entity, dmx_start: int, dmx_end: int) -> None:
         super().__init__(entity_start.value, entity_end.value, dmx_start, dmx_end)
 
         self.entity_start = entity_start
@@ -265,10 +265,10 @@ class Capability:
         self,
         dmx_value_resolution: DmxValueResolution,
         comment: str | None = None,
-        dmx_range: [int] = None,
+        dmx_range: list[int] | None = None,
         menu_click: MenuClick | None = None,
         switch_channels: dict[str, str] | None = None,
-    ):
+    ) -> None:
         super().__init__()
 
         if dmx_range is None:
@@ -282,12 +282,12 @@ class Capability:
 
         self.menu_click = menu_click
         if self.menu_click:
-            self.menu_click_value = {
+            self.menu_click_value: int | None = {
                 MenuClick.start.name: self.dmx_range_start,
                 MenuClick.center.name: int((self.dmx_range_start + self.dmx_range_end) / 2),
                 MenuClick.end.name: self.dmx_range_end,
                 MenuClick.hidden.name: self.dmx_range_start,
-            }[menu_click.name]
+            }[self.menu_click.name]
         else:
             self.menu_click_value = None
 
@@ -299,7 +299,7 @@ class Capability:
     def is_dynamic_entity(self) -> bool:
         return len(self.dynamic_entities) != 0
 
-    def is_applicable(self, dmx_value: int):
+    def is_applicable(self, dmx_value: int) -> bool:
         """
         Tests whether or not the DMX value is within the range of this
         capability.
@@ -308,7 +308,7 @@ class Capability:
         """
         return self.dmx_range_start <= dmx_value <= self.dmx_range_end
 
-    def _define_from_entity(self, entities: list[Entity] | None):
+    def _define_from_entity(self, entities: Sequence[Entity] | None) -> None:
         if not entities:
             return
 
@@ -325,7 +325,7 @@ class Capability:
         return "mdi:percent"
 
     def extra_attributes(self) -> dict[str, Any]:
-        attributes = {"DMX range start": self.dmx_range_start, "DMX range end": self.dmx_range_end}
+        attributes: dict[str, Any] = {"DMX range start": self.dmx_range_start, "DMX range end": self.dmx_range_end}
         if self.comment:
             attributes["Comment"] = self.comment
 
@@ -336,17 +336,17 @@ class Capability:
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.comment:
             return self.comment
         if self.dmx_range_start and self.dmx_range_end:
             return f"[{self.dmx_range_start},{self.dmx_range_end}]"
         return "Capability"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def args_to_str(self, *args) -> str:
+    def args_to_str(self, *args: Any) -> str:
         """
         Helper function which turns arguments into a nice string.
         :param args: The argument(s) to be converted
@@ -376,10 +376,10 @@ class NoFunction(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.comment or "No function"
 
 
@@ -396,8 +396,8 @@ class ShutterStrobe(Capability):
         random_timing: bool = False,
         speed: list[entity.Speed] | None = None,
         duration: list[entity.Time] | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
         self.effect = shutter_effect
         self.sound_controlled = sound_controlled
@@ -424,7 +424,7 @@ class ShutterStrobe(Capability):
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(
             self.effect,
             "sound controlled" if self.sound_controlled else None,
@@ -440,7 +440,7 @@ class StrobeSpeed(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[entity.Speed], **kwargs):
+    def __init__(self, speed: list[entity.Speed], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.speed = speed
         self._define_from_entity(speed)
@@ -448,7 +448,7 @@ class StrobeSpeed(Capability):
     def icon(self) -> str:
         return "mdi:flash-auto"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.speed)
 
 
@@ -458,7 +458,7 @@ class StrobeDuration(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, duration: list[entity.Time], **kwargs):
+    def __init__(self, duration: list[entity.Time], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.duration = duration
         self._define_from_entity(duration)
@@ -466,7 +466,7 @@ class StrobeDuration(Capability):
     def icon(self) -> str:
         return "mdi:timer-outline"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.duration)
 
 
@@ -476,7 +476,7 @@ class Intensity(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, brightness: list[Brightness] | None = None, **kwargs):
+    def __init__(self, brightness: list[Brightness] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.brightness = brightness or [Brightness("off"), Brightness("bright")]
         self._define_from_entity(self.brightness)
@@ -484,7 +484,7 @@ class Intensity(Capability):
     def icon(self) -> str:
         return "mdi:brightness-7"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.brightness)
 
 
@@ -494,7 +494,7 @@ class ColorIntensity(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, color: SingleColor, brightness: list[Brightness] | None = None, **kwargs):
+    def __init__(self, color: SingleColor, brightness: list[Brightness] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.color = color
         self.brightness = brightness or [Brightness("off"), Brightness("bright")]
@@ -508,7 +508,7 @@ class ColorIntensity(Capability):
         attributes["Color"] = str(self.color)
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.color, self.brightness)
 
 
@@ -522,8 +522,8 @@ class ColorPreset(Capability):
         self,
         colors: list[list[str]] | None = None,
         color_temperature: list[entity.ColorTemperature] | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
         self.colors = colors
         self.color_temperature = color_temperature
@@ -537,7 +537,7 @@ class ColorPreset(Capability):
     def icon(self) -> str:
         return "mdi:palette-swatch"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.colors, self.color_temperature)
 
 
@@ -547,7 +547,7 @@ class ColorTemperature(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, color_temperature: list[entity.ColorTemperature], **kwargs):
+    def __init__(self, color_temperature: list[entity.ColorTemperature], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.color_temperature = color_temperature
         self._define_from_entity(self.color_temperature)
@@ -555,7 +555,7 @@ class ColorTemperature(Capability):
     def icon(self) -> str:
         return "mdi:thermometer"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.color_temperature)
 
 
@@ -565,7 +565,7 @@ class Pan(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, angle: list[RotationAngle], **kwargs):
+    def __init__(self, angle: list[RotationAngle], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.angle = angle
         self._define_from_entity(angle)
@@ -573,7 +573,7 @@ class Pan(Capability):
     def icon(self) -> str:
         return "mdi:arrow-left-right"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.angle)
 
 
@@ -583,7 +583,7 @@ class PanContinuous(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[RotationSpeed], **kwargs):
+    def __init__(self, speed: list[RotationSpeed], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.speed = speed
         self._define_from_entity(speed)
@@ -591,7 +591,7 @@ class PanContinuous(Capability):
     def icon(self) -> str:
         return "mdi:format-text-rotation-none"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.speed)
 
 
@@ -601,7 +601,7 @@ class Tilt(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, angle: list[RotationAngle], **kwargs):
+    def __init__(self, angle: list[RotationAngle], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.angle = angle
         self._define_from_entity(angle)
@@ -609,7 +609,7 @@ class Tilt(Capability):
     def icon(self) -> str:
         return "mdi:arrow-up-down"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.angle)
 
 
@@ -619,7 +619,7 @@ class TiltContinuous(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[RotationSpeed], **kwargs):
+    def __init__(self, speed: list[RotationSpeed], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.speed = speed
         self._define_from_entity(speed)
@@ -627,7 +627,7 @@ class TiltContinuous(Capability):
     def icon(self) -> str:
         return "mdi:format-text-rotation-up"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.speed)
 
 
@@ -637,7 +637,7 @@ class PanTiltSpeed(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[entity.Speed] | None, duration: list[entity.Time] | None, **kwargs):
+    def __init__(self, speed: list[entity.Speed] | None, duration: list[entity.Time] | None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         assert bool(speed) != bool(duration)
         self.speed = speed
@@ -659,7 +659,7 @@ class PanTiltSpeed(Capability):
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.speed, self.duration)
 
 
@@ -669,7 +669,7 @@ class WheelSlot(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, name: str, slot_number: list[SlotNumber], wheel: str | None = None, **kwargs):
+    def __init__(self, name: str, slot_number: list[SlotNumber], wheel: str | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.wheel = wheel or name
         self.slot_number = slot_number
@@ -683,7 +683,7 @@ class WheelSlot(Capability):
         attributes["Wheel"] = self.wheel
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.wheel, self.slot_number)
 
 
@@ -701,8 +701,8 @@ class WheelShake(Capability):
         slot_number: list[SlotNumber] | None = None,
         shake_speed: list[entity.Speed] | None = None,
         shake_angle: list[SwingAngle] | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
         self.is_shaking = is_shaking
         self.wheel = wheel or name
@@ -738,7 +738,7 @@ class WheelShake(Capability):
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.wheel, self.slot_number, self.shake_speed, self.shake_angle, self.is_shaking)
 
 
@@ -755,8 +755,8 @@ class WheelSlotRotation(Capability):
         slot_number: SlotNumber | None = None,
         speed: list[RotationSpeed] | None = None,
         angle: list[RotationAngle] | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
         assert bool(angle) != bool(speed)
         self.wheel = wheel or name
@@ -791,7 +791,7 @@ class WheelSlotRotation(Capability):
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.wheel, self.slot_number)
 
 
@@ -807,8 +807,8 @@ class WheelRotation(Capability):
         wheel: str | list[str] | None = None,
         speed: list[RotationSpeed] | None = None,
         angle: list[RotationAngle] | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
         self.wheel = wheel or name
         self.speed = speed
@@ -837,7 +837,7 @@ class WheelRotation(Capability):
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.wheel, self.speed, self.angle)
 
 
@@ -856,8 +856,8 @@ class Effect(Capability):
         parameter: list[Parameter] | None = None,
         sound_controlled: bool = False,
         sound_sensitivity: list[Percent] | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         assert effect_name or effect_preset
@@ -910,7 +910,7 @@ class Effect(Capability):
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(
             self.effect_name,
             self.effect_preset,
@@ -928,7 +928,7 @@ class BeamAngle(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, angle: list[entity.BeamAngle], **kwargs):
+    def __init__(self, angle: list[entity.BeamAngle], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.angle = angle
         self._define_from_entity(angle)
@@ -936,7 +936,7 @@ class BeamAngle(Capability):
     def icon(self) -> str:
         return "mdi:angle-acute"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.angle)
 
 
@@ -950,8 +950,8 @@ class BeamPosition(Capability):
         self,
         horizontal_angle: list[HorizontalAngle] | None = None,
         vertical_angle: list[VerticalAngle] | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         assert horizontal_angle or vertical_angle
@@ -975,7 +975,7 @@ class BeamPosition(Capability):
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.horizontal_angle, self.vertical_angle)
 
 
@@ -985,7 +985,7 @@ class EffectSpeed(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[entity.Speed], **kwargs):
+    def __init__(self, speed: list[entity.Speed], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.speed = speed
         self._define_from_entity(speed)
@@ -993,7 +993,7 @@ class EffectSpeed(Capability):
     def icon(self) -> str:
         return "mdi:speedometer"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.speed)
 
 
@@ -1003,7 +1003,7 @@ class EffectDuration(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, duration: list[entity.Time], **kwargs):
+    def __init__(self, duration: list[entity.Time], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.duration = duration
         self._define_from_entity(duration)
@@ -1011,7 +1011,7 @@ class EffectDuration(Capability):
     def icon(self) -> str:
         return "mdi:timer-sand"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.duration)
 
 
@@ -1021,7 +1021,7 @@ class EffectParameter(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, parameter: list[Parameter], **kwargs):
+    def __init__(self, parameter: list[Parameter], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.parameter = parameter
         self._define_from_entity(parameter)
@@ -1029,7 +1029,7 @@ class EffectParameter(Capability):
     def icon(self) -> str:
         return "mdi:format-list-bulleted-type"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.parameter)
 
 
@@ -1039,7 +1039,7 @@ class SoundSensitivity(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, sound_sensitivity: list[Percent], **kwargs):
+    def __init__(self, sound_sensitivity: list[Percent], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.sound_sensitivity = sound_sensitivity
         self._define_from_entity(sound_sensitivity)
@@ -1047,7 +1047,7 @@ class SoundSensitivity(Capability):
     def icon(self) -> str:
         return "mdi:microphone-outline"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.sound_sensitivity)
 
 
@@ -1057,7 +1057,7 @@ class Focus(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, distance: list[Distance], **kwargs):
+    def __init__(self, distance: list[Distance], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.distance = distance
         self._define_from_entity(distance)
@@ -1065,7 +1065,7 @@ class Focus(Capability):
     def icon(self) -> str:
         return "mdi:image-filter-center-focus"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.distance)
 
 
@@ -1075,7 +1075,7 @@ class Zoom(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, angle: list[entity.BeamAngle], **kwargs):
+    def __init__(self, angle: list[entity.BeamAngle], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.angle = angle
         self._define_from_entity(angle)
@@ -1083,7 +1083,7 @@ class Zoom(Capability):
     def icon(self) -> str:
         return "mdi:magnify-plus-outline"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.angle)
 
 
@@ -1093,7 +1093,7 @@ class Iris(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, open_percent: list[IrisPercent], **kwargs):
+    def __init__(self, open_percent: list[IrisPercent], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.open_percent = open_percent
         self._define_from_entity(open_percent)
@@ -1101,7 +1101,7 @@ class Iris(Capability):
     def icon(self) -> str:
         return "mdi:circle-slice-8"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.open_percent)
 
 
@@ -1111,7 +1111,7 @@ class IrisEffect(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, effect_name: str, speed: list[entity.Speed] | None = None, **kwargs):
+    def __init__(self, effect_name: str, speed: list[entity.Speed] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.effect_name = effect_name
         self.speed = speed
@@ -1125,7 +1125,7 @@ class IrisEffect(Capability):
         attributes["Effect name"] = str(self.effect_name)
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.effect_name, self.speed)
 
 
@@ -1135,7 +1135,7 @@ class Frost(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, frost_intensity: list[Percent], **kwargs):
+    def __init__(self, frost_intensity: list[Percent], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.frost_intensity = frost_intensity
         self._define_from_entity(frost_intensity)
@@ -1143,7 +1143,7 @@ class Frost(Capability):
     def icon(self) -> str:
         return "mdi:snowflake"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.frost_intensity)
 
 
@@ -1153,7 +1153,7 @@ class FrostEffect(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, effect_name: str, speed: list[entity.Speed] | None = None, **kwargs):
+    def __init__(self, effect_name: str, speed: list[entity.Speed] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.effect_name = effect_name
         self.speed = speed
@@ -1167,7 +1167,7 @@ class FrostEffect(Capability):
         attributes["Effect name"] = str(self.effect_name)
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.effect_name, self.speed)
 
 
@@ -1177,7 +1177,7 @@ class Prism(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs):
+    def __init__(self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         assert not (bool(speed) and bool(angle))
         self.speed = speed
@@ -1200,7 +1200,7 @@ class Prism(Capability):
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.speed, self.angle)
 
 
@@ -1210,7 +1210,7 @@ class PrismRotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs):
+    def __init__(self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         assert bool(speed) != bool(angle)
         self.speed = speed
@@ -1233,7 +1233,7 @@ class PrismRotation(Capability):
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.speed, self.angle)
 
 
@@ -1243,7 +1243,7 @@ class BladeInsertion(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, blade: BladePosition | int, insertion: list[Insertion], **kwargs):
+    def __init__(self, blade: BladePosition | int, insertion: list[Insertion], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.blade = blade
         self._define_from_entity(insertion)
@@ -1256,7 +1256,7 @@ class BladeInsertion(Capability):
         attributes["Blade position"] = str(self.blade)
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.blade)
 
 
@@ -1266,7 +1266,7 @@ class BladeRotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, blade: BladePosition | int, angle: list[RotationAngle], **kwargs):
+    def __init__(self, blade: BladePosition | int, angle: list[RotationAngle], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.blade = blade
         self._define_from_entity(angle)
@@ -1279,7 +1279,7 @@ class BladeRotation(Capability):
         attributes["Blade position"] = str(self.blade)
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.blade)
 
 
@@ -1289,7 +1289,7 @@ class BladeSystemRotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, angle: list[RotationAngle], **kwargs):
+    def __init__(self, angle: list[RotationAngle], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.angle = angle
         self._define_from_entity(angle)
@@ -1297,7 +1297,7 @@ class BladeSystemRotation(Capability):
     def icon(self) -> str:
         return "mdi:rotate-orbit"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.angle)
 
 
@@ -1308,8 +1308,8 @@ class Fog(Capability):
     """
 
     def __init__(
-        self, fog_type: FogTypeOutput | None = None, fog_output: list[entity.FogOutput] | None = None, **kwargs
-    ):
+        self, fog_type: FogTypeOutput | None = None, fog_output: list[entity.FogOutput] | None = None, **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
         self.fog_type = fog_type
         self.fog_output = fog_output
@@ -1323,7 +1323,7 @@ class Fog(Capability):
         attributes["Fog type output"] = str(self.fog_type)
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.fog_type, self.fog_output)
 
 
@@ -1333,7 +1333,7 @@ class FogOutput(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, fog_output: list[entity.FogOutput], **kwargs):
+    def __init__(self, fog_output: list[entity.FogOutput], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.fog_output = fog_output
         self._define_from_entity(fog_output)
@@ -1346,7 +1346,7 @@ class FogOutput(Capability):
         attributes["Fog type output"] = str(self.fog_output)
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.fog_output)
 
 
@@ -1356,7 +1356,7 @@ class FogType(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, fog_type: FogTypeOutput | None = None, **kwargs):
+    def __init__(self, fog_type: FogTypeOutput | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.fog_type = fog_type
 
@@ -1368,7 +1368,7 @@ class FogType(Capability):
         attributes["Fog type output"] = str(self.fog_type)
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.fog_type)
 
 
@@ -1378,7 +1378,7 @@ class Rotation(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs):
+    def __init__(self, speed: list[RotationSpeed] | None = None, angle: list[RotationAngle] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         assert bool(speed) != bool(angle)
         self.speed = speed
@@ -1401,7 +1401,7 @@ class Rotation(Capability):
 
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.speed, self.angle)
 
 
@@ -1411,7 +1411,7 @@ class Speed(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, speed: list[entity.Speed], **kwargs):
+    def __init__(self, speed: list[entity.Speed], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.speed = speed
         self._define_from_entity(speed)
@@ -1419,7 +1419,7 @@ class Speed(Capability):
     def icon(self) -> str:
         return "mdi:run-fast"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.speed)
 
 
@@ -1429,7 +1429,7 @@ class Time(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, time: list[entity.Time], **kwargs):
+    def __init__(self, time: list[entity.Time], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.time = time
         self._define_from_entity(time)
@@ -1437,7 +1437,7 @@ class Time(Capability):
     def icon(self) -> str:
         return "mdi:clock-outline"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.time)
 
 
@@ -1447,7 +1447,7 @@ class Maintenance(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, parameter: list[Parameter] | None = None, hold: entity.Time | None = None, **kwargs):
+    def __init__(self, parameter: list[Parameter] | None = None, hold: entity.Time | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.hold = hold
         self.parameter = parameter
@@ -1461,7 +1461,7 @@ class Maintenance(Capability):
         attributes["Hold"] = str(self.hold)
         return attributes
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.args_to_str(self.hold, self.parameter)
 
 
@@ -1471,7 +1471,7 @@ class Generic(Capability):
     Class name and instance arguments match the fixture format exactly.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._define_from_entity([Percent(0, "%"), Percent(100, "%")])
 

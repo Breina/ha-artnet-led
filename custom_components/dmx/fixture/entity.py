@@ -14,25 +14,29 @@ class Entity:
         unit: str | None,
         allowed_units: list[str | None],
         keywords: dict[str, int] | None = None,
-    ):
+    ) -> None:
+
+        self.value: float
+        self.unit: str | None
+
         if isinstance(value, str):
             assert keywords
             self.input = value
-            self.value: float = keywords[value]
+            self.value = keywords[value]
             self.unit = "%"
         else:
             assert unit in allowed_units
             self.input = f"{value}{unit}" if unit else str(value)
-            self.value: float = value
+            self.value = value
             self.unit = unit
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.input)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def __lt__(self, other):
+    def __lt__(self, other: "Entity") -> bool:
         return self.value < other.value
 
 
@@ -43,7 +47,7 @@ class Speed(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(
             value,
             unit,
@@ -59,7 +63,7 @@ class RotationSpeed(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(
             value, unit, ["Hz", "rpm", "%"], {"fast CCW": -100, "slow CCW": -1, "stop": 0, "slow CW": 1, "fast CW": 100}
         )
@@ -72,7 +76,7 @@ class Time(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["s", "ms", "%"], {"instant": 0, "short": 1, "long": 100})
 
 
@@ -83,7 +87,7 @@ class Distance(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["m", "%"], {"near": 1, "far": 100})
 
 
@@ -94,7 +98,7 @@ class Brightness(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["lm", "%"], {"off": 0, "dark": 1, "bright": 100})
 
 
@@ -105,7 +109,7 @@ class ColorTemperature(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["K", "%"], {"warm": -100, "CTO": -100, "default": 0, "cold": 100, "CTB": 100})
 
 
@@ -116,7 +120,7 @@ class FogOutput(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["m^3/min", "%"], {"off": 0, "weak": 1, "strong": 100})
 
 
@@ -127,7 +131,7 @@ class RotationAngle(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["deg", "%"])
 
 
@@ -138,7 +142,7 @@ class BeamAngle(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["deg", "%"], {"closed": 0, "narrow": 1, "wide": 100})
 
 
@@ -149,7 +153,7 @@ class HorizontalAngle(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["deg", "%"], {"left": -100, "center": 0, "right": 100})
 
 
@@ -160,7 +164,7 @@ class VerticalAngle(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["deg", "%"], {"top": -100, "center": 0, "bottom": 100})
 
 
@@ -171,7 +175,7 @@ class SwingAngle(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["deg", "%"], {"off": 0, "narrow": 1, "wide": 100})
 
 
@@ -182,7 +186,7 @@ class Parameter(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(
             value,
             unit,
@@ -209,7 +213,7 @@ class SlotNumber(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str):
+    def __init__(self, value: float | str) -> None:
         super().__init__(value, None, [None])
 
 
@@ -220,7 +224,7 @@ class Percent(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(value, unit, ["%"], {"off": 0, "low": 1, "high": 100})
 
 
@@ -231,7 +235,7 @@ class Insertion(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(
             value,
             unit,
@@ -250,7 +254,7 @@ class IrisPercent(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: float | str, unit: str | None = None):
+    def __init__(self, value: float | str, unit: str | None = None) -> None:
         super().__init__(
             value,
             unit,
@@ -269,7 +273,7 @@ class ColorHex(Entity):
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, value: int, hex: str):
+    def __init__(self, value: int, hex: str) -> None:
         super().__init__(value, None, [None])
 
         self.hex = hex

@@ -6,10 +6,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import async_get_platforms
+from homeassistant.helpers.entity_platform import async_get_platforms, EntityPlatform
 from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 
-from custom_components.dmx import DOMAIN, ArtPollReply, Node
+from custom_components.dmx.const import DOMAIN
+from custom_components.dmx.server import ArtPollReply
+from custom_components.dmx.server.artnet_server import Node
 from custom_components.dmx.const import CONF_NODE_ENTITIES
 from custom_components.dmx.entity.node import (
     ArtNetACNPrioritySensor,
@@ -36,7 +38,7 @@ log = logging.getLogger(__name__)
 class DynamicNodeHandler:
     """Handler for dynamically discovered ArtNet nodes."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, controller) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, controller: Any) -> None:
         """Initialize the dynamic node handler."""
         self.hass = hass
         self.entry = entry
@@ -45,7 +47,7 @@ class DynamicNodeHandler:
 
     async def handle_new_node(self, artpoll_reply: ArtPollReply) -> None:
         """Handle a newly discovered ArtNet node."""
-        unique_id = f"{artpoll_reply.mac_address}{artpoll_reply.bind_index}"
+        unique_id = f"{artpoll_reply.mac_address!r}{artpoll_reply.bind_index}"
 
         if unique_id in self.discovered_nodes:
             # Previously disabled, but found again
@@ -69,9 +71,9 @@ class DynamicNodeHandler:
         )
 
         if artpoll_reply.supports_web_browser_configuration:
-            device_info["configuration_url"] = f"http://{'.'.join(map(str, artpoll_reply.source_ip))}/"
+            device_info["configuration_url"] = f"http://{'.'.join(str(b) for b in artpoll_reply.source_ip)}/"
 
-        entities = []
+        entities: list[Any] = []
 
         entities.append(ArtNetOnlineBinarySensor(artpoll_reply, device_info))
         entities.append(ArtNetIndicatorStateSensor(artpoll_reply, device_info))
@@ -102,7 +104,7 @@ class DynamicNodeHandler:
 
     async def update_node(self, artpoll_reply: ArtPollReply) -> None:
         """Update an existing ArtNet node with new ArtPollReply data."""
-        unique_id = f"{artpoll_reply.mac_address}{artpoll_reply.bind_index}"
+        unique_id = f"{artpoll_reply.mac_address!r}{artpoll_reply.bind_index}"
 
         if unique_id not in self.discovered_nodes:
             return
@@ -120,7 +122,7 @@ class DynamicNodeHandler:
 
                 # Use the new unified update method - entity handles validation and value extraction
                 if hasattr(entity, "safe_update_from_artpoll_reply"):
-                    update_successful = await entity.update_from_artpoll_reply(artpoll_reply)
+                    update_successful: bool = await entity.update_from_artpoll_reply(artpoll_reply)
 
                     if update_successful:
                         entities_updated += 1
@@ -135,7 +137,7 @@ class DynamicNodeHandler:
         log.debug(f"Updated ArtNet node: {artpoll_reply.long_name}")
 
     async def disable_node(self, node: Node) -> None:
-        unique_id = f"{node.mac_address}{node.bind_index}"
+        unique_id = f"{node.mac_address!r}{node.bind_index}"
 
         if unique_id not in self.discovered_nodes:
             return
@@ -217,10 +219,10 @@ class DynamicNodeHandler:
         else:
             log.debug(f"Re-enabled {entities_updated} entities for node {artpoll_reply.short_name}")
 
-    async def _add_entities(self, entities) -> None:
+    async def _add_entities(self, entities: list[Any]) -> None:
         """Add entities to Home Assistant."""
         # Wait for platforms to be set up if they aren't ready yet
-        platforms = list(async_get_platforms(self.hass, DOMAIN))
+        platforms: list[EntityPlatform] = list(async_get_platforms(self.hass, DOMAIN))
         if not platforms:
             log.warning("Platforms not ready yet, waiting 1 second...")
             await asyncio.sleep(1)

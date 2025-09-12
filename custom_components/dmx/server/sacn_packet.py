@@ -38,7 +38,7 @@ class SacnPacket:
     cid: bytes = field(default_factory=lambda: uuid.uuid4().bytes)
     dmx_data: bytearray = field(default_factory=lambda: bytearray(513))  # Start code + 512 channels
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         assert 1 <= len(self.source_name) <= 63, "Source name must be 1-63 characters"
         assert 0 <= self.priority <= 200, "Priority must be 0-200"
         assert 1 <= self.universe <= 63999, "Universe must be 1-63999"
@@ -51,7 +51,7 @@ class SacnPacket:
         if self.dmx_data[0] != 0x00:
             self.dmx_data[0] = 0x00
 
-    def set_dmx_channel(self, channel: int, value: int):
+    def set_dmx_channel(self, channel: int, value: int) -> None:
         assert 1 <= channel <= 512, "Channel must be 1-512"
         assert 0 <= value <= 255, "Value must be 0-255"
 
@@ -60,7 +60,7 @@ class SacnPacket:
 
         self.dmx_data[channel] = value
 
-    def set_dmx_data(self, data: bytearray):
+    def set_dmx_data(self, data: bytearray) -> None:
         assert len(data) <= 513, "DMX data must be <= 513 bytes"
         self.dmx_data = data
         if len(self.dmx_data) > 0 and self.dmx_data[0] != 0x00:
@@ -225,7 +225,7 @@ class SacnSyncPacket:
     sync_address: int = 0  # 0 = all universes, 1-63999 = specific sync address
     cid: bytes = field(default_factory=lambda: uuid.uuid4().bytes)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         assert 0 <= self.sequence_number <= 255, "Sequence number must be 0-255"
         assert 0 <= self.sync_address <= 63999, "Sync address must be 0-63999"
         assert len(self.cid) == 16, "CID must be 16 bytes (UUID)"

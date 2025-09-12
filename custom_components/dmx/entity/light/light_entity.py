@@ -31,7 +31,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         has_separate_dimmer: bool = False,
         min_kelvin: int = 2000,
         max_kelvin: int = 6500,
-    ):
+    ) -> None:
         self._matrix_key = matrix_key
         self._attr_name = f"{fixture_name} Light {matrix_key}" if matrix_key else f"{fixture_name} Light"
         if entity_id_prefix:
@@ -48,7 +48,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         self._attr_supported_color_modes = {color_mode}
         self._attr_supported_features = LightEntityFeature.TRANSITION
 
-        if ColorMode.COLOR_TEMP in self.supported_color_modes:
+        if self.supported_color_modes and ColorMode.COLOR_TEMP in self.supported_color_modes:
             self._attr_min_color_temp_kelvin = min_kelvin
             self._attr_max_color_temp_kelvin = max_kelvin
 
@@ -65,17 +65,21 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         self._register_channel_listeners(self.channel_map)
 
-    def _register_channel_listeners(self, channel_map: dict[ChannelType, ChannelMapping]):
+    def _register_channel_listeners(self, channel_map: dict[ChannelType, ChannelMapping]) -> None:
         for channel_type, channel_data in channel_map.items():
             for dmx_index in channel_data.dmx_indexes:
                 self._universe.register_channel_listener(dmx_index, partial(self._handle_channel_update, channel_type))
 
     @callback
-    def _handle_channel_update(self, channel_type: ChannelType, source: str | None):
+    def _handle_channel_update(self, channel_type: ChannelType, source: str | None) -> None:
         self._attr_attribution = source
 
         channel_mapping = self.channel_map[channel_type]
-        [capability] = channel_mapping.channel.capabilities
+        capabilities = channel_mapping.channel.capabilities
+        if isinstance(capabilities, list):
+            capability = capabilities[0]
+        else:
+            capability = capabilities
         assert len(capability.dynamic_entities) == 1
         dynamic_entity = capability.dynamic_entities[0]
 
@@ -96,11 +100,11 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         return self._state.is_on
 
     @property
-    def brightness(self) -> int:
+    def brightness(self) -> int | None:
         return self._state.brightness
 
     @property
-    def rgb_color(self) -> tuple[int, int, int]:
+    def rgb_color(self) -> tuple[int, int, int] | None:
         return self._state.rgb
 
     @property
@@ -125,7 +129,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         value = getattr(self, "_attr_max_color_temp_kelvin", None)
         return value if value is not None else 6500
 
-    async def async_turn_on(self, **kwargs: Any):
+    async def async_turn_on(self, **kwargs: Any) -> None:
         await self._controller.turn_on(**kwargs)
 
         if not self.hass:
@@ -134,7 +138,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         self.async_write_ha_state()
 
-    async def async_turn_off(self, **kwargs: Any):
+    async def async_turn_off(self, **kwargs: Any) -> None:
         transition = kwargs.get(ATTR_TRANSITION)
         await self._controller.turn_off(transition)
 
@@ -144,7 +148,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         self.async_write_ha_state()
 
-    async def async_added_to_hass(self):
+    async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
 
         last_state = await self.async_get_last_state()

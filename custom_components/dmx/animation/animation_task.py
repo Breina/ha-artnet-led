@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import time
+from collections.abc import Callable
 
 from custom_components.dmx.animation.color_calculator import LightTransitionAnimator
 from custom_components.dmx.entity.light import ChannelMapping, ChannelType
@@ -26,13 +28,17 @@ class AnimationTask:
         self.start_time = time.time()
         self.is_cancelled = False
 
-        self.task = None
+        self.task: asyncio.Task[None] | None = None
+        self.completion_callback: Callable[[], None] | None = None
 
         self.controlled_indexes: set[int] = set()
         for mapping in channel_mappings:
             self.controlled_indexes.update(mapping.dmx_indexes)
 
-        self.animator = LightTransitionAnimator(current_values, desired_values, min_kelvin, max_kelvin)
+        # Convert int values to float for the animator
+        current_values_float = {k: float(v) for k, v in current_values.items()}
+        desired_values_float = {k: float(v) for k, v in desired_values.items()}
+        self.animator = LightTransitionAnimator(current_values_float, desired_values_float, min_kelvin, max_kelvin)
 
     def get_progress(self) -> float:
         """Get animation progress from 0.0 to 1.0"""
@@ -47,4 +53,5 @@ class AnimationTask:
         """Calculate the current frame values based on animation progress"""
         progress = self.get_progress()
 
-        return self.animator.interpolate(progress)
+        float_values = self.animator.interpolate(progress)
+        return {k: round(v) for k, v in float_values.items()}

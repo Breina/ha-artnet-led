@@ -10,7 +10,7 @@ from custom_components.dmx.fixture.capability import Capability, DmxValueResolut
 Capabilities = Capability | list[Capability]
 
 
-def percent_to_byte(default_value: str | int):
+def percent_to_byte(default_value: str | int) -> int:
     """
     Converts a percent string (75%) into a byte (196).
     :param default_value: If a string, converts it into byte. Otherwise pass
@@ -32,32 +32,28 @@ class Channel:
     def __init__(
         self,
         name: str,
-        fine_channel_aliases: [str],
+        fine_channel_aliases: list[str] | None,
         dmx_value_resolution: DmxValueResolution,
         default_value: int | str | None = None,
         highlight_value: int | str | None = None,
         constant: bool = False,
-    ):
-        self.name = name
-        self.matrix_key = None  # Used to identify channels part of a templated matrix
+    ) -> None:
+        self.name: str = name
+        self.matrix_key: str | None = None  # Used to identify channels part of a templated matrix
 
         if fine_channel_aliases is None:
             fine_channel_aliases = []
-        self.fine_channel_aliases = fine_channel_aliases
+        self.fine_channel_aliases: list[str] = fine_channel_aliases
 
-        self.dmx_value_resolution = dmx_value_resolution
+        self.dmx_value_resolution: DmxValueResolution = dmx_value_resolution
 
-        if default_value:
-            self.default_value = percent_to_byte(default_value)
-        else:
-            self.default_value = 0
+        self.default_value: int = percent_to_byte(default_value) if default_value else 0
 
-        if not highlight_value:
-            self.highlight_value = math.pow(255, dmx_value_resolution.value)
-        else:
-            self.highlight_value = percent_to_byte(highlight_value)
+        self.highlight_value: int | float = (
+            math.pow(255, dmx_value_resolution.value) if not highlight_value else percent_to_byte(highlight_value)
+        )
 
-        self.constant = constant
+        self.constant: bool = constant
 
         self.capabilities: Capabilities = []
 
@@ -72,12 +68,12 @@ class Channel:
             self.capabilities = [capability]
 
     def has_multiple_capabilities(self) -> bool:
-        return len(self.capabilities) > 1
+        return isinstance(self.capabilities, list) and len(self.capabilities) > 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}: {self.capabilities}"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name
 
 
@@ -91,7 +87,7 @@ class ChannelOffset:
     channel: Channel
     byte_offset: int
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.channel.__repr__()}#{self.byte_offset}"
 
 
@@ -104,5 +100,5 @@ class SwitchingChannel:
     name: str
     controlled_channels: dict[str, ChannelOffset]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.name}{self.controlled_channels}"

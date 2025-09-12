@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Callable
+from typing import Any
 
 from custom_components.dmx.animation.engine import DmxAnimationEngine
 from custom_components.dmx.server import PortAddress
@@ -12,25 +13,26 @@ class DmxUniverse:
     def __init__(
         self,
         port_address: PortAddress,
-        controller: ArtNetServer,
+        controller: ArtNetServer | None,
         use_partial_universe: bool = True,
         sacn_server: SacnServer | None = None,
         sacn_universe: int | None = None,
-        hass=None,
+        hass: Any = None,
         max_fps: int = 30,
-    ):
+    ) -> None:
         self.port_address = port_address
         self.controller = controller
         self.sacn_server = sacn_server
         self.sacn_universe = sacn_universe
         self.use_partial_universe = use_partial_universe
 
-        self._channel_values = {}
-        self._constant_values = {}
-        self._channel_callbacks = {}
-        self._changed_channels = set()
-        self._first_send = True
-        self._output_enabled = True
+        self._channel_values: dict[int, int] = {}
+        self._constant_values: dict[int, int] = {}
+        self._channel_callbacks: dict[int, list[Callable[[str | None], None]]] = {}
+        self._changed_channels: set[int] = set()
+        self._first_send: bool = True
+        self._output_enabled: bool = True
+        self.animation_engine: DmxAnimationEngine | None = None
 
         if hass:
             self.animation_engine = DmxAnimationEngine(hass, self, max_fps)
@@ -68,8 +70,8 @@ class DmxUniverse:
 
         channels = [channel] if isinstance(channel, int) else channel
 
-        callbacks_to_call = set()
-        changed_channels = []
+        callbacks_to_call: set[Callable[[str | None], None]] = set()
+        changed_channels: list[int] = []
 
         for ch in channels:
             if ch in self._constant_values and source is None:
@@ -99,7 +101,7 @@ class DmxUniverse:
     async def update_multiple_values(
         self, updates: dict[int, int], source: str | None = None, send_update: bool = True
     ) -> None:
-        callbacks_to_call = set()
+        callbacks_to_call: set[Callable[[str | None], None]] = set()
         for channel, value in updates.items():
             callbacks_to_call.update(await self.update_value(channel, value, send_immediately=False, source=source))
 
@@ -110,7 +112,7 @@ class DmxUniverse:
             self.send_universe_data()
 
     @staticmethod
-    async def _call_callback(callback, source: str | None = None):
+    async def _call_callback(callback: Callable[[str | None], None], source: str | None = None) -> None:
         if asyncio.iscoroutinefunction(callback):
             await callback(source)
         else:

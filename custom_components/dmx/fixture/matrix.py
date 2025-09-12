@@ -6,6 +6,7 @@ templating channels.
 import re
 from dataclasses import dataclass
 from functools import reduce
+from typing import Any
 
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
 
@@ -23,12 +24,12 @@ class Pixel:
         self.z = z
         self.name = name
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.name:
             return self.name
         return f"({self.x + 1},{self.y + 1},{self.z + 1})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
     def match(self, pattern: str) -> re.Match[str] | None:
@@ -37,6 +38,8 @@ class Pixel:
         :param pattern: The regex pattern that is matched against the pixel name
         :return: The regex Match object
         """
+        if self.name is None:
+            return None
         return re.search(pattern, self.name)
 
 
@@ -46,7 +49,12 @@ def flatten(matrix: list[list[list[Pixel | None]]]) -> list[Pixel | None]:
     :param matrix: The 3D list.
     :return: The 1D list.
     """
-    return reduce(list.__add__, reduce(list.__add__, matrix))
+    # Use a more explicit approach for better type safety
+    result: list[Pixel | None] = []
+    for z_plane in matrix:
+        for y_row in z_plane:
+            result.extend(y_row)
+    return result
 
 
 @dataclass
@@ -59,7 +67,7 @@ class PixelGroup:
     name: str
     pixels: list[Pixel]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}: {self.pixels.__str__()}"
 
 
@@ -68,29 +76,29 @@ class Matrix:
     God class for matrix / pixel operations.
     """
 
-    def __init__(self, pixels: list[list[list[Pixel | None]]]):
+    def __init__(self, pixels: list[list[list[Pixel | None]]]) -> None:
         super().__init__()
         self.pixels = pixels
 
-        self.z_size = len(pixels)
-        self.y_size = len(pixels[0])
-        self.x_size = len(pixels[0][0])
+        self.z_size: int = len(pixels)
+        self.y_size: int = len(pixels[0])
+        self.x_size: int = len(pixels[0][0])
 
-        self.pixels_by_name = {}
+        self.pixels_by_name: dict[str, Pixel] = {}
         for yz_plane in self.pixels:
             for y_row in yz_plane:
                 for pixel in y_row:
                     if pixel and pixel.name:
                         self.pixels_by_name[pixel.name] = pixel
 
-        self.pixel_groups = {}
+        self.pixel_groups: dict[str, PixelGroup] = {}
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str | int) -> Pixel | list[list[list[Pixel | None]]] | list[list[Pixel | None]]:
         if isinstance(name, str):
             return self.pixels_by_name[name]
         return self.pixels[name]
 
-    def dimensions(self) -> (int, int, int):
+    def dimensions(self) -> tuple[int, int, int]:
         """
         Returns a tuple containing the 3 dimensions of the 3D matrix.
         :return: x-size, y-size, z-size integers
@@ -105,7 +113,7 @@ class Matrix:
         """
         return self.pixel_groups[name]
 
-    def define_group(self, name: str, ref: str | dict | list) -> PixelGroup:
+    def define_group(self, name: str, ref: str | dict[str, Any] | list[str]) -> PixelGroup:
         """
         Defines a new pixel group.
         :param name: The name of the new pixel group.
@@ -114,7 +122,9 @@ class Matrix:
         :return: The newly created pixel group.
         """
         if ref == "all":
-            group = PixelGroup(name, [pixel for pixel in flatten(self.pixels) if pixel])
+            # Filter out None pixels for PixelGroup which expects list[Pixel]
+            pixels: list[Pixel] = [pixel for pixel in flatten(self.pixels) if pixel is not None]
+            group = PixelGroup(name, pixels)
             self.pixel_groups[name] = group
             return group
 
@@ -126,23 +136,31 @@ class Matrix:
 
             flat_pixels = flatten([[row[x_slice] for row in zy_plane[y_slice]] for zy_plane in self.pixels[z_slice]])
 
-            flat_pixels = [
-                pixel for pixel in flat_pixels if pixel and all(pixel.match(pattern) for pattern in patterns)
+            # Filter out None pixels and apply pattern matching, ensuring we get list[Pixel]
+            filtered_pixels: list[Pixel] = [
+                pixel for pixel in flat_pixels 
+                if pixel is not None and all(pixel.match(pattern) for pattern in patterns)
             ]
 
-            group = PixelGroup(name, flat_pixels)
+            group = PixelGroup(name, filtered_pixels)
             self.pixel_groups[name] = group
             return group
 
         if isinstance(ref, list):
-            group = PixelGroup(name, [self[pixel_name] for pixel_name in ref])
+            # Ensure we get Pixel objects, not other types from __getitem__
+            group_pixels: list[Pixel] = []
+            for pixel_name in ref:
+                pixel = self[pixel_name]
+                if isinstance(pixel, Pixel):
+                    group_pixels.append(pixel)
+            group = PixelGroup(name, group_pixels)
             self.pixel_groups[name] = group
             return group
 
         raise FixtureConfigurationError(f"Pixel group {ref} is ill defined.")
 
     @staticmethod
-    def __map_to_slice(ref, axis: str) -> slice:
+    def __map_to_slice(ref: dict[str, Any], axis: str) -> slice:
         if axis not in ref:
             return slice(None)
 
@@ -173,7 +191,7 @@ class Matrix:
 
         return slice(start, stop, step)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.pixels.__str__()
 
 
@@ -206,9 +224,17 @@ def matrix_from_pixel_names(pixels: list[list[list[str | None]]]) -> Matrix:
     y_size = len(pixels[0])
     x_size = len(pixels[0][0])
 
+    # Create new matrix with proper typing to avoid in-place modification issues
+    pixel_matrix: list[list[list[Pixel | None]]] = []
+    
     for z in range(z_size):
+        z_plane: list[list[Pixel | None]] = []
         for y in range(y_size):
+            y_row: list[Pixel | None] = []
             for x in range(x_size):
-                pixels[z][y][x] = Pixel(x, y, z, pixels[z][y][x]) if pixels[z][y][x] else None
+                pixel_name = pixels[z][y][x]
+                y_row.append(Pixel(x, y, z, pixel_name) if pixel_name else None)
+            z_plane.append(y_row)
+        pixel_matrix.append(z_plane)
 
-    return Matrix(pixels)
+    return Matrix(pixel_matrix)

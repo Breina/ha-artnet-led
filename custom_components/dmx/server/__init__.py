@@ -92,7 +92,7 @@ class NodeReport(Enum):
     RC_FACTORY_RES = 0x0010  # Factory reset has occurred.
     # @formatter:on
 
-    def report(self, reply_count: int, status_message: str):
+    def report(self, reply_count: int, status_message: str) -> str:
         # The spec is very unclear regarding the 'ArtPollResponse' count, this is my best-guess.
         return f"#{hex(self.value)[2:]} [{str(reply_count).zfill(4)}] {status_message}"
 
@@ -129,19 +129,19 @@ class PortAddress:
         return (self.net << 13) | (self.sub_net << 9) | self.universe
 
     @port_address.setter
-    def port_address(self, port_address):
+    def port_address(self, port_address: int) -> None:
         self.net = port_address >> 13 & 0xF
         self.sub_net = port_address >> 9 & 0xF
         self.universe = port_address & 0x1FF
 
     @staticmethod
-    def parse(port_address: int):
+    def parse(port_address: int) -> "PortAddress":
         return PortAddress(port_address >> 13 & 0xF, port_address >> 9 & 0xF, port_address & 0x1FF)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.net}/{self.sub_net}/{self.universe}"
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.port_address
 
 
@@ -187,7 +187,7 @@ class GoodInput:
     receive_errors_detected: bool = False
 
     @property
-    def flags(self):
+    def flags(self) -> int:
         return (
             (self.data_received << 7)
             + (self.includes_dmx512_test_packets << 6)
@@ -198,7 +198,7 @@ class GoodInput:
         )
 
     @flags.setter
-    def flags(self, flags):
+    def flags(self, flags: int) -> None:
         self.data_received = bool(flags >> 7 & 1)
         self.includes_dmx512_test_packets = bool(flags >> 6 & 1)
         self.includes_dmx512_sips = bool(flags >> 5 & 1)
@@ -219,7 +219,7 @@ class GoodOutputA:
     use_sacn: bool = False
 
     @property
-    def flags(self):
+    def flags(self) -> int:
         return (
             (self.data_being_transmitted << 7)
             + (self.includes_dmx512_test_packets << 6)
@@ -232,7 +232,7 @@ class GoodOutputA:
         )
 
     @flags.setter
-    def flags(self, flags):
+    def flags(self, flags: int) -> None:
         self.data_being_transmitted = bool(flags >> 7 & 1)
         self.includes_dmx512_test_packets = bool(flags >> 6 & 1)
         self.includes_dmx512_sips = bool(flags >> 5 & 1)
@@ -262,7 +262,7 @@ class Port:
         return (self.output << 7) + (self.input << 6) + self.type.value
 
     @port_types_flags.setter
-    def port_types_flags(self, flags):
+    def port_types_flags(self, flags: int) -> None:
         self.output = bool(flags >> 7 & 1)
         self.input = bool(flags >> 6 & 1)
         self.type = PortType(flags & 0b11_1111)
@@ -272,7 +272,7 @@ class Port:
         return (self.rdm_enabled << 7) + (self.output_continuous << 6)
 
     @good_output_b.setter
-    def good_output_b(self, flags):
+    def good_output_b(self, flags: int) -> None:
         self.rdm_enabled = bool(flags >> 7 & 1)
         self.output_continuous = bool(flags >> 6 & 1)
 
@@ -295,7 +295,7 @@ class ArtIpProgCommand:
     program_port: bool = False
 
     @property
-    def flags(self):
+    def flags(self) -> int:
         return (
             (self.enable_programming << 7)
             + (self.enable_dhcp << 6)
@@ -307,7 +307,7 @@ class ArtIpProgCommand:
         )
 
     @flags.setter
-    def flags(self, flags):
+    def flags(self, flags: int) -> None:
         self.enable_programming = bool(flags >> 7 & 1)
         self.enable_dhcp = bool(flags >> 6 & 1)
         self.program_default_gateway = bool(flags >> 4 & 1)
@@ -321,13 +321,13 @@ class ArtAddressCommand(Enum):
     # @formatter:off
     AC_NONE = 0x00  # No action
     AC_CANCEL_MERGE = 0x01  # If Node is currently in merge mode, cancel merge mode upon receipt of next ArtDmx packet.
-                            # See discussion of merge mode operation.
+    # See discussion of merge mode operation.
     AC_LED_NORMAL = 0x02  # The front panel indicators of the Node operate normally.
     AC_LED_MUTE = 0x03  # The front panel indicators of the Node are disabled and switched off.
     AC_LED_LOCATE = 0x04  # Rapid flashing of the Node's front panel indicators.
-                          # It is intended as an outlet identifier for large installations.
+    # It is intended as an outlet identifier for large installations.
     AC_RESET_RX_FLAGS = 0x05  # Resets the Node's Sip, Text, Test and data error flags.
-                              # If an output short is being flagged, forces the test to re-run.
+    # If an output short is being flagged, forces the test to re-run.
     AC_ANALYSIS_ON = 0x06  # Enable analysis and debugging mode.
     AC_ANALYSIS_OFF = 0x07  # Disable analysis and debugging mode.
 
@@ -360,7 +360,7 @@ class ArtAddressCommand(Enum):
         return self.value if self.value >= 0x10 else self.value + port_index
 
     @staticmethod
-    def decode_with_port_index(value: int) -> (Enum, int):
+    def decode_with_port_index(value: int) -> tuple["ArtAddressCommand", int]:
         if value >= 0x10:
             port_index = value & 0x0F
             value -= port_index
@@ -383,6 +383,8 @@ class TimeCodeType(Enum):
 
 
 class ArtBase:
+    __ENCODINGS__: list[str] = ["utf-8", "ascii", "latin-1", "cp1252"]
+
     def __init__(self, opcode: OpCode) -> None:
         super().__init__()
         self.__opcode = opcode
@@ -405,39 +407,39 @@ class ArtBase:
         return index
 
     @staticmethod
-    def _pop(packet: bytearray, index: int) -> (int, int):
+    def _pop(packet: bytearray, index: int) -> tuple[int, int]:
         return packet[index], index + 1
 
     @staticmethod
-    def _take(packet: bytearray, n: int, index: int) -> (int, int):
+    def _take(packet: bytearray, n: int, index: int) -> tuple[bytearray, int]:
         return packet[index : index + n], index + n
 
     @staticmethod
-    def _append_int_lsb(packet: bytearray, number: int):
+    def _append_int_lsb(packet: bytearray, number: int) -> None:
         packet.append(number & 0xFF)
         packet.append(number >> 8 & 0xFF)
 
     @staticmethod
-    def _append_int_msb(packet: bytearray, number: int):
+    def _append_int_msb(packet: bytearray, number: int) -> None:
         packet.append(number >> 8 & 0xFF)
         packet.append(number & 0xFF)
 
     @staticmethod
-    def _consume_int_lsb(packet: bytearray, index: int) -> (int, int):
+    def _consume_int_lsb(packet: bytearray, index: int) -> tuple[int, int]:
         if len(packet) < (index + 2):
             raise SerializationError(f"Not enough bytes in packet: {bytes(packet).hex()}")
         [lsb, msb] = packet[index : index + 2]
         return (msb << 8) | lsb, index + 2
 
     @staticmethod
-    def _consume_int_msb(packet: bytearray, index: int) -> (int, int):
+    def _consume_int_msb(packet: bytearray, index: int) -> tuple[int, int]:
         if len(packet) < (index + 2):
             raise SerializationError(f"Not enough bytes in packet: {bytes(packet).hex()}")
         [msb, lsb] = packet[index : index + 2]
         return (msb << 8) | lsb, index + 2
 
     @staticmethod
-    def _consume_hex_number_lsb(packet: bytearray, index: int) -> (int, int):
+    def _consume_hex_number_lsb(packet: bytearray, index: int) -> tuple[int, int]:
         if len(packet) < (index + 2):
             raise SerializationError(f"Not enough bytes in packet: {bytes(packet).hex()}")
         lower = hex(packet[index])[2:].zfill(2)
@@ -445,7 +447,7 @@ class ArtBase:
         return int(upper + lower, 16), index + 2
 
     @staticmethod
-    def _consume_hex_number_msb(packet: bytearray, index: int) -> (int, int):
+    def _consume_hex_number_msb(packet: bytearray, index: int) -> tuple[int, int]:
         if len(packet) < (index + 2):
             raise SerializationError(f"Not enough bytes in packet: {bytes(packet).hex()}")
         upper = hex(packet[index])[2:].zfill(2)
@@ -453,13 +455,13 @@ class ArtBase:
         return int(upper + lower, 16), index + 2
 
     @staticmethod
-    def _append_str(packet: bytearray, text: str, length: int):
+    def _append_str(packet: bytearray, text: str, length: int) -> None:
         cut_text: str = text[: length - 1]
         padded_text = cut_text.ljust(length, "\0")
         packet.extend(map(ord, padded_text))
 
     @staticmethod
-    def _consume_str(packet: bytearray, index: int, length: int) -> (str | None, int):
+    def _consume_str(packet: bytearray, index: int, length: int) -> tuple[str, int]:
         decoded_str: str | None = None
         raw_string_from_packet = packet[index : index + length]
 
@@ -468,11 +470,8 @@ class ArtBase:
             # if there is a NUL character in the bytearry, it terminates earlier
             nul_terminator = re.compile(b"([^\\x00]+)")
 
-            terminated_string = (
-                nul_terminator.match(raw_string_from_packet).group(1)
-                if nul_terminator.match(raw_string_from_packet)
-                else raw_string_from_packet
-            )
+            match = nul_terminator.match(raw_string_from_packet)
+            terminated_string = match.group(1) if match else raw_string_from_packet
 
             # remove every other control character
             sanitized_str = re.sub(b"[^\x00-\x7f]", b"", terminated_string)
@@ -486,9 +485,8 @@ class ArtBase:
 
         # check if decoding has failed
         if decoded_str is None:
-            log.error(
-                f"Unable to convert bytes to string: {bytes(raw_string_from_packet).hex()}"
-            )
+            log.error(f"Unable to convert bytes to string: {bytes(raw_string_from_packet).hex()}")
+            decoded_str = "Unknown"
 
         return decoded_str, index + length
 
@@ -502,6 +500,7 @@ class ArtBase:
                 return sanitized_str
             except UnicodeDecodeError as e:
                 log.warning(f"failed ({e.reason}) to decode as {encoding}: {bytes(byte_str).hex()}")
+        return None
 
     @staticmethod
     def peek_opcode(packet: bytearray) -> OpCode | None:
@@ -520,7 +519,7 @@ class ArtPoll(ArtBase):
 
     def __init__(
         self,
-        protocol_version=PROTOCOL_VERSION,
+        protocol_version: int = PROTOCOL_VERSION,
         enable_vlc_transmission: bool = False,
         notify_on_change: bool = False,
     ) -> None:
@@ -541,41 +540,41 @@ class ArtPoll(ArtBase):
         self,
         mode: DiagnosticsMode = DiagnosticsMode.BROADCAST,
         diag_priority: DiagnosticsPriority = DiagnosticsPriority.DP_LOW,
-    ):
+    ) -> None:
         self.__enable_diagnostics = True
         self.__diag_priority = diag_priority
         self.__diag_mode = mode
 
     @property
-    def protocol_verison(self):
+    def protocol_verison(self) -> int:
         return self.__protocol_version
 
     @property
-    def vlc_transmission_enabled(self):
+    def vlc_transmission_enabled(self) -> bool:
         return self.__enable_vlc_transmission
 
     @property
-    def is_diagnostics_enabled(self):
+    def is_diagnostics_enabled(self) -> bool:
         return self.__enable_diagnostics
 
     @property
-    def diagnostics_priority(self):
+    def diagnostics_priority(self) -> DiagnosticsPriority:
         return self.__diag_priority
 
     @property
-    def diagnostics_mode(self):
+    def diagnostics_mode(self) -> DiagnosticsMode:
         return self.__diag_mode
 
     @property
-    def targeted_mode_enabled(self):
+    def targeted_mode_enabled(self) -> bool:
         return self.__enable_targeted_mode
 
     @property
-    def target_port_bounds(self) -> (PortAddress, PortAddress):
+    def target_port_bounds(self) -> tuple[PortAddress, PortAddress]:
         return self.__target_port_bottom, self.__target_port_top
 
     @target_port_bounds.setter
-    def target_port_bounds(self, bounds: (PortAddress, PortAddress)):
+    def target_port_bounds(self, bounds: tuple[PortAddress, PortAddress]) -> None:
         self.__target_port_bottom = bounds[0]
         self.__target_port_top = bounds[0]
         self.__enable_targeted_mode = True
@@ -624,7 +623,7 @@ class ArtPoll(ArtBase):
 class ArtPollReply(ArtBase):
     def __init__(
         self,
-        source_ip: bytes = bytes([0x00] * 4),
+        source_ip: bytearray = bytearray([0x00] * 4),
         firmware_version: int = 0,
         net_switch: int = 0,
         sub_switch: int = 0,
@@ -642,8 +641,8 @@ class ArtPollReply(ArtBase):
         sw_macro_bitmap: int = 0,
         sw_remote_bitmap: int = 0,
         style: StyleCode = StyleCode.ST_CONTROLLER,
-        mac_address: bytes = bytes([0] * 6),
-        bind_ip: bytes = bytes([0] * 4),
+        mac_address: bytearray = bytearray([0] * 6),
+        bind_ip: bytearray = bytearray([0] * 4),
         bind_index: int = 1,
         supports_web_browser_configuration: bool = False,
         dhcp_configured: bool = False,
@@ -716,23 +715,23 @@ class ArtPollReply(ArtBase):
         self.__ubea = 0
 
         self.__supports_llrp = True
-        self.__default_resp_uid = [0x0] * 6
+        self.__default_resp_uid = bytearray([0x0] * 6)
 
     @property
     def ubea(self) -> int | None:
         return self.__ubea if self.__ubea_present else None
 
     @ubea.setter
-    def ubea(self, ubea: int):
+    def ubea(self, ubea: int) -> None:
         self.__ubea_present = True
         self.__ubea = ubea
 
     @property
-    def default_resp_uid(self):
+    def default_resp_uid(self) -> bytearray | None:
         return self.__default_resp_uid if self.__supports_llrp else None
 
     @default_resp_uid.setter
-    def default_resp_uid(self, default_resp_uid: bytearray):
+    def default_resp_uid(self, default_resp_uid: bytearray) -> None:
         assert len(default_resp_uid) == 6
         self.__supports_llrp = True
         self.__default_resp_uid = default_resp_uid
@@ -800,7 +799,10 @@ class ArtPollReply(ArtBase):
             + (self.supports_switching_port_direction < 3)
         )
         packet.append(status3)
-        packet.extend(self.default_resp_uid)
+        if self.default_resp_uid is not None:
+            packet.extend(self.default_resp_uid)
+        else:
+            packet.extend([0x0] * 6)
 
         packet.extend([0x0] * 15)
 
@@ -846,7 +848,9 @@ class ArtPollReply(ArtBase):
 
             index += 3
 
-            self.style, index = self._pop(packet, index)
+            style_code, index = self._pop(packet, index)
+            self.style = StyleCode(style_code)
+
             self.mac_address, index = self._take(packet, 6, index)
             self.bind_ip, index = self._take(packet, 4, index)
             self.bind_index, index = self._pop(packet, index)
@@ -892,9 +896,9 @@ class ArtIpProg(ArtBase):
         self,
         protocol_version: int = PROTOCOL_VERSION,
         command: ArtIpProgCommand | None = None,
-        prog_ip: bytes = bytes([0x00] * 4),
-        prog_subnet: bytes = bytes([0x00] * 4),
-        prog_gateway: bytes = bytes([0x00] * 4),
+        prog_ip: bytearray = bytearray([0x00] * 4),
+        prog_subnet: bytearray = bytearray([0x00] * 4),
+        prog_gateway: bytearray = bytearray([0x00] * 4),
     ) -> None:
         super().__init__(OpCode.OP_IP_PROG)
 
@@ -949,9 +953,9 @@ class ArtIpProgReply(ArtBase):
     def __init__(
         self,
         protocol_version: int = PROTOCOL_VERSION,
-        prog_ip: bytes = bytes([0x00] * 4),
-        prog_subnet: bytes = bytes([0x00] * 4),
-        prog_gateway: bytes = bytes([0x00] * 4),
+        prog_ip: bytearray = bytearray([0x00] * 4),
+        prog_subnet: bytearray = bytearray([0x00] * 4),
+        prog_gateway: bytearray = bytearray([0x00] * 4),
         dhcp_enabled: bool = False,
     ) -> None:
         super().__init__(OpCode.OP_IP_PROG_REPLY)
@@ -1080,9 +1084,9 @@ class ArtAddress(ArtBase):
                 raise SerializationError("Protocol is not 14!")
 
             self.net_switch, self.net_action, index = self.__consume_value_and_action(packet, index)
-            self.bind_index, index, self._pop(packet, index)
-            self.short_name = self._consume_str(packet, index, 18)
-            self.long_name = self._consume_str(packet, index, 64)
+            self.bind_index, index = self._pop(packet, index)
+            self.short_name, index = self._consume_str(packet, index, 18)
+            self.long_name, index = self._consume_str(packet, index, 64)
             self.sw_in, self.sw_in_actions, index = self.__consume_sw_in_out(packet, index)
             self.sw_out, self.sw_out_actions, index = self.__consume_sw_in_out(packet, index)
             self.sub_switch, self.sub_action, index = self.__consume_value_and_action(packet, index)
@@ -1103,7 +1107,7 @@ class ArtAddress(ArtBase):
             return (action == ValueAction.WRITE) << 7 | value
 
     @staticmethod
-    def __consume_value_and_action(packet: bytearray, index: int) -> (int, ValueAction, int):
+    def __consume_value_and_action(packet: bytearray, index: int) -> tuple[int, ValueAction, int]:
         value = packet[index]
         if value == 0x00:
             action = ValueAction.RESET
@@ -1115,12 +1119,12 @@ class ArtAddress(ArtBase):
         return value, action, index + 1
 
     @staticmethod
-    def __append_sw_in_out(packet: bytearray, sw: list[int], sw_actions: list[ValueAction]):
+    def __append_sw_in_out(packet: bytearray, sw: list[int], sw_actions: list[ValueAction]) -> None:
         for i in range(4):
             packet.append(ArtAddress.__apply_value_action(sw_actions[i], sw[i]))
 
     @staticmethod
-    def __consume_sw_in_out(packet: bytearray, index: int) -> (list[int], list[ValueAction], int):
+    def __consume_sw_in_out(packet: bytearray, index: int) -> tuple[list[int], list[ValueAction], int]:
         sw_action = [ArtAddress.__consume_value_and_action(packet, index + i) for i in range(4)]
         sws = [sw_a[0] for sw_a in sw_action]
         actions = [sw_a[1] for sw_a in sw_action]
@@ -1131,7 +1135,7 @@ class ArtDiagData(ArtBase):
     def __init__(
         self,
         protocol_version: int = PROTOCOL_VERSION,
-        diag_priority: DiagnosticsPriority = DiagnosticsPriority,
+        diag_priority: DiagnosticsPriority = DiagnosticsPriority.DP_LOW,
         logical_port: int = 0,
         text: str = "",
     ) -> None:
@@ -1234,7 +1238,7 @@ class ArtTimeCode(ArtBase):
 
 
 class ArtCommand(ArtBase):
-    def __init__(self, protocol_version: int = PROTOCOL_VERSION, esta: int = 0xFFFF, command: str = ""):
+    def __init__(self, protocol_version: int = PROTOCOL_VERSION, esta: int = 0xFFFF, command: str = "") -> None:
         super().__init__(opcode=OpCode.OP_COMMAND)
         self.protocol_version = protocol_version
         self.esta = esta
@@ -1273,8 +1277,8 @@ class ArtTrigger(ArtBase):
         oem: int = 0xFFFF,
         key: int = 0,
         sub_key: int = 0,
-        payload: bytearray = [0x00] * 512,
-    ):
+        payload: bytearray = bytearray([0x00] * 512),
+    ) -> None:
         super().__init__(opcode=OpCode.OP_TRIGGER)
         self.protocol_version = protocol_version
         self.oem = oem
@@ -1325,9 +1329,9 @@ class ArtDmx(ArtBase):
         sequence_number: int = 0,
         physical: int = 0,
         port_address: PortAddress | None = None,
-        data: bytearray = [0x00] * 2,
+        data: bytearray = bytearray([0x00] * 2),
     ) -> None:
-        super().__init__(opcode=OpCode.OP_OUTPUT_DMX),
+        super().__init__(opcode=OpCode.OP_OUTPUT_DMX)
 
         self.protocol_version = protocol_version
 

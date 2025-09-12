@@ -17,15 +17,15 @@ import re
 import typing
 from enum import EnumType
 from types import MappingProxyType, UnionType
-from typing import Union
+from typing import Any, Callable, Union
 
 from custom_components.dmx.fixture import OFL_URL, capability, wheel
-from custom_components.dmx.fixture.capability import Capability, MenuClick
-from custom_components.dmx.fixture.channel import Channel, DmxValueResolution
+from custom_components.dmx.fixture.capability import Capability, DmxValueResolution, MenuClick
+from custom_components.dmx.fixture.channel import Channel
 from custom_components.dmx.fixture.entity import Entity
 from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
 from custom_components.dmx.fixture.fixture import Fixture
-from custom_components.dmx.fixture.matrix import matrix_from_pixel_count, matrix_from_pixel_names
+from custom_components.dmx.fixture.matrix import Matrix, matrix_from_pixel_count, matrix_from_pixel_names
 from custom_components.dmx.fixture.mode import ChannelOrder, MatrixChannelInsertBlock, Mode, RepeatFor
 from custom_components.dmx.fixture.wheel import Wheel, WheelSlot
 
@@ -35,13 +35,14 @@ entity_value = re.compile(r"([-\d.]*)(.*)")
 log = logging.getLogger(__name__)
 
 
-def _read_json_file(json_file: str) -> dict:
+def _read_json_file(json_file: str) -> dict[str, Any]:
     """Helper function to read JSON file synchronously."""
     with open(json_file, encoding="utf-8") as json_data:
-        return json.load(json_data)
+        result: dict[str, Any] = json.load(json_data)
+        return result
 
 
-def _parse_fixture_data(data: dict) -> Fixture:
+def _parse_fixture_data(data: dict[str, Any]) -> Fixture:
     """
     Internal function to parse fixture data from a dictionary.
     :param data: The parsed JSON data
@@ -77,7 +78,7 @@ def _parse_fixture_data(data: dict) -> Fixture:
     return fixture_model
 
 
-async def parse_async(json_file: str, hass) -> Fixture:
+async def parse_async(json_file: str, hass: Any) -> Fixture:
     """
     Parses the json fixture-format file asynchronously.
     :param json_file: The fixture-format json file
@@ -98,7 +99,7 @@ def parse(json_file: str) -> Fixture:
     return _parse_fixture_data(data)
 
 
-def __parse_fixture(fixture_json: dict) -> Fixture:
+def __parse_fixture(fixture_json: dict[str, Any]) -> Fixture:
     name = fixture_json["name"]
     short_name = fixture_json.get("shortName", name)
     categories = fixture_json["categories"]
@@ -124,9 +125,10 @@ def __parse_fixture(fixture_json: dict) -> Fixture:
     return Fixture(name, short_name, categories, config_url)
 
 
-def __parse_matrix(fixture_model: Fixture, matrix_json: dict):
+def __parse_matrix(fixture_model: Fixture, matrix_json: dict[str, Any]) -> None:
     pixel_count_json = matrix_json.get("pixelCount")
     pixel_keys_json = matrix_json.get("pixelKeys")
+    matrix: Matrix
     if pixel_count_json:
         matrix = matrix_from_pixel_count(pixel_count_json[0], pixel_count_json[1], pixel_count_json[2])
     elif pixel_keys_json:
@@ -142,7 +144,7 @@ def __parse_matrix(fixture_model: Fixture, matrix_json: dict):
     fixture_model.define_matrix(matrix)
 
 
-def __parse_wheels(fixture_model: Fixture, wheels_json: dict):
+def __parse_wheels(fixture_model: Fixture, wheels_json: dict[str, Any]) -> None:
     for wheel_name, wheel_json in wheels_json.items():
         slots: list[WheelSlot] = []
         direction = wheel_json.get("direction")
@@ -151,12 +153,12 @@ def __parse_wheels(fixture_model: Fixture, wheels_json: dict):
             slot_type = wheel_slot_json["type"]
 
             # This is directly mapped to the class names inside wheel.py.
-            slot_obj = getattr(wheel, slot_type)
+            slot_obj: type[WheelSlot] = getattr(wheel, slot_type)
 
             params = inspect.signature(slot_obj.__init__).parameters
             param_names = [name[0] for name in params.items() if name[0] != "self" and name[0] != "kwargs"]
 
-            args = [None] * len(param_names)
+            args: list[Any] = [None] * len(param_names)
 
             for key, value_json in wheel_slot_json.items():
                 if key in ["type"]:
@@ -181,8 +183,8 @@ def __parse_wheels(fixture_model: Fixture, wheels_json: dict):
 
 
 def __parse_channels(
-    available_channels_json: dict, add_channel: typing.Callable[[Channel], None], config_url: str | None
-):
+    available_channels_json: dict[str, Any], add_channel: Callable[[Channel], None], config_url: str | None
+) -> None:
     # pylint: disable=protected-access
     for name, channel_json in available_channels_json.items():
         dmx_value_resolution_str = channel_json.get("dmxValueResolution")
@@ -220,35 +222,35 @@ def __parse_channels(
 
         capabilities_json = channel_json.get("capabilities")
         if capabilities_json:
-            channel_buffer = []
+            channel_buffer: list[Capability] = []
             for capability_json in capabilities_json:
-                channel_json = __parse_capability(channel, capability_json, config_url)
-                if channel_json and channel_json.menu_click != MenuClick.hidden:
-                    channel_buffer.append(channel_json)
+                parsed_capability = __parse_capability(channel, capability_json, config_url)
+                if parsed_capability and parsed_capability.menu_click != MenuClick.hidden:
+                    channel_buffer.append(parsed_capability)
             channel.define_capability(channel_buffer)
             add_channel(channel)
             continue
 
 
-def __parse_capability(channel: Channel, capability_json: dict, config_url: str | None) -> Capability | None:
+def __parse_capability(channel: Channel, capability_json: dict[str, Any], config_url: str | None) -> Capability | None:
     capability_type = capability_json["type"]
 
     # This is directly mapped to the class names inside capability.py.
-    capability_obj = getattr(capability, capability_type)
+    capability_obj: type[Capability] = getattr(capability, capability_type)
 
     params = inspect.signature(capability_obj.__init__).parameters
     param_names = [name[0] for name in params.items() if name[0] != "self" and name[0] != "kwargs"]
     parent_params = inspect.signature(Capability.__init__).parameters
 
-    args = [None] * len(param_names)
-    kwargs = {}
+    args: list[Any] = [None] * len(param_names)
+    kwargs: dict[str, Any] = {}
     kwargs["dmx_value_resolution"] = channel.dmx_value_resolution
 
     if "name" in param_names:
         # noinspection PyTypeChecker
         args[list.index(param_names, "name")] = channel.name
 
-    start_end_registry = {}
+    start_end_registry: dict[str, list[Any]] = {}
 
     for key, value_json in capability_json.items():
         if key == "helpWanted":
@@ -275,7 +277,7 @@ def __parse_capability(channel: Channel, capability_json: dict, config_url: str 
         is_start = arg_name.endswith("_start")
         if is_start or arg_name.endswith("_end"):
             shorthand = arg_name[0 : arg_name.rfind("_")]
-            value_container = start_end_registry.get(shorthand, [None, None])
+            value_container: list[Any] = start_end_registry.get(shorthand, [None, None])
             if is_start:
                 value_container[0] = value_json
             else:
@@ -306,7 +308,7 @@ def __parse_capability(channel: Channel, capability_json: dict, config_url: str 
     return capability_obj(*args, **kwargs)
 
 
-def __extract_value_type(name: str, value_json, is_combined: bool, params: MappingProxyType[str, inspect.Parameter]):
+def __extract_value_type(name: str, value_json: Any, is_combined: bool, params: MappingProxyType[str, inspect.Parameter]) -> Any:
     param = params[name]
     type_annotation = param.annotation
 
@@ -321,8 +323,10 @@ def __extract_value_type(name: str, value_json, is_combined: bool, params: Mappi
     # Unwrap if type is a list and indicate to wrap the value if it's not already
     if typing.get_origin(type_annotation) is list:
         type_annotation = type_annotation.__args__[0]
-        should_wrap = not is_combined
+        # dmx_range is already provided as a list in JSON format, so don't wrap it
+        should_wrap = not is_combined and name != "dmx_range"
 
+    value: Any
     if isinstance(value_json, list):
         # If type is List[List[str]], then unwrap the second time
         if typing.get_origin(type_annotation) is list:
@@ -335,13 +339,20 @@ def __extract_value_type(name: str, value_json, is_combined: bool, params: Mappi
     return [value] if should_wrap else value
 
 
-def __extract_single_value(value_json: str, type_annotation: type):
+def __extract_single_value(value_json: Any, type_annotation: type) -> Any:
     if inspect.isclass(type_annotation) and issubclass(type_annotation, Entity):
         if isinstance(value_json, (int, float)):
-            return type_annotation(value_json)
+            # Check if the constructor accepts a unit parameter
+            sig = inspect.signature(type_annotation.__init__)
+            params = list(sig.parameters.keys())
+            if len(params) >= 3 and params[2] == "unit":  # self, value, unit
+                return type_annotation(value_json, None)  # type: ignore[call-arg]
+            else:
+                return type_annotation(value_json)  # type: ignore[call-arg]
 
         value_parts = entity_value.findall(value_json)[0]
-        value = value_parts[0]
+        value: str | float = value_parts[0]
+        unit: str | None
         if not value:
             value = value_parts[1]
             unit = None
@@ -349,7 +360,7 @@ def __extract_single_value(value_json: str, type_annotation: type):
             value = float(value)
             unit = value_parts[1] or None
 
-        return type_annotation(value, unit)
+        return type_annotation(value, unit)  # type: ignore[call-arg]
 
     if not isinstance(value_json, str):
         return value_json
@@ -371,19 +382,19 @@ def __extract_single_value(value_json: str, type_annotation: type):
     raise FixtureConfigurationError(f"I don't know what kind of type this is: {type_annotation}")
 
 
-def __parse_modes(fixture_model: Fixture, modes_yaml: dict):
+def __parse_modes(fixture_model: Fixture, modes_yaml: list[dict[str, Any]]) -> None:
     for mode_yaml in modes_yaml:
         name = mode_yaml["name"]
         short_name = mode_yaml.get("shortName")
-        channels = mode_yaml["channels"]
+        channels_yaml: list[None | str | dict[str, Any]] = mode_yaml["channels"]
 
-        channels = list(map(__parse_mode_channel, channels))
+        channels = list(map(__parse_mode_channel, channels_yaml))
 
         mode = Mode(name, channels, short_name)
         fixture_model.define_mode(mode)
 
 
-def __parse_mode_channel(mode_channel: None | str | dict) -> None | str | MatrixChannelInsertBlock:
+def __parse_mode_channel(mode_channel: None | str | dict[str, Any]) -> None | str | MatrixChannelInsertBlock:
     if mode_channel is None or isinstance(mode_channel, str):
         return mode_channel
 
@@ -394,7 +405,7 @@ def __parse_mode_channel(mode_channel: None | str | dict) -> None | str | Matrix
     repeat_for_json = mode_channel["repeatFor"]
 
     # It's either a string enum or a list of strings
-    repeat_for = RepeatFor[repeat_for_json] if isinstance(repeat_for_json, str) else repeat_for_json
+    repeat_for: RepeatFor | list[str] = RepeatFor[repeat_for_json] if isinstance(repeat_for_json, str) else repeat_for_json
 
     channel_order = ChannelOrder[mode_channel["channelOrder"]]
     template_channels = mode_channel["templateChannels"]

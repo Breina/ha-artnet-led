@@ -8,9 +8,9 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.const import EntityCategory
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, Entity
 
-from custom_components.dmx import ArtPollReply
+from custom_components.dmx.server import ArtPollReply
 from custom_components.dmx.server import (
     BootProcess,
     FailsafeState,
@@ -22,13 +22,13 @@ from custom_components.dmx.server import (
 _LOGGER = logging.getLogger(__name__)
 
 
-def bind_index_str(artpoll_reply: ArtPollReply):
+def bind_index_str(artpoll_reply: ArtPollReply) -> str:
     if artpoll_reply.bind_index == 0:
         return ""
     return f" {artpoll_reply.bind_index}"
 
 
-class ArtNetEntity:
+class ArtNetEntity(Entity):
     """Representation of an ArtNet entity."""
 
     def __init__(
@@ -37,7 +37,7 @@ class ArtNetEntity:
         name: str,
         entity_id_suffix: str,
         device_info: DeviceInfo,
-    ):
+    ) -> None:
         """Initialize the entity."""
         super().__init__()
         self.art_poll_reply = art_poll_reply
@@ -72,7 +72,7 @@ class ArtNetEntity:
 
             if new_source_ip != self._source_ip or new_bind_index != self._bind_index:
                 _LOGGER.debug(
-                    f"Entity {self.unique_id} rejected update from IP={new_source_ip}, bind_index={new_bind_index} "
+                    f"Entity {self._attr_unique_id} rejected update from IP={new_source_ip}, bind_index={new_bind_index} "
                     f"(expected IP={self._source_ip}, bind_index={self._bind_index})"
                 )
                 return False
@@ -92,14 +92,18 @@ class ArtNetEntity:
 class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
     """Representation of an ArtNet device online status."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo) -> None:
         """Initialize the binary sensor."""
         # Store the online status and extra state attributes at creation time
         self._connected = True
         self._ip_address = ".".join(str(b) for b in art_poll_reply.source_ip)
         self._short_name = art_poll_reply.short_name
         self._long_name = art_poll_reply.long_name
-        self._style_name = next((s.value[1] for s in StyleCode if s.value[0] == art_poll_reply.style), "Unknown")
+        try:
+            style_value = int(art_poll_reply.style)  # type: ignore[call-overload]
+            self._style_name = next((s.value[1] for s in StyleCode if s.value[0] == style_value), "Unknown")
+        except (TypeError, ValueError):
+            self._style_name = "Unknown"
 
         super().__init__(
             art_poll_reply, f"{art_poll_reply.short_name}{bind_index_str(art_poll_reply)} Online", "online", device_info
@@ -112,7 +116,11 @@ class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
         self._ip_address = ".".join(str(b) for b in artpoll_reply.source_ip)
         self._short_name = artpoll_reply.short_name
         self._long_name = artpoll_reply.long_name
-        self._style_name = next((s.value[1] for s in StyleCode if s.value[0] == artpoll_reply.style), "Unknown")
+        try:
+            style_value = int(artpoll_reply.style)  # type: ignore[call-overload]
+            self._style_name = next((s.value[1] for s in StyleCode if s.value[0] == style_value), "Unknown")
+        except (TypeError, ValueError):
+            self._style_name = "Unknown"
 
     def set_offline(self) -> None:
         """Mark this entity as offline."""
@@ -142,7 +150,7 @@ class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
 class ArtNetIndicatorStateSensor(ArtNetEntity, SensorEntity):
     """Representation of an ArtNet device indicator state."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo) -> None:
         """Initialize the sensor."""
         self._indicator_state_name = art_poll_reply.indicator_state.name
 
@@ -174,7 +182,7 @@ class ArtNetIndicatorStateSensor(ArtNetEntity, SensorEntity):
 class ArtNetBootProcessSensor(ArtNetEntity, SensorEntity):
     """Representation of an ArtNet device boot process."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo) -> None:
         """Initialize the sensor."""
         self._boot_process_name = art_poll_reply.boot_process.name
 
@@ -205,7 +213,7 @@ class ArtNetBootProcessSensor(ArtNetEntity, SensorEntity):
 class ArtNetRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
     """Representation of an ArtNet device RDM support status."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo) -> None:
         """Initialize the binary sensor."""
         self._supports_rdm = art_poll_reply.supports_rdm
         self._supports_rdm_through_artnet = art_poll_reply.supports_rdm_through_artnet
@@ -243,7 +251,7 @@ class ArtNetRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
 class ArtNetDHCPBinarySensor(ArtNetEntity, BinarySensorEntity):
     """Representation of an ArtNet device DHCP status."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo) -> None:
         """Initialize the binary sensor."""
         self._dhcp_configured = art_poll_reply.dhcp_configured
         self._dhcp_capable = art_poll_reply.dhcp_capable
@@ -279,7 +287,7 @@ class ArtNetDHCPBinarySensor(ArtNetEntity, BinarySensorEntity):
 class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
     """Representation of an ArtNet port input status."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo, port_index):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo, port_index: int) -> None:
         """Initialize the binary sensor."""
         self.port_index = port_index
 
@@ -365,7 +373,7 @@ class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
 class ArtNetPortOutputBinarySensor(ArtNetEntity, BinarySensorEntity):
     """Representation of an ArtNet port output status."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo, port_index):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo, port_index: int) -> None:
         """Initialize the binary sensor."""
         self.port_index = port_index
 
@@ -451,7 +459,7 @@ class ArtNetPortOutputBinarySensor(ArtNetEntity, BinarySensorEntity):
 class ArtNetPortMergeModeSelect(ArtNetEntity, BinarySensorEntity):
     """Representation of an ArtNet port merge mode."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo, port_index):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo, port_index: int) -> None:
         """Initialize the sensor."""
         self.port_index = port_index
 
@@ -492,7 +500,7 @@ class ArtNetPortMergeModeSelect(ArtNetEntity, BinarySensorEntity):
         return self._merging_enabled
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return merge mode as extra state attributes."""
         return {"Merge mode": self._merge_mode}
 
@@ -509,7 +517,7 @@ class ArtNetPortMergeModeSelect(ArtNetEntity, BinarySensorEntity):
 class ArtNetPortSACNBinarySensor(ArtNetEntity, BinarySensorEntity):
     """Representation of an ArtNet port sACN mode status."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo, port_index):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo, port_index: int) -> None:
         """Initialize the binary sensor."""
         self.port_index = port_index
 
@@ -558,7 +566,7 @@ class ArtNetPortSACNBinarySensor(ArtNetEntity, BinarySensorEntity):
 class ArtNetPortRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
     """Representation of an ArtNet port RDM enabled status."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo, port_index):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo, port_index: int) -> None:
         """Initialize the binary sensor."""
         self.port_index = port_index
 
@@ -608,7 +616,7 @@ class ArtNetPortRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
 class ArtNetPortOutputModeSensor(ArtNetEntity, SensorEntity):
     """Representation of an ArtNet port output mode."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo, port_index):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo, port_index: int) -> None:
         """Initialize the sensor."""
         self.port_index = port_index
 
@@ -659,7 +667,7 @@ class ArtNetPortOutputModeSensor(ArtNetEntity, SensorEntity):
 class ArtNetPortUniverseSensor(ArtNetEntity, SensorEntity):
     """Representation of an ArtNet port universe number."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo, port_index, is_input=True):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo, port_index: int, is_input: bool = True) -> None:
         """Initialize the sensor."""
         self.port_index = port_index
         self.is_input = is_input
@@ -710,7 +718,7 @@ class ArtNetPortUniverseSensor(ArtNetEntity, SensorEntity):
 class ArtNetFailsafeStateSensor(ArtNetEntity, SensorEntity):
     """Representation of an ArtNet failsafe state."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo) -> None:
         """Initialize the sensor."""
         self._failsafe_state_name = art_poll_reply.failsafe_state.name
 
@@ -741,7 +749,7 @@ class ArtNetFailsafeStateSensor(ArtNetEntity, SensorEntity):
 class ArtNetACNPrioritySensor(ArtNetEntity, SensorEntity):
     """Representation of an ArtNet ACN priority number."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo) -> None:
         """Initialize the sensor."""
         self._acn_priority = art_poll_reply.acn_priority
 
@@ -770,7 +778,7 @@ class ArtNetACNPrioritySensor(ArtNetEntity, SensorEntity):
 class ArtNetNodeReportSensor(ArtNetEntity, SensorEntity):
     """Representation of an ArtNet node report text."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo) -> None:
         """Initialize the sensor."""
         self._node_report = art_poll_reply.node_report
 
@@ -799,7 +807,7 @@ class ArtNetNodeReportSensor(ArtNetEntity, SensorEntity):
 class ArtNetPortAddressProgrammingAuthoritySensor(ArtNetEntity, SensorEntity):
     """Representation of an ArtNet port address programming authority."""
 
-    def __init__(self, art_poll_reply, device_info: DeviceInfo):
+    def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo) -> None:
         """Initialize the sensor."""
         self._port_address_programming_authority_name = art_poll_reply.port_address_programming_authority.name
 

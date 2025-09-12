@@ -22,7 +22,7 @@ class Fixture:
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, name: str, short_name: str, categories: list[str], config_url: str | None):
+    def __init__(self, name: str, short_name: str, categories: list[str], config_url: str | None) -> None:
         self.name = name
         self.short_name = short_name or name
 
@@ -67,7 +67,13 @@ class Fixture:
         for byte_offset, fine_channel_alias in enumerate(channel.fine_channel_aliases, start=1):
             dest[fine_channel_alias] = ChannelOffset(channel, byte_offset)
 
-        for capability in channel.capabilities:
+        capabilities = channel.capabilities
+        if isinstance(capabilities, list):
+            capability_list = capabilities
+        else:
+            capability_list = [capabilities]
+        
+        for capability in capability_list:
             for switch_channel_key, switch_channel_value in capability.switch_channels.items():
                 if switch_channel_key not in switching_dest:
                     switching_dest[switch_channel_key] = set()
@@ -92,7 +98,8 @@ class Fixture:
         Adds a mode to the fixture.
         :param mode: The mode to be added
         """
-        self.modes[mode.short_name] = mode
+        if mode.short_name is not None:
+            self.modes[mode.short_name] = mode
 
     def resolve_channels(self) -> None:
         """
@@ -107,7 +114,9 @@ class Fixture:
 
         del self.switching_channel_names
 
-    def __resolve_matrix(self):
+    def __resolve_matrix(self) -> None:
+        if self.matrix is None:
+            return
         for name in list(self.matrix.pixels_by_name.keys()) + list(self.matrix.pixel_groups.keys()):
             for template_channel in self.template_channels.values():
                 channel_copy = self.__renamed_copy(template_channel, name)
@@ -118,7 +127,7 @@ class Fixture:
         switching_channel_names: dict[str, set[str]],
         channels: dict[str, ChannelOffset],
         dest: dict[str, SwitchingChannel],
-    ):
+    ) -> None:
 
         for switching_channel_name, switched_channel_names in switching_channel_names.items():
             switched_channels = [channels[channelName] for channelName in switched_channel_names]
@@ -169,11 +178,13 @@ class Fixture:
                 self.__resolve_channel(template_channel_name.replace(PIXEL_KEY, name))
                 for name in names
                 for template_channel_name in mode_channel.template_channels
+                if template_channel_name is not None
             ]
         if mode_channel.order is ChannelOrder.perChannel:
             return [
                 self.__resolve_channel(template_channel_name.replace(PIXEL_KEY, name))
                 for template_channel_name in mode_channel.template_channels
+                if template_channel_name is not None
                 for name in names
             ]
         raise FixtureConfigurationError(f"{mode_channel.order.name} is not a supported channelOrder.")
@@ -194,12 +205,18 @@ class Fixture:
         copy.fine_channel_aliases = [
             fine_channel_alias.replace(PIXEL_KEY, new_name) for fine_channel_alias in copy.fine_channel_aliases
         ]
-        for capability in copy.capabilities:
+        capabilities = copy.capabilities
+        if isinstance(capabilities, list):
+            capability_list = capabilities
+        else:
+            capability_list = [capabilities]
+        
+        for capability in capability_list:
             capability.switch_channels = {
                 switchingChannel.replace(PIXEL_KEY, new_name): referenced_channel.replace(PIXEL_KEY, new_name)
                 for switchingChannel, referenced_channel in capability.switch_channels.items()
             }
         return copy
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} ({self.short_name})"

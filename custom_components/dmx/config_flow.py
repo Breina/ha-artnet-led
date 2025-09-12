@@ -1,4 +1,5 @@
 """Config flow to configure DMX."""
+from typing import Any
 
 from homeassistant import config_entries
 
@@ -10,14 +11,14 @@ class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the Artnet flow."""
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> Any:
         """Handle a flow start."""
         pass
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> Any:
         return self.async_abort(
             reason=(
                 "I acknowledge that it's fun to click buttons, but alas, this integration is configured through "
@@ -25,7 +26,7 @@ class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
         )
 
-    async def async_step_import(self, user_input=None):
+    async def async_step_import(self, user_input: dict[str, Any] | None = None) -> Any:
         """Handle configuration by YAML file."""
         await self.async_set_unique_id(DOMAIN)
 
@@ -41,10 +42,10 @@ class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 fingerprints = existing_data.get(CONF_FINGERPRINTS, {})
 
                 # Update with new YAML data but preserve fingerprints
-                new_data = user_input.copy()
+                new_data = user_input.copy() if user_input else {}
                 new_data[CONF_FINGERPRINTS] = fingerprints
 
                 self.hass.config_entries.async_update_entry(entry, data=new_data)
                 self._abort_if_unique_id_configured()
 
-        return self.async_create_entry(title=DOMAIN, data=user_input)
+        return self.async_create_entry(title=DOMAIN, data=user_input or {})

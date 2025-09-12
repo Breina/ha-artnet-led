@@ -63,7 +63,8 @@ def determine_icon(channel: Channel) -> str:
         "NoFunction": "mdi:minus-circle-outline",
     }
 
-    capability_types = [type(cap).__name__ for cap in channel.capabilities]
+    capabilities_list = channel.capabilities if isinstance(channel.capabilities, list) else [channel.capabilities]
+    capability_types = [type(cap).__name__ for cap in capabilities_list]
     capability_counts = Counter(capability_types)
 
     priority_order = [

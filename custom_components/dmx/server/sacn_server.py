@@ -5,6 +5,7 @@ import struct
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 
@@ -24,7 +25,7 @@ class SacnServerConfig:
     multicast_ttl: int = 64
     enable_preview_data: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.cid is None:
             self.cid = uuid.uuid4().bytes
 
@@ -33,11 +34,11 @@ class SacnServerConfig:
 class UniverseState:
     sequence_number: int = 0
     last_data: bytearray | None = None
-    send_task: asyncio.Task | None = None
+    send_task: asyncio.Task[None] | None = None
     termination_sent: bool = False
-    unicast_addresses: list = field(default_factory=list)
+    unicast_addresses: list[dict[str, Any]] = field(default_factory=list)
 
-    def increment_sequence(self):
+    def increment_sequence(self) -> None:
         self.sequence_number = (self.sequence_number + 1) % 256
 
 
@@ -52,9 +53,14 @@ class SacnServer:
     - Integration with existing DMX universe system
     """
 
-    def __init__(self, hass: HomeAssistant, config: SacnServerConfig = None):
+    def __init__(self, hass: HomeAssistant, config: SacnServerConfig | None = None) -> None:
+        import uuid
         self.hass = hass
         self.config = config or SacnServerConfig()
+        
+        # Ensure we have a valid CID
+        if self.config.cid is None:
+            self.config.cid = uuid.uuid4().bytes
 
         self.universes: dict[int, UniverseState] = {}
         self.socket: socket.socket | None = None
@@ -66,7 +72,7 @@ class SacnServer:
 
         log.info(f"sACN Server initialized with source name: {self.config.source_name}")
 
-    def start_server(self):
+    def start_server(self) -> None:
         if self.running:
             log.warning("sACN server already running")
             return
@@ -84,7 +90,7 @@ class SacnServer:
             log.error(f"Failed to start sACN server: {e}")
             raise
 
-    def stop_server(self):
+    def stop_server(self) -> None:
         if not self.running:
             return
 
@@ -98,7 +104,7 @@ class SacnServer:
         self.running = False
         log.info("sACN server stopped")
 
-    def add_universe(self, universe_id: int, unicast_addresses: list | None = None) -> bool:
+    def add_universe(self, universe_id: int, unicast_addresses: list[str] | None = None) -> bool:
         if not (1 <= universe_id <= 63999):
             log.error(f"Invalid universe ID: {universe_id}. Must be 1-63999")
             return False
@@ -109,7 +115,15 @@ class SacnServer:
 
         universe_state = UniverseState()
         if unicast_addresses:
-            universe_state.unicast_addresses = unicast_addresses
+            # Convert string addresses to dict format
+            universe_state.unicast_addresses = []
+            for addr in unicast_addresses:
+                if ":" in addr:
+                    host, port_str = addr.split(":", 1)
+                    universe_state.unicast_addresses.append({"host": host, "port": int(port_str)})
+                else:
+                    # Default to standard sACN port if no port specified
+                    universe_state.unicast_addresses.append({"host": addr, "port": 5568})
 
         self.universes[universe_id] = universe_state
         log.info(f"Added sACN universe {universe_id}")
@@ -119,7 +133,7 @@ class SacnServer:
 
         return True
 
-    def remove_universe(self, universe_id: int):
+    def remove_universe(self, universe_id: int) -> None:
         if universe_id not in self.universes:
             log.warning(f"Universe {universe_id} not found")
             return
@@ -149,7 +163,7 @@ class SacnServer:
 
         return True
 
-    async def _send_universe_data(self, universe_id: int, dmx_data: bytearray):
+    async def _send_universe_data(self, universe_id: int, dmx_data: bytearray) -> None:
         try:
             universe_state = self.universes[universe_id]
 
@@ -163,6 +177,7 @@ class SacnServer:
                 force_synchronization=self.config.enable_per_universe_sync,
             )
 
+            assert self.config.cid is not None  # Guaranteed by __init__
             packet = SacnPacket(
                 source_name=self.config.source_name,
                 priority=self.config.priority,
@@ -176,11 +191,13 @@ class SacnServer:
             multicast_addr = packet.get_multicast_address()
             packet_bytes = packet.serialize()
 
-            await self.hass.async_add_executor_job(self.socket.sendto, packet_bytes, (multicast_addr, SACN_PORT))
+            if self.socket is not None:
+                await self.hass.async_add_executor_job(self.socket.sendto, packet_bytes, (multicast_addr, SACN_PORT))
 
             for unicast_addr in universe_state.unicast_addresses:
-                await self.hass.async_add_executor_job(
-                    self.socket.sendto, packet_bytes, (unicast_addr["host"], unicast_addr["port"])
+                if self.socket is not None:
+                    await self.hass.async_add_executor_job(
+                        self.socket.sendto, packet_bytes, (unicast_addr["host"], unicast_addr["port"])
                 )
 
             unicast_info = (
@@ -197,7 +214,7 @@ class SacnServer:
         except Exception as e:
             log.error(f"Error sending sACN data to universe {universe_id}: {e}")
 
-    def terminate_universe(self, universe_id: int):
+    def terminate_universe(self, universe_id: int) -> None:
         if universe_id not in self.universes:
             return
 
@@ -210,6 +227,7 @@ class SacnServer:
 
             last_data = universe_state.last_data or bytearray(513)
 
+            assert self.config.cid is not None  # Guaranteed by __init__
             packet = SacnPacket(
                 source_name=self.config.source_name,
                 priority=self.config.priority,
@@ -223,11 +241,12 @@ class SacnServer:
             multicast_addr = packet.get_multicast_address()
             packet_bytes = packet.serialize()
 
-            for _ in range(3):
-                self.socket.sendto(packet_bytes, (multicast_addr, SACN_PORT))
+            if self.socket is not None:
+                for _ in range(3):
+                    self.socket.sendto(packet_bytes, (multicast_addr, SACN_PORT))
 
-                for unicast_addr in universe_state.unicast_addresses:
-                    self.socket.sendto(packet_bytes, (unicast_addr["host"], unicast_addr["port"]))
+                    for unicast_addr in universe_state.unicast_addresses:
+                        self.socket.sendto(packet_bytes, (unicast_addr["host"], unicast_addr["port"]))
 
             universe_state.termination_sent = True
             log.info(f"Sent termination packet for sACN universe {universe_id}")
@@ -235,23 +254,25 @@ class SacnServer:
         except Exception as e:
             log.error(f"Error sending termination packet for universe {universe_id}: {e}")
 
-    def send_sync_packet(self, sync_address: int = 0):
+    def send_sync_packet(self, sync_address: int = 0) -> None:
         if not self.running:
             log.error("sACN server not running")
             return
 
         try:
+            assert self.config.cid is not None  # Guaranteed by __init__
             sync_packet = SacnSyncPacket(sequence_number=0, sync_address=sync_address, cid=self.config.cid)
 
             packet_bytes = sync_packet.serialize()
 
-            self.socket.sendto(packet_bytes, ("239.255.0.0", SACN_PORT))
+            if self.socket is not None:
+                self.socket.sendto(packet_bytes, ("239.255.0.0", SACN_PORT))
             log.debug(f"Sent sACN sync packet for sync address {sync_address}")
 
         except Exception as e:
             log.error(f"Error sending sACN sync packet: {e}")
 
-    def get_universe_info(self, universe_id: int) -> dict | None:
+    def get_universe_info(self, universe_id: int) -> dict[str, Any] | None:
         if universe_id not in self.universes:
             return None
 
@@ -264,32 +285,32 @@ class SacnServer:
             "termination_sent": state.termination_sent,
         }
 
-    def get_all_universes(self) -> dict[int, dict]:
-        return {uid: self.get_universe_info(uid) for uid in self.universes}
+    def get_all_universes(self) -> dict[int, dict[str, Any]]:
+        return {uid: info for uid in self.universes if (info := self.get_universe_info(uid)) is not None}
 
 
 class SacnReceiver(asyncio.DatagramProtocol):
     def __init__(
-        self, hass: HomeAssistant, data_callback: Callable | None = None, own_source_name: str | None = None
-    ):
+        self, hass: HomeAssistant, data_callback: Callable[[PortAddress, bytearray, str], None] | None = None, own_source_name: str | None = None
+    ) -> None:
         self.hass = hass
         self.data_callback = data_callback
         self.transport: asyncio.DatagramTransport | None = None
         self.subscribed_universes: set[int] = set()
         self.own_source_name = own_source_name
 
-    def connection_made(self, transport: asyncio.DatagramTransport):
-        self.transport = transport
+    def connection_made(self, transport: asyncio.BaseTransport) -> None:
+        self.transport = transport  # type: ignore[assignment]
         log.info("sACN receiver connection established")
 
         for universe_id in self.subscribed_universes:
             self._join_multicast_group(universe_id)
 
-    def connection_lost(self, exc: Exception | None):
+    def connection_lost(self, exc: Exception | None) -> None:
         log.info("sACN receiver connection lost")
         self.transport = None
 
-    def datagram_received(self, data: bytes, addr):
+    def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
         try:
             log.debug(f"Received {len(data)} bytes from {addr[0]}:{addr[1]}")
             packet = SacnPacket.deserialize(data)
@@ -321,7 +342,7 @@ class SacnReceiver(asyncio.DatagramProtocol):
             log.warning(f"Error processing sACN packet from {addr[0]}:{addr[1]} " f"({len(data)} bytes): {e}")
             log.debug(f"Raw packet data: {data[:50].hex()}{'...' if len(data) > 50 else ''}")
 
-    def subscribe_universe(self, universe_id: int):
+    def subscribe_universe(self, universe_id: int) -> None:
         if not (1 <= universe_id <= 63999):
             log.error(f"Invalid universe ID: {universe_id}")
             return
@@ -333,7 +354,7 @@ class SacnReceiver(asyncio.DatagramProtocol):
 
         log.info(f"Subscribed to sACN universe {universe_id}")
 
-    def unsubscribe_universe(self, universe_id: int):
+    def unsubscribe_universe(self, universe_id: int) -> None:
         if universe_id in self.subscribed_universes:
             self.subscribed_universes.remove(universe_id)
 
@@ -342,13 +363,13 @@ class SacnReceiver(asyncio.DatagramProtocol):
 
             log.info(f"Unsubscribed from sACN universe {universe_id}")
 
-    def _manage_multicast_group(self, universe_id: int, join: bool):
+    def _manage_multicast_group(self, universe_id: int, join: bool) -> None:
         """Join or leave multicast group for a universe"""
         try:
             multicast_addr = f"239.255.{universe_id >> 8}.{universe_id & 0xFF}"
             mreq = struct.pack("4sl", socket.inet_aton(multicast_addr), socket.INADDR_ANY)
 
-            sock = self.transport.get_extra_info("socket")
+            sock = self.transport.get_extra_info("socket") if self.transport else None
             if sock:
                 operation = socket.IP_ADD_MEMBERSHIP if join else socket.IP_DROP_MEMBERSHIP
                 action = "Joined" if join else "Left"
@@ -363,15 +384,15 @@ class SacnReceiver(asyncio.DatagramProtocol):
             action = "join" if join else "leave"
             log.error(f"Failed to {action} multicast group {multicast_addr} for universe {universe_id}: {e}")
 
-    def _join_multicast_group(self, universe_id: int):
+    def _join_multicast_group(self, universe_id: int) -> None:
         self._manage_multicast_group(universe_id, True)
 
-    def _leave_multicast_group(self, universe_id: int):
+    def _leave_multicast_group(self, universe_id: int) -> None:
         self._manage_multicast_group(universe_id, False)
 
 
 async def create_sacn_receiver(
-    hass: HomeAssistant, data_callback: Callable | None = None, own_source_name: str | None = None
+    hass: HomeAssistant, data_callback: Callable[[PortAddress, bytearray, str], None] | None = None, own_source_name: str | None = None
 ) -> SacnReceiver:
     receiver = SacnReceiver(hass, data_callback, own_source_name)
 

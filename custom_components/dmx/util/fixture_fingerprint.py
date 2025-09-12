@@ -4,6 +4,7 @@ Fixture fingerprinting utility to detect meaningful changes in fixture configura
 
 import hashlib
 import json
+from typing import Any
 
 from custom_components.dmx.fixture.capability import Capability
 from custom_components.dmx.fixture.channel import Channel, ChannelOffset, SwitchingChannel
@@ -27,7 +28,7 @@ def generate_fixture_fingerprint(
         8-character hex fingerprint
     """
     # Build a serializable representation of the channel structure
-    channel_data = {"fixture_name": fixture_name, "mode_name": mode_name, "channels": []}
+    channel_data: dict[str, Any] = {"fixture_name": fixture_name, "mode_name": mode_name, "channels": []}
 
     for _, channel in enumerate(channels):
         if channel is None:
@@ -43,7 +44,7 @@ def generate_fixture_fingerprint(
     return hash_obj.hexdigest()[:8]
 
 
-def _serialize_channel_offset(channel_offset: ChannelOffset) -> dict:
+def _serialize_channel_offset(channel_offset: ChannelOffset) -> dict[str, Any]:
     """Serialize a ChannelOffset to a dict representation."""
     return {
         "type": "channel_offset",
@@ -52,7 +53,7 @@ def _serialize_channel_offset(channel_offset: ChannelOffset) -> dict:
     }
 
 
-def _serialize_switching_channel(switching_channel: SwitchingChannel) -> dict:
+def _serialize_switching_channel(switching_channel: SwitchingChannel) -> dict[str, Any]:
     """Serialize a SwitchingChannel to a dict representation."""
     return {
         "type": "switching_channel",
@@ -64,7 +65,7 @@ def _serialize_switching_channel(switching_channel: SwitchingChannel) -> dict:
     }
 
 
-def _serialize_channel(channel: Channel) -> dict:
+def _serialize_channel(channel: Channel) -> dict[str, Any]:
     """Serialize a Channel to a dict representation."""
     return {
         "name": channel.name,
@@ -74,18 +75,21 @@ def _serialize_channel(channel: Channel) -> dict:
         "default_value": channel.default_value,
         "highlight_value": channel.highlight_value,
         "constant": channel.constant,
-        "capabilities": [_serialize_capability(cap) for cap in channel.capabilities],
+        "capabilities": [
+            _serialize_capability(cap) 
+            for cap in (channel.capabilities if isinstance(channel.capabilities, list) else [channel.capabilities])
+        ],
     }
 
 
-def _serialize_capability(capability: Capability) -> dict:
+def _serialize_capability(capability: Capability) -> dict[str, Any]:
     """Serialize a Capability to a dict representation."""
     result = {
         "type": capability.__class__.__name__,
         "dmx_range_start": capability.dmx_range_start,
         "dmx_range_end": capability.dmx_range_end,
         "menu_click": (
-            capability.menu_click.name if hasattr(capability.menu_click, "name") else str(capability.menu_click)
+            capability.menu_click.name if capability.menu_click and hasattr(capability.menu_click, "name") else str(capability.menu_click)
         ),
         "menu_click_value": capability.menu_click_value,
         "switch_channels": capability.switch_channels,
@@ -103,6 +107,7 @@ def _serialize_capability(capability: Capability) -> dict:
                 "end": {"value": de.entity_end.value, "unit": de.entity_end.unit},
             }
             for de in capability.dynamic_entities
+            if hasattr(de, "entity_start") and hasattr(de, "entity_end")
         ]
 
     return result

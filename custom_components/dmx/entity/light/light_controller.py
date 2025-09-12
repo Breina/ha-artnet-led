@@ -16,8 +16,8 @@ class LightController:
         state: LightState,
         universe: DmxUniverse,
         channel_mappings: list[ChannelMapping] | None = None,
-        animation_engine=None,
-    ):
+        animation_engine: Any = None,
+    ) -> None:
         self.state = state
         self.universe = universe
         self.channel_mappings = channel_mappings
@@ -25,7 +25,7 @@ class LightController:
         self.is_updating = False
         self._current_animation_id: str | None = None
 
-    async def turn_on(self, **kwargs):
+    async def turn_on(self, **kwargs: Any) -> None:
         self.state.is_on = True
         updates = self._collect_updates_from_kwargs(kwargs)
         if not updates:
@@ -38,7 +38,7 @@ class LightController:
         transition = kwargs.get(ATTR_TRANSITION)
         await self._apply_updates(updates, transition)
 
-    async def turn_off(self, transition: float | None = None):
+    async def turn_off(self, transition: float | None = None) -> None:
         self.state.is_on = False
         preserved = self._capture_current_state()
         updates = {}
@@ -55,7 +55,7 @@ class LightController:
         await self._apply_updates(updates, transition)
         self._save_last_state(preserved)
 
-    async def _apply_updates(self, updates: dict[ChannelType, int], transition: float | None = None):
+    async def _apply_updates(self, updates: dict[ChannelType, int], transition: float | None = None) -> None:
         if self._current_animation_id and self.animation_engine:
             self.animation_engine.cancel_animation(self._current_animation_id)
             self._current_animation_id = None
@@ -82,9 +82,14 @@ class LightController:
                     dmx_values = [self.universe.get_channel_value(idx) for idx in mapping.dmx_indexes]
 
                     # Convert DMX values to entity value using the dynamic entity
-                    [dynamic_entity] = mapping.channel.capabilities[0].dynamic_entities
+                    capabilities = mapping.channel.capabilities
+                    if isinstance(capabilities, list):
+                        first_capability = capabilities[0]
+                    else:
+                        first_capability = capabilities
+                    [dynamic_entity] = first_capability.dynamic_entities
                     normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
-                    current_entity_value = dynamic_entity.unnormalize(normalized_value)
+                    current_entity_value = int(dynamic_entity.unnormalize(normalized_value))
                     break
 
             current_values[channel_type] = int(current_entity_value)
@@ -178,7 +183,7 @@ class LightController:
 
         return updates
 
-    def _capture_current_state(self) -> dict:
+    def _capture_current_state(self) -> dict[str, Any]:
         return {
             "brightness": self.state.brightness,
             "rgb": self.state.rgb,
@@ -188,7 +193,7 @@ class LightController:
             "color_temp_dmx": self.state.color_temp_dmx,
         }
 
-    def _save_last_state(self, s: dict):
+    def _save_last_state(self, s: dict[str, Any]) -> None:
         self.state.last_brightness = s["brightness"]
         self.state.last_rgb = s["rgb"]
         self.state.last_cold_white = s["cold_white"]
@@ -196,6 +201,6 @@ class LightController:
         self.state.last_color_temp_kelvin = s["color_temp_kelvin"]
         self.state.last_color_temp_dmx = s["color_temp_dmx"]
 
-    def _on_animation_complete(self):
+    def _on_animation_complete(self) -> None:
         """Called when an animation completes naturally"""
         self._current_animation_id = None

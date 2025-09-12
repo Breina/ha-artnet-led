@@ -3,7 +3,7 @@ import logging
 from homeassistant.components.select import SelectEntity
 from homeassistant.helpers.entity import DeviceInfo
 
-from custom_components.dmx import DOMAIN
+from custom_components.dmx.const import DOMAIN
 from custom_components.dmx.entity.icon_helper import determine_icon
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.fixture.capability import Capability
@@ -44,7 +44,8 @@ class DmxSelectEntity(SelectEntity):
         name_counts: dict[str, int] = {}
         self.capability_types: dict[str, Capability] = {}
 
-        for capability in channel.capabilities:
+        capabilities_list = channel.capabilities if isinstance(channel.capabilities, list) else [channel.capabilities]
+        for capability in capabilities_list:
             name = str(capability)
             if name in name_counts:
                 name_counts[name] += 1
@@ -62,15 +63,15 @@ class DmxSelectEntity(SelectEntity):
 
         self._attr_options = list(self.capability_types.keys())
 
-        self.switching_entities = {}
+        self.switching_entities: dict[str, DmxNumberEntity] = {}
 
         self._attr_current_option = self._attr_options[0]
 
         self.universe = universe
         self.universe.register_channel_listener(dmx_index, self.update_value)
 
-        # TODO RuntimeWarning: coroutine 'DmxUniverse.update_value' was never awaited
-        self.universe.update_value(self.dmx_index, channel.default_value, send_immediately=False)
+        # Initialize with default value - note: this is sync initialization so we can't await
+        # The value will be properly set when the entity is added to Home Assistant
         self.update_option_to_dmx_value(channel.default_value)
 
     def link_switching_entities(self, entities: list[DmxNumberEntity]) -> None:
@@ -80,7 +81,7 @@ class DmxSelectEntity(SelectEntity):
 
             for channel_name in capability.switch_channels.values():
                 for entity in entities:
-                    if entity.name.endswith(channel_name):
+                    if isinstance(entity.name, str) and entity.name.endswith(channel_name):
                         self.switching_entities[capability_name] = entity
                         entity.available = False
                         break
@@ -98,8 +99,8 @@ class DmxSelectEntity(SelectEntity):
         else:
             log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
 
-    def update_option_to_dmx_value(self, value):
-        capability = [capability for capability in self.capability_types.values() if capability.is_applicable(value)]
+    def update_option_to_dmx_value(self, value: int) -> None:
+        capability: list[Capability] = [capability for capability in self.capability_types.values() if capability.is_applicable(value)]
         if not any(capability):
             raise FixtureConfigurationError(f"Fixture {self._attr_name} received an invalid DMX value: " f"{value}")
 
@@ -110,7 +111,7 @@ class DmxSelectEntity(SelectEntity):
         await self._update_current_option_async(option)
 
         capability = self.capability_types[option]
-        dmx_value = capability.menu_click_value if capability.menu_click else capability.dmx_range_start
+        dmx_value: int = capability.menu_click_value if capability.menu_click_value is not None else capability.dmx_range_start
 
         await self.universe.update_value(self.dmx_index, dmx_value, send_immediately=True)
 
@@ -146,10 +147,12 @@ class DmxSelectEntity(SelectEntity):
 
             if availability:
                 # Reapply the current value when the entity becomes available
-                await switching_entity.async_set_native_value(switching_entity.native_value)
+                current_value = switching_entity.native_value
+                if current_value is not None:
+                    await switching_entity.async_set_native_value(current_value)
 
     def __str__(self) -> str:
-        return f"{self._attr_name}: {self.capability_attributes['options']}"
+        return f"{self._attr_name}: {self._attr_options}"
 
     def __repr__(self) -> str:
         return self.__str__()

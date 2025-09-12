@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+from typing import Any, Callable
 
 from homeassistant.core import HomeAssistant
 
@@ -13,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 class DmxAnimationEngine:
     """Animation engine for DMX lighting transitions (supports Art-Net and sACN)"""
 
-    def __init__(self, hass: HomeAssistant, universe=None, max_fps: int = 30):
+    def __init__(self, hass: HomeAssistant, universe: Any = None, max_fps: int = 30) -> None:
         self.hass = hass
         self.universe = universe
         self.max_fps = max_fps
@@ -27,7 +28,7 @@ class DmxAnimationEngine:
         self._animation_counter += 1
         return f"anim_{self._animation_counter}_{int(time.time() * 1000)}"
 
-    def _cancel_conflicting_animations(self, new_animation: AnimationTask):
+    def _cancel_conflicting_animations(self, new_animation: AnimationTask) -> None:
         """Cancel any animations that control the same DMX channels"""
         conflicting_animations = []
 
@@ -42,12 +43,12 @@ class DmxAnimationEngine:
                 _LOGGER.debug(f"Cancelling conflicting animation: {anim_id}")
                 self._cleanup_animation(anim_id)
 
-    def _claim_dmx_channels(self, animation: AnimationTask):
+    def _claim_dmx_channels(self, animation: AnimationTask) -> None:
         """Claim DMX channels for the given animation"""
         for dmx_index in animation.controlled_indexes:
             self.dmx_channel_owners[dmx_index] = animation.animation_id
 
-    def _cleanup_animation(self, animation_id: str):
+    def _cleanup_animation(self, animation_id: str) -> None:
         """Clean up a completed or cancelled animation"""
         if animation_id not in self.active_animations:
             return
@@ -63,7 +64,7 @@ class DmxAnimationEngine:
         del self.active_animations[animation_id]
         _LOGGER.debug(f"Cleaned up animation: {animation_id}")
 
-    async def _run_animation(self, animation: AnimationTask):
+    async def _run_animation(self, animation: AnimationTask) -> None:
         """Run a single animation to completion"""
         try:
             _LOGGER.debug(f"Starting animation {animation.animation_id} for {animation.duration_seconds}s")
@@ -99,7 +100,7 @@ class DmxAnimationEngine:
         finally:
             self._cleanup_animation(animation.animation_id)
 
-    def _output_frame(self, frame_values: dict[ChannelType, int]):
+    def _output_frame(self, frame_values: dict[ChannelType, int]) -> None:
         """Output frame data to DMX universe"""
         if not self.universe:
             return
@@ -113,7 +114,12 @@ class DmxAnimationEngine:
                     if mapping.channel_type == channel_type:
                         try:
                             # Convert to DMX values using the mapping
-                            [entity] = mapping.channel.capabilities[0].dynamic_entities
+                            capabilities = mapping.channel.capabilities
+                            if isinstance(capabilities, list):
+                                first_capability = capabilities[0]
+                            else:
+                                first_capability = capabilities
+                            [entity] = first_capability.dynamic_entities
                             norm_val = entity.normalize(value)
                             dmx_values = entity.to_dmx_fine(norm_val, len(mapping.dmx_indexes))
 
@@ -137,7 +143,7 @@ class DmxAnimationEngine:
         animation_duration_seconds: float,
         min_kelvin: int | None = None,
         max_kelvin: int | None = None,
-        completion_callback=None,
+        completion_callback: Callable[[], None] | None = None,
     ) -> str:
         """
         Create and start a new animation.
@@ -183,7 +189,7 @@ class DmxAnimationEngine:
             return True
         return False
 
-    def cancel_all_animations(self):
+    def cancel_all_animations(self) -> None:
         """Cancel all active animations"""
         for animation_id in list(self.active_animations.keys()):
             self.cancel_animation(animation_id)

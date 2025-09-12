@@ -83,7 +83,7 @@ CONF_ENTITY_ID_PREFIX = "entity_id_prefix"
 
 PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT, Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR]
 
-FIXTURES = {}
+FIXTURES: dict[str, Any] = {}
 
 
 class UnknownFixtureError(IntegrationError):
@@ -154,12 +154,12 @@ def port_address_config(value: Any) -> int:
     return PortAddress(net, sub_net, universe).port_address
 
 
-async def reload_configuration_yaml(event: dict, hass: HomeAssistant):
+async def reload_configuration_yaml(event: dict[str, Any], hass: HomeAssistant) -> None:
     """Reload configuration.yaml."""
     await hass.services.async_call("homeassistant", "check_config", {})
 
 
-async def async_update_options(hass, config_entry: ConfigEntry):
+async def async_update_options(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     """Update options."""
     await hass.config_entries.async_reload(config_entry.entry_id)
 
@@ -176,7 +176,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def process_fixtures(hass: HomeAssistant, fixture_folder: str) -> dict[str, Fixture]:
-    fixture_map = {}
+    fixture_map: dict[str, Fixture] = {}
 
     if not os.path.isdir(fixture_folder):
         log.warning(f"Fixture folder does not exist: {fixture_folder}")
@@ -202,7 +202,7 @@ async def process_fixtures(hass: HomeAssistant, fixture_folder: str) -> dict[str
     return fixture_map
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the component."""
 
     hass.data.setdefault(DOMAIN, {})
@@ -244,20 +244,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         sacn_universe_rate_limiters = {}
 
         # Function to process sACN universe updates with rate limiting
-        def sacn_state_callback(port_address: PortAddress, data: bytearray, source: str | None = None):
+        def sacn_state_callback(port_address: PortAddress, data: bytearray, source: str | None = None) -> None:
             log.debug(
                 f"sACN state callback triggered for {port_address} from source '{source}' with {len(data)} channels"
             )
 
-            callback_universe: DmxUniverse = universes.get(port_address)
+            callback_universe = universes.get(port_address)
             if callback_universe is None:
                 log.warning(f"Received sACN data for unknown universe: {port_address}")
                 return
 
             if port_address not in sacn_universe_rate_limiters:
-                updates_dict = {}
+                updates_dict: dict[int, int] = {}
 
-                async def process_updates():
+                async def process_updates() -> None:
                     nonlocal updates_dict
                     updates_to_process = updates_dict.copy()
                     updates_dict.clear()
@@ -266,9 +266,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                         log.debug(f"Processing {len(updates_to_process)} sACN channel updates for {port_address}")
                         await callback_universe.update_multiple_values(updates_to_process, source, send_update=False)
 
+                def update_callback() -> None:
+                    hass.async_create_task(process_updates())
+
                 limiter = RateLimiter(
                     hass,
-                    update_method=lambda: hass.async_create_task(process_updates()),
+                    update_method=update_callback,
                     update_interval=rate_limit,
                     force_update_after=rate_limit * 4,
                 )
@@ -314,7 +317,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             port_address = PortAddress(0, 0, universe_id if universe_id <= 511 else universe_id % 512)
 
             # Add universe to sACN server with unicast addresses
-            sacn_server.add_universe(universe_id, unicast_addresses)
+            unicast_hosts = [addr["host"] for addr in unicast_addresses] if unicast_addresses else None
+            sacn_server.add_universe(universe_id, unicast_hosts)
 
             # Subscribe receiver to this universe for incoming multicast data
             sacn_receiver.subscribe_universe(universe_id)
@@ -375,16 +379,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         universe_rate_limiters = {}
 
         # Function to process universe updates with rate limiting
-        def state_callback(port_address: PortAddress, data: bytearray, source: str | None = None):
-            callback_universe: DmxUniverse = universes.get(port_address)
+        def state_callback(port_address: PortAddress, data: bytearray, source: str | None = None) -> None:
+            callback_universe = universes.get(port_address)
             if callback_universe is None:
                 log.warning(f"Received DMX data for unknown universe: {port_address}")
                 return
 
             if port_address not in universe_rate_limiters:
-                updates_dict = {}
+                updates_dict: dict[int, int] = {}
 
-                async def process_updates():
+                async def process_updates() -> None:
                     nonlocal updates_dict
                     updates_to_process = updates_dict.copy()
                     updates_dict.clear()
@@ -392,9 +396,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     if updates_to_process:
                         await callback_universe.update_multiple_values(updates_to_process, source, send_update=False)
 
+                def update_callback_2() -> None:
+                    hass.async_create_task(process_updates())
+
                 limiter = RateLimiter(
                     hass,
-                    update_method=lambda: hass.async_create_task(process_updates()),
+                    update_method=update_callback_2,
                     update_interval=rate_limit,
                     force_update_after=rate_limit * 4,
                 )
@@ -415,7 +422,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         controller = ArtNetServer(hass, state_callback, retransmit_time_ms=refresh_every * 1000)
 
-        def _get_node_handler():
+        def _get_node_handler() -> type[Any]:
             from custom_components.dmx.entity.node_handler import DynamicNodeHandler
 
             return DynamicNodeHandler
@@ -423,17 +430,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         dynamic_node_handler = _get_node_handler()
         node_handler = dynamic_node_handler(hass, entry, controller)
 
-        def node_new_callback(artpoll_reply: ArtPollReply):
+        def node_new_callback(artpoll_reply: ArtPollReply) -> None:
             hass.async_create_task(node_handler.handle_new_node(artpoll_reply))
 
         controller.node_new_callback = node_new_callback
 
-        def node_update_callback(artpoll_reply: ArtPollReply):
+        def node_update_callback(artpoll_reply: ArtPollReply) -> None:
             hass.async_create_task(node_handler.update_node(artpoll_reply))
 
         controller.node_update_callback = node_update_callback
 
-        def node_lost_callback(node: Node):
+        def node_lost_callback(node: Node) -> None:
             hass.async_create_task(node_handler.disable_node(node))
 
         controller.node_lost_callback = node_lost_callback

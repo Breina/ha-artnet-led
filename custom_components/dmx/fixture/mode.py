@@ -3,9 +3,11 @@ This module contains mode related functions and classes, as per matrix-format.
 """
 
 import functools
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto, member
 from itertools import product
+from typing import Any
 
 
 class ChannelOrder(Enum):
@@ -19,7 +21,7 @@ class ChannelOrder(Enum):
     perChannel = auto()  # noqa: N815
 
 
-def matrix_pixel_order(axis0: int, axis1: int, axis2: int):
+def matrix_pixel_order(axis0: int, axis1: int, axis2: int) -> Callable[[Any], list[Any]]:
     """
     Loops through all pixels, ordered by axis.
     :param axis0: The order [0, 2] in which to sort the x-axis.
@@ -69,7 +71,7 @@ class MatrixChannelInsertBlock:
     order: ChannelOrder
     template_channels: list[None | str]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "matrixChannels"
 
 
@@ -83,12 +85,12 @@ class Mode:
     channels: list[None | str | MatrixChannelInsertBlock]
     short_name: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.short_name is None:
             self.short_name = self.name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}: {self.channels}"
