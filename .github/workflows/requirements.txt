@@ -1,3 +1,0 @@
-homeassistant
-netifaces
-pytest-asyncio

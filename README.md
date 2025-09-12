@@ -1,10 +1,10 @@
 # Art-net LED Lighting for DMX
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Breina/ha-artnet-led/validate.yml)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Breina/ha-artnet-led/hassfest.yaml)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Breina/ha-artnet-led/python.yml)
-[![Documentation](https://img.shields.io/badge/docs-github%20pages-blue)](https://breina.github.io/ha-artnet-led/)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Breina/ha-artnet-led/validate.yml?label=HACS)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Breina/ha-artnet-led/hassfest.yaml?label=Hassfest)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Breina/ha-artnet-led/code-quality.yml?label=Code%20quality)
+[![Documentation](https://img.shields.io/badge/docs-github%20pages-blue)](https://breina.github.io/ha-artnet-led/?label=Docs)
 
 A Home Assistant integration that transforms your instance into a professional Art-Net and sACN lighting controller. Control DMX fixtures, LED strips, and stage lighting directly from Home Assistant with full bidirectional communication using both Art-Net and sACN (E1.31) protocols.
 

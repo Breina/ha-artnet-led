@@ -1,0 +1,56 @@
+name: Code Quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .[dev]
+
+    - name: Run Ruff (lint)
+      run: ruff check .
+
+    - name: Run Black (format check)
+      run: black --check .
+
+    - name: Run MyPy (type check)
+      run: mypy custom_components/dmx
+
+    - name: Run tests
+      run: |
+        cd tests
+        pytest --doctest-modules --junitxml=junit/test-results.xml --cov=custom_components.dmx --cov-report=xml
+
+    - name: Report test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Test Results (Python ${{ matrix.python-version }})
+        path: tests/junit/test-results.xml
+        reporter: java-junit
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
+      if: matrix.python-version == '3.12'
+      with:
+        file: ./tests/coverage.xml
+        fail_ci_if_error: false
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
