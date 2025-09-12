@@ -14,7 +14,7 @@ version = "1.0.0"
 dev = [
     "ruff",
     "black", 
-    "mypy==1.13.0",
+    "mypy==1.17.1",
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
