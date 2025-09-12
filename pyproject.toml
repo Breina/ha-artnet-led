@@ -7,7 +7,7 @@ name = "ha-artnet-led"
 description = "Home Assistant custom integration for Art-Net and sACN DMX lighting control"
 authors = [{name = "ha-artnet-led contributors"}]
 license = {text = "GPLv3"}
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 version = "1.0.0"
 
 [project.optional-dependencies]
@@ -31,7 +31,7 @@ include = ["custom_components*"]
 # Ruff - Fast Python linter (linting only)
 [tool.ruff]
 line-length = 120
-target-version = "py311"
+target-version = "py312"
 exclude = [".git", ".venv", "__pycache__", "build", "dist", "deploy_staging.py"]
 
 [tool.ruff.lint]
@@ -62,12 +62,12 @@ known-first-party = ["custom_components.dmx"]
 # Black - Code formatter
 [tool.black]
 line-length = 120
-target-version = ['py311']
+target-version = ['py312']
 skip-string-normalization = false
 
 # MyPy - Type checker
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 ignore_missing_imports = true
 

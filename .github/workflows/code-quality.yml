@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.12"]
 
     steps:
     - uses: actions/checkout@v4
@@ -48,7 +48,6 @@ jobs:
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
-      if: matrix.python-version == '3.12'
       with:
         file: ./tests/coverage.xml
         fail_ci_if_error: false
