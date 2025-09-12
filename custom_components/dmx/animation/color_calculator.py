@@ -36,7 +36,7 @@ class ColorSpaceConverter:
     @classmethod
     def rgb_to_xyz(cls, rgb: tuple[float, float, float]) -> tuple[float, float, float]:
         """Convert RGB to XYZ color space using sRGB matrix."""
-        r, g, b = [cls.gamma_correct(c) for c in rgb]
+        r, g, b = (cls.gamma_correct(c) for c in rgb)
 
         # FIX: Remove the buggy matrix multiplication code and use the correct implementation
         x = r * cls.RGB_TO_XYZ_MATRIX[0][0] + g * cls.RGB_TO_XYZ_MATRIX[0][1] + b * cls.RGB_TO_XYZ_MATRIX[0][2]

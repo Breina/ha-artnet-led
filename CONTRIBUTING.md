@@ -1,4 +1,112 @@
-## Update docs
+# Contributing to ha-artnet-led
+
+Thank you for your interest in contributing to ha-artnet-led! This document provides guidelines and information for contributors.
+
+## Development Setup
+
+### Prerequisites
+
+- Python 3.11 or higher
+- Home Assistant development environment
+- Git
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-repo/ha-artnet-led.git
+cd ha-artnet-led
+```
+
+2. Install development dependencies:
+```bash
+pip install -e .[dev]
+```
+
+## Code Quality Tools
+
+This project uses several tools to maintain code quality and consistency. All configurations are defined in `pyproject.toml`.
+
+### Ruff (Linting and Import Sorting)
+
+[Ruff](https://docs.astral.sh/ruff/) is an extremely fast Python linter that replaces flake8, isort, and other linting tools.
+
+**Run linting:**
+```bash
+ruff check .
+```
+
+**Auto-fix linting issues:**
+```bash
+ruff check --fix .
+```
+
+### Black (Code Formatting)
+
+[Black](https://black.readthedocs.io/) ensures consistent code formatting across the project.
+
+**Format code:**
+```bash
+black .
+```
+
+**Check formatting:**
+```bash
+black --check .
+```
+
+### MyPy (Type Checking)
+
+[MyPy](https://mypy.readthedocs.io/) provides static type checking to catch type-related errors.
+
+**Run type checking:**
+```bash
+mypy custom_components/dmx
+```
+
+### Pre-commit Integration
+
+We provide a `.pre-commit-config.yaml` file that automatically runs Ruff, Black, and MyPy before each commit.
+
+**Install and setup pre-commit:**
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+The pre-commit hooks will now run automatically on every commit. You can also run them manually:
+
+```bash
+# Run on all files
+pre-commit run --all-files
+
+# Run on staged files only
+pre-commit run
+```
+
+## Testing
+
+### Running Tests
+
+**Run all tests:**
+```bash
+cd tests
+pytest
+```
+
+**Run with coverage:**
+```bash
+pytest --cov=custom_components.dmx --cov-report=html
+```
+
+**Run with JUnit XML output (for CI):**
+```bash
+pytest --doctest-modules --junitxml=junit/test-results.xml
+```
+
+## Documentation
+
+### Update docs
 
 `pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-awesome-pages-plugin mkdocstrings[python]`
 
@@ -28,16 +136,6 @@ docker build -f Dockerfile -t ha-artnet-led-staging . && docker run -p 0.0.0.0:8
 
 [Open browser](http://localhost:8123/)
 
-## Run tests
-
-```shell
-cd tests
-```
-
-```shell
-pytest
-```
-
 ## Development
 
 ### Magic code
@@ -48,11 +146,13 @@ The mandatory and optional parameters directly match [OpenFixtureLibrary's spec]
 
 ### Entities
 
-There are currently 3 types of entities;
+There are currently 5 types of entities;
 
 * [DmxNumberEntity](custom_components/dmx/entity/number.py): These are created for every entity that has a DMX range.
 * [DmxSelectEntity](custom_components/dmx/entity/select.py): Created for channels that have multiple capabilities.
 * [DmxLightEntity](custom_components/dmx/entity/light/light_entity.py): A light fixture is configured based on the best effort channels it can find.
+* [ArtNetEntity](custom_components/dmx/entity/node.py): Entities created by a discovered Art-Net node.
+* [DmxUniverseSwitch](custom_components/dmx/switch.py): Enables or disables a universe.
 
 ### Design decisions
 

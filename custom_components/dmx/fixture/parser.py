@@ -343,7 +343,7 @@ def __extract_value_type(
 
 def __extract_single_value(value_json: Any, type_annotation: type) -> Any:
     if inspect.isclass(type_annotation) and issubclass(type_annotation, Entity):
-        if isinstance(value_json, (int, float)):
+        if isinstance(value_json, int | float):
             # Check if the constructor accepts a unit parameter
             sig = inspect.signature(type_annotation.__init__)
             params = list(sig.parameters.keys())

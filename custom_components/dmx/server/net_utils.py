@@ -4,7 +4,7 @@ from netifaces import AF_INET, gateways
 
 
 def get_default_gateway() -> str:
-    return gateways()["default"][AF_INET][0]
+    return str(gateways()["default"][AF_INET][0])
 
 
 def get_private_ip() -> str:
