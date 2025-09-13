@@ -15,5 +15,5 @@ repos:
     hooks:
       - id: mypy
         files: ^custom_components/dmx/
-        additional_dependencies: [homeassistant-stubs, types-setuptools]
+        additional_dependencies: [homeassistant-stubs==2025.9.1, types-setuptools]
         args: [--config-file=pyproject.toml]

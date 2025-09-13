@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.13.2"]
 
     steps:
     - uses: actions/checkout@v4
@@ -31,15 +31,7 @@ jobs:
       run: black --check .
 
     - name: Run MyPy (type check)
-      run: |
-        echo "MyPy version:"
-        mypy --version
-        echo "Python version:"
-        python --version
-        echo "Installed packages:"
-        pip list | grep -E "(mypy|homeassistant|types-)"
-        echo "Running MyPy:"
-        mypy --config-file=pyproject.toml --show-error-context --show-column-numbers --pretty custom_components/dmx
+      run: mypy --config-file=pyproject.toml custom_components/dmx
 
     - name: Run tests
       run: |

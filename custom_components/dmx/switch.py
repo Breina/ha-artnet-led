@@ -16,7 +16,9 @@ log = logging.getLogger(__name__)
 class DmxUniverseSwitch(SwitchEntity):
     """Switch entity to control DMX universe output."""
 
-    def __init__(self, universe: DmxUniverse, universe_name: str, hass: HomeAssistant, config_entry: ConfigEntry):
+    def __init__(
+        self, universe: DmxUniverse, universe_name: str, hass: HomeAssistant, config_entry: ConfigEntry[dict[str, Any]]
+    ):
         """Initialize the switch."""
         self._universe = universe
         self._universe_name = universe_name
@@ -84,7 +86,7 @@ class DmxUniverseSwitch(SwitchEntity):
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: ConfigEntry[dict[str, Any]],
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up DMX universe switches."""

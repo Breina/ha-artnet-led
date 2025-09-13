@@ -3,7 +3,7 @@
 {
 	"name": "HA DMX Dev Container",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
+	"image": "mcr.microsoft.com/devcontainers/python:1-3.13.2-bullseye",
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},

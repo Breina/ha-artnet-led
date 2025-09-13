@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 class DynamicNodeHandler:
     """Handler for dynamically discovered ArtNet nodes."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, controller: Any) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry[dict[str, Any]], controller: Any) -> None:
         """Initialize the dynamic node handler."""
         self.hass = hass
         self.entry = entry

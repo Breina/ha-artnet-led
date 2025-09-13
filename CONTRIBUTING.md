@@ -6,7 +6,7 @@ Thank you for your interest in contributing to ha-artnet-led! This document prov
 
 ### Prerequisites
 
-- Python 3.11 or higher
+- Python 3.13.2 or higher
 - Home Assistant development environment
 - Git
 
@@ -18,7 +18,22 @@ git clone https://github.com/your-repo/ha-artnet-led.git
 cd ha-artnet-led
 ```
 
-2. Install development dependencies:
+2. Create and activate a virtual environment:
+```bash
+python -m venv .venv
+```
+
+**Windows:**
+```bash
+.venv\Scripts\activate
+```
+
+**macOS/Linux:**
+```bash
+source .venv/bin/activate
+```
+
+3. Install development dependencies:
 ```bash
 pip install -e .[dev]
 ```
@@ -79,7 +94,8 @@ The pre-commit hooks will now run automatically on every commit. You can also ru
 ```bash
 # Run on all files
 pre-commit run --all-files
-
+```
+```bash
 # Run on staged files only
 pre-commit run
 ```
