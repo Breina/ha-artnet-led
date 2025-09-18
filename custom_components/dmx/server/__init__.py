@@ -99,6 +99,12 @@ class NodeReport(Enum):
 
 
 class StyleCode(Enum):
+    def __new__(cls, value, description):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.description = description
+        return obj
+    
     # @formatter:off
     ST_NODE = (0x00, "A DMX to / from Art-Net device")
     ST_CONTROLLER = (0x01, "A lighting console.")
@@ -279,6 +285,7 @@ class Port:
 
 
 class FailsafeState(Enum):
+    UNKNOWN = -1
     HOLD_LAST_STATE = 0
     ALL_OUTPUTS_0 = 1
     ALL_OUTPUTS_FULL = 2
@@ -882,15 +889,19 @@ class ArtPollReply(ArtBase):
                 port.good_output_a.flags = good_output_a_flags[i]
                 port.sw_in = sw_ins[i]
                 port.sw_out = sw_outs[i]
-                port.good_output_b = good_output_b_flags[i]
+                if i < len(good_output_b_flags):
+                    port.good_output_b = good_output_b_flags[i]
 
-            status3, index = self._pop(packet, index)
-            self.failsafe_state = FailsafeState(status3 >> 6)
-            self.supports_failover = bool(status3 >> 5 & 1)
-            self.__supports_llrp = bool(status3 >> 4 & 1)
-            self.supports_switching_port_direction = bool(status3 >> 3 & 1)
-
-            self.default_resp_uid, index = self._take(packet, 6, index)
+            if index < len(packet):
+                status3, index = self._pop(packet, index)
+                self.failsafe_state = FailsafeState(status3 >> 6)
+                self.supports_failover = bool(status3 >> 5 & 1)
+                self.__supports_llrp = bool(status3 >> 4 & 1)
+                self.supports_switching_port_direction = bool(status3 >> 3 & 1)
+                #trailing data might be optional and packet might end earlier
+            
+            if index + 6 <= len(packet):
+                self.default_resp_uid, index = self._take(packet, 6, index)
 
             index += 15
         except SerializationError as e:
