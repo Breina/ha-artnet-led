@@ -27,6 +27,7 @@ from homeassistant.const import CONF_NAME as CONF_DEVICE_NAME
 from homeassistant.const import CONF_PORT as CONF_NODE_PORT
 from homeassistant.const import CONF_TYPE as CONF_DEVICE_TYPE
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import discovery
 from homeassistant.helpers.entity_registry import async_get
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util.color import color_rgb_to_rgbw
@@ -167,6 +168,7 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
     entity_registry = async_get(hass)
 
     device_list = []
+    button_configs = []
     used_unique_ids = []
     for universe_nr, universe_cfg in config[CONF_NODE_UNIVERSES].items():
         try:
@@ -179,7 +181,7 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
 
         for device in universe_cfg[CONF_DEVICES]:  # type: dict
             device = device.copy()
-            cls = __CLASS_TYPE[device[CONF_DEVICE_TYPE]]
+            device_type = device[CONF_DEVICE_TYPE]
 
             channel = device[CONF_DEVICE_CHANNEL]
             unique_id = f"{DOMAIN}:{host}/{universe_nr}/{channel}"
@@ -187,6 +189,46 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
             name: str = device[CONF_DEVICE_NAME]
             byte_size = CHANNEL_SIZE[device[CONF_CHANNEL_SIZE]][0]
             byte_order = device[CONF_BYTE_ORDER]
+
+            # Handle "trigger" type as a button instead of a light
+            if device_type == "trigger":
+                entity_id = f"button.{name.replace(' ', '_').lower()}"
+                entity = entity_registry.async_get(entity_id)
+                if entity:
+                    log.info(f"Found existing entity for name {entity_id}, using unique id {unique_id}")
+                    if entity.unique_id is not None and entity.unique_id not in used_unique_ids:
+                        unique_id = entity.unique_id
+                used_unique_ids.append(unique_id)
+
+                channel_setup = device.get(CONF_CHANNEL_SETUP) or [255]
+                channel_width = len(channel_setup)
+
+                dmx_channel = universe.add_channel(
+                    start=channel,
+                    width=channel_width,
+                    channel_name=name,
+                    byte_size=byte_size,
+                    byte_order=byte_order,
+                )
+                dmx_channel.output_correction = AVAILABLE_CORRECTIONS.get(
+                    device[CONF_OUTPUT_CORRECTION]
+                )
+
+                button_configs.append({
+                    "name": name,
+                    "unique_id": unique_id,
+                    "channel": dmx_channel,
+                    "channel_setup": channel_setup,
+                    "channel_size": CHANNEL_SIZE[device[CONF_CHANNEL_SIZE]],
+                    "fade_time": device[CONF_DEVICE_TRANSITION],
+                })
+
+                send_partial_universe = universe_cfg[CONF_SEND_PARTIAL_UNIVERSE]
+                if not send_partial_universe:
+                    universe._resize_universe(512)
+                continue
+
+            cls = __CLASS_TYPE[device_type]
 
             entity_id = f"light.{name.replace(' ', '_').lower()}"
 
@@ -224,6 +266,18 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
                 universe._resize_universe(512)
 
     async_add_devices(device_list)
+
+    # Forward fixed type devices to the button platform
+    if button_configs:
+        hass.async_create_task(
+            discovery.async_load_platform(
+                hass,
+                "button",
+                "artnet_led",
+                {"buttons": button_configs},
+                config,
+            )
+        )
 
     return True
 
@@ -461,6 +515,11 @@ class DmxFixed(DmxBaseLight):
     async def restore_state(self, old_state):
         log.debug("Added fixed to hass. Do nothing to restore state. Fixed is constant value")
         await super().async_create_fade()
+
+
+class DmxTrigger:
+    """Marker class for trigger type - actual implementation is in button.py"""
+    CONF_TYPE = "trigger"
 
 
 class DmxBinary(DmxBaseLight):
@@ -1021,7 +1080,7 @@ class DmxXY(DmxBaseLight):
 # conf
 # ------------------------------------------------------------------------------
 
-__CLASS_LIST = [DmxDimmer, DmxRGB, DmxWhite, DmxRGBW, DmxRGBWW, DmxBinary, DmxFixed, DmxXY]
+__CLASS_LIST = [DmxDimmer, DmxRGB, DmxWhite, DmxRGBW, DmxRGBWW, DmxBinary, DmxFixed, DmxTrigger, DmxXY]
 __CLASS_TYPE = {k.CONF_TYPE: k for k in __CLASS_LIST}
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
