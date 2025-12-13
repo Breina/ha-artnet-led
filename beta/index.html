@@ -15,8 +15,11 @@
         <link rel="next" href="../transitions/">
       
       
+        
+      
+      
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
     
     
       
@@ -24,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -52,7 +55,6 @@
     
       
 
-    
     
     
   </head>
@@ -223,9 +225,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Overview
+  
+
     
   </span>
+  
   
 
       </a>
@@ -245,9 +252,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Configuration
+  
+
     
   </span>
+  
   
 
       </a>
@@ -267,9 +279,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     External Art-Net controller
+  
+
     
   </span>
+  
   
 
       </a>
@@ -289,9 +306,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     External sACN controller
+  
+
     
   </span>
+  
   
 
       </a>
@@ -311,9 +333,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Art-Net vs sACN
+  
+
     
   </span>
+  
   
 
       </a>
@@ -342,9 +369,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Beta information
+  
+
     
   </span>
+  
   
 
           <span class="md-nav__icon md-icon"></span>
@@ -355,9 +387,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Beta information
+  
+
     
   </span>
+  
   
 
       </a>
@@ -380,7 +417,9 @@
         <li class="md-nav__item">
   <a href="#how-to-use-it" class="md-nav__link">
     <span class="md-ellipsis">
-      How to use it?
+      
+        How to use it?
+      
     </span>
   </a>
   
@@ -389,7 +428,9 @@
         <li class="md-nav__item">
   <a href="#whats-in-the-box" class="md-nav__link">
     <span class="md-ellipsis">
-      What's in the box?
+      
+        What's in the box?
+      
     </span>
   </a>
   
@@ -398,7 +439,9 @@
         <li class="md-nav__item">
   <a href="#whats-excluded" class="md-nav__link">
     <span class="md-ellipsis">
-      What's excluded?
+      
+        What's excluded?
+      
     </span>
   </a>
   
@@ -407,7 +450,9 @@
         <li class="md-nav__item">
   <a href="#where-to-report-feedback" class="md-nav__link">
     <span class="md-ellipsis">
-      Where to report feedback?
+      
+        Where to report feedback?
+      
     </span>
   </a>
   
@@ -416,7 +461,9 @@
         <li class="md-nav__item">
   <a href="#legal" class="md-nav__link">
     <span class="md-ellipsis">
-      Legal
+      
+        Legal
+      
     </span>
   </a>
   
@@ -442,9 +489,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Transitions
+  
+
     
   </span>
+  
   
 
       </a>
@@ -464,9 +516,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Migration
+  
+
     
   </span>
+  
   
 
       </a>
@@ -503,7 +560,9 @@
         <li class="md-nav__item">
   <a href="#how-to-use-it" class="md-nav__link">
     <span class="md-ellipsis">
-      How to use it?
+      
+        How to use it?
+      
     </span>
   </a>
   
@@ -512,7 +571,9 @@
         <li class="md-nav__item">
   <a href="#whats-in-the-box" class="md-nav__link">
     <span class="md-ellipsis">
-      What's in the box?
+      
+        What's in the box?
+      
     </span>
   </a>
   
@@ -521,7 +582,9 @@
         <li class="md-nav__item">
   <a href="#whats-excluded" class="md-nav__link">
     <span class="md-ellipsis">
-      What's excluded?
+      
+        What's excluded?
+      
     </span>
   </a>
   
@@ -530,7 +593,9 @@
         <li class="md-nav__item">
   <a href="#where-to-report-feedback" class="md-nav__link">
     <span class="md-ellipsis">
-      Where to report feedback?
+      
+        Where to report feedback?
+      
     </span>
   </a>
   
@@ -539,7 +604,9 @@
         <li class="md-nav__item">
   <a href="#legal" class="md-nav__link">
     <span class="md-ellipsis">
-      Legal
+      
+        Legal
+      
     </span>
   </a>
   
@@ -555,6 +622,7 @@
           
           
             <div class="md-content" data-md-component="content">
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -574,7 +642,8 @@ This means we now support moving heads, strobes, and much more. Since this stand
 <li>Rate limiting when sending DMX data from an external controller to HomeAssistant</li>
 <li>Discovered Art-Net nodes will create new entities</li>
 <li>Art-Net triggers will invoke HomeAssistant events</li>
-<li>sACN has multicast support</li>
+<li>sACN has multicast support meaning it will work automatically without needing to define an IP</li>
+<li>Transitions going through L*U*V* color space</li>
 </ul>
 <h2 id="whats-excluded">What's excluded?<a class="headerlink" href="#whats-excluded" title="Permanent link">&para;</a></h2>
 <ul>
@@ -634,10 +703,11 @@ This guarantees that this any derivatives of this work will always remain open s
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
     
   </body>

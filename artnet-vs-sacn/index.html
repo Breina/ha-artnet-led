@@ -8,10 +8,10 @@
 <link href="../sacn-communication/" rel="prev"/>
 <link href="../beta/" rel="next"/>
 <link href="../assets/images/favicon.png" rel="icon"/>
-<meta content="mkdocs-1.6.1, mkdocs-material-9.6.14" name="generator"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.7.0" name="generator"/>
 <title>Art-Net vs sACN - Art-Net &amp; sACN LED Lighting for DMX</title>
-<link href="../assets/stylesheets/main.342714a4.min.css" rel="stylesheet"/>
-<link href="../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link href="../assets/stylesheets/main.618322db.min.css" rel="stylesheet"/>
+<link href="../assets/stylesheets/palette.ab4e12ef.min.css" rel="stylesheet"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
 <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
@@ -106,7 +106,11 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="..">
 <span class="md-ellipsis">
+    
+  
     Overview
+  
+
     
   </span>
 </a>
@@ -114,7 +118,11 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="../config/">
 <span class="md-ellipsis">
+    
+  
     Configuration
+  
+
     
   </span>
 </a>
@@ -122,7 +130,11 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="../artnet-controller-communication/">
 <span class="md-ellipsis">
+    
+  
     External Art-Net controller
+  
+
     
   </span>
 </a>
@@ -130,7 +142,11 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="../sacn-communication/">
 <span class="md-ellipsis">
+    
+  
     External sACN controller
+  
+
     
   </span>
 </a>
@@ -139,14 +155,22 @@
 <input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
 <label class="md-nav__link md-nav__link--active" for="__toc">
 <span class="md-ellipsis">
+    
+  
     Art-Net vs sACN
+  
+
     
   </span>
 <span class="md-nav__icon md-icon"></span>
 </label>
 <a class="md-nav__link md-nav__link--active" href="./">
 <span class="md-ellipsis">
+    
+  
     Art-Net vs sACN
+  
+
     
   </span>
 </a>
@@ -159,14 +183,18 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#quick-decision-matrix">
 <span class="md-ellipsis">
-      Quick Decision Matrix
+      
+        Quick Decision Matrix
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#protocol-comparison">
 <span class="md-ellipsis">
-      Protocol Comparison
+      
+        Protocol Comparison
+      
     </span>
 </a>
 <nav aria-label="Protocol Comparison" class="md-nav">
@@ -174,7 +202,9 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#network-transport">
 <span class="md-ellipsis">
-      Network Transport
+      
+        Network Transport
+      
     </span>
 </a>
 <nav aria-label="Network Transport" class="md-nav">
@@ -182,14 +212,18 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#art-net-broadcast-network">
 <span class="md-ellipsis">
-      Art-Net Broadcast Network
+      
+        Art-Net Broadcast Network
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#sacn-multicast-network">
 <span class="md-ellipsis">
-      sACN Multicast Network
+      
+        sACN Multicast Network
+      
     </span>
 </a>
 </li>
@@ -199,21 +233,27 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#universe-addressing">
 <span class="md-ellipsis">
-      Universe Addressing
+      
+        Universe Addressing
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#multi-controller-support">
 <span class="md-ellipsis">
-      Multi-Controller Support
+      
+        Multi-Controller Support
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#synchronization">
 <span class="md-ellipsis">
-      Synchronization
+      
+        Synchronization
+      
     </span>
 </a>
 </li>
@@ -223,7 +263,9 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#network-requirements-comparison">
 <span class="md-ellipsis">
-      Network Requirements Comparison
+      
+        Network Requirements Comparison
+      
     </span>
 </a>
 <nav aria-label="Network Requirements Comparison" class="md-nav">
@@ -231,14 +273,18 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#art-net-network-needs">
 <span class="md-ellipsis">
-      Art-Net Network Needs
+      
+        Art-Net Network Needs
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#sacn-network-needs">
 <span class="md-ellipsis">
-      sACN Network Needs
+      
+        sACN Network Needs
+      
     </span>
 </a>
 </li>
@@ -248,7 +294,9 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#installation-scenarios">
 <span class="md-ellipsis">
-      Installation Scenarios
+      
+        Installation Scenarios
+      
     </span>
 </a>
 <nav aria-label="Installation Scenarios" class="md-nav">
@@ -256,21 +304,27 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#scenario-1-home-theater-setup">
 <span class="md-ellipsis">
-      Scenario 1: Home Theater Setup
+      
+        Scenario 1: Home Theater Setup
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#scenario-2-nightclub-installation">
 <span class="md-ellipsis">
-      Scenario 2: Nightclub Installation
+      
+        Scenario 2: Nightclub Installation
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#scenario-3-mixed-professional-environment">
 <span class="md-ellipsis">
-      Scenario 3: Mixed Professional Environment
+      
+        Scenario 3: Mixed Professional Environment
+      
     </span>
 </a>
 </li>
@@ -280,7 +334,9 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#future-considerations">
 <span class="md-ellipsis">
-      Future Considerations
+      
+        Future Considerations
+      
     </span>
 </a>
 </li>
@@ -290,7 +346,11 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="../beta/">
 <span class="md-ellipsis">
+    
+  
     Beta information
+  
+
     
   </span>
 </a>
@@ -298,7 +358,11 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="../transitions/">
 <span class="md-ellipsis">
+    
+  
     Transitions
+  
+
     
   </span>
 </a>
@@ -306,7 +370,11 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="../migration/">
 <span class="md-ellipsis">
+    
+  
     Migration
+  
+
     
   </span>
 </a>
@@ -328,14 +396,18 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#quick-decision-matrix">
 <span class="md-ellipsis">
-      Quick Decision Matrix
+      
+        Quick Decision Matrix
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#protocol-comparison">
 <span class="md-ellipsis">
-      Protocol Comparison
+      
+        Protocol Comparison
+      
     </span>
 </a>
 <nav aria-label="Protocol Comparison" class="md-nav">
@@ -343,7 +415,9 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#network-transport">
 <span class="md-ellipsis">
-      Network Transport
+      
+        Network Transport
+      
     </span>
 </a>
 <nav aria-label="Network Transport" class="md-nav">
@@ -351,14 +425,18 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#art-net-broadcast-network">
 <span class="md-ellipsis">
-      Art-Net Broadcast Network
+      
+        Art-Net Broadcast Network
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#sacn-multicast-network">
 <span class="md-ellipsis">
-      sACN Multicast Network
+      
+        sACN Multicast Network
+      
     </span>
 </a>
 </li>
@@ -368,21 +446,27 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#universe-addressing">
 <span class="md-ellipsis">
-      Universe Addressing
+      
+        Universe Addressing
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#multi-controller-support">
 <span class="md-ellipsis">
-      Multi-Controller Support
+      
+        Multi-Controller Support
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#synchronization">
 <span class="md-ellipsis">
-      Synchronization
+      
+        Synchronization
+      
     </span>
 </a>
 </li>
@@ -392,7 +476,9 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#network-requirements-comparison">
 <span class="md-ellipsis">
-      Network Requirements Comparison
+      
+        Network Requirements Comparison
+      
     </span>
 </a>
 <nav aria-label="Network Requirements Comparison" class="md-nav">
@@ -400,14 +486,18 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#art-net-network-needs">
 <span class="md-ellipsis">
-      Art-Net Network Needs
+      
+        Art-Net Network Needs
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#sacn-network-needs">
 <span class="md-ellipsis">
-      sACN Network Needs
+      
+        sACN Network Needs
+      
     </span>
 </a>
 </li>
@@ -417,7 +507,9 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#installation-scenarios">
 <span class="md-ellipsis">
-      Installation Scenarios
+      
+        Installation Scenarios
+      
     </span>
 </a>
 <nav aria-label="Installation Scenarios" class="md-nav">
@@ -425,21 +517,27 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#scenario-1-home-theater-setup">
 <span class="md-ellipsis">
-      Scenario 1: Home Theater Setup
+      
+        Scenario 1: Home Theater Setup
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#scenario-2-nightclub-installation">
 <span class="md-ellipsis">
-      Scenario 2: Nightclub Installation
+      
+        Scenario 2: Nightclub Installation
+      
     </span>
 </a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#scenario-3-mixed-professional-environment">
 <span class="md-ellipsis">
-      Scenario 3: Mixed Professional Environment
+      
+        Scenario 3: Mixed Professional Environment
+      
     </span>
 </a>
 </li>
@@ -449,7 +547,9 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="#future-considerations">
 <span class="md-ellipsis">
-      Future Considerations
+      
+        Future Considerations
+      
     </span>
 </a>
 </li>
@@ -719,7 +819,7 @@
 <div class="md-dialog" data-md-component="dialog">
 <div class="md-dialog__inner md-typeset"></div>
 </div>
-<script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
-<script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+<script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+<script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
 </body>
 </html>
