@@ -4,7 +4,7 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 
@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 class SacnProtocol(ProtocolServer):
     """sACN (E1.31) protocol server implementation."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry[dict[str, Any]]):
+    def __init__(self, hass: HomeAssistant, entry: config_entries.ConfigEntry[dict[str, Any]]):
         super().__init__(hass, entry)
         self.sacn_server: SacnServer | None = None
         self.sacn_receiver: SacnReceiver | None = None

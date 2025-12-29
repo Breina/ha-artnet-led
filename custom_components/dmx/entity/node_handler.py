@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 class DynamicNodeHandler:
     """Handler for dynamically discovered ArtNet nodes."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry[dict[str, Any]], controller: Any) -> None:
+    def __init__(self, hass: HomeAssistant, entry: config_entries.ConfigEntry[dict[str, Any]], controller: Any) -> None:
         """Initialize the dynamic node handler."""
         self.hass = hass
         self.entry = entry

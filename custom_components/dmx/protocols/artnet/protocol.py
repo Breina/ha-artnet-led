@@ -4,7 +4,7 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 
@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 class ArtNetProtocol(ProtocolServer):
     """Art-Net protocol server implementation."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry[dict[str, Any]]):
+    def __init__(self, hass: HomeAssistant, entry: config_entries.ConfigEntry[dict[str, Any]]):
         super().__init__(hass, entry)
         self.controller: ArtNetServer | None = None
         self._rate_limit = CONF_RATE_LIMIT_DEFAULT

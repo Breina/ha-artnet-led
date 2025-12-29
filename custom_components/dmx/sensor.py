@@ -1,8 +1,8 @@
 import logging
 from typing import Any
 
+from homeassistant import config_entries
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry[dict[str, Any]],
+    config_entry: config_entries.ConfigEntry[dict[str, Any]],
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     entities = [

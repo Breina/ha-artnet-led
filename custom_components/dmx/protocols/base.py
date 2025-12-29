@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 
 from custom_components.dmx.io.dmx_io import DmxUniverse
@@ -14,7 +14,7 @@ from custom_components.dmx.server import PortAddress
 class ProtocolServer(ABC):
     """Abstract base class for DMX protocol servers."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry[dict[str, Any]]):
+    def __init__(self, hass: HomeAssistant, entry: config_entries.ConfigEntry[dict[str, Any]]):
         self.hass = hass
         self.entry = entry
         self.universes: dict[PortAddress, DmxUniverse] = {}

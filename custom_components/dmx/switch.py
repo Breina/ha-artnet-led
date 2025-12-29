@@ -1,8 +1,8 @@
 import logging
 from typing import Any
 
+from homeassistant import config_entries
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -17,7 +17,11 @@ class DmxUniverseSwitch(SwitchEntity):
     """Switch entity to control DMX universe output."""
 
     def __init__(
-        self, universe: DmxUniverse, universe_name: str, hass: HomeAssistant, config_entry: ConfigEntry[dict[str, Any]]
+        self,
+        universe: DmxUniverse,
+        universe_name: str,
+        hass: HomeAssistant,
+        config_entry: config_entries.ConfigEntry[dict[str, Any]],
     ):
         """Initialize the switch."""
         self._universe = universe
@@ -86,7 +90,7 @@ class DmxUniverseSwitch(SwitchEntity):
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry[dict[str, Any]],
+    config_entry: config_entries.ConfigEntry[dict[str, Any]],
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up DMX universe switches."""

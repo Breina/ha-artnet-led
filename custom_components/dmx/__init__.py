@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
+from homeassistant import config_entries
 from homeassistant.components.light import ATTR_TRANSITION
-from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry, ConfigFlowContext
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import IntegrationError
@@ -63,7 +63,7 @@ async def reload_configuration_yaml(event: dict[str, Any], hass: HomeAssistant) 
     await hass.services.async_call("homeassistant", "check_config", {})
 
 
-async def async_update_options(hass: HomeAssistant, config_entry: ConfigEntry[dict[str, Any]]) -> None:
+async def async_update_options(hass: HomeAssistant, config_entry: config_entries.ConfigEntry[dict[str, Any]]) -> None:
     """Update options."""
     await hass.config_entries.async_reload(config_entry.entry_id)
 
@@ -74,12 +74,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     if DOMAIN not in config:
         return True
 
-    discovery_flow.async_create_flow(hass, DOMAIN, context=ConfigFlowContext(source=SOURCE_IMPORT), data=config)
+    discovery_flow.async_create_flow(hass, DOMAIN, context={"source": config_entries.SOURCE_IMPORT}, data=config)
 
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry[dict[str, Any]]) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: config_entries.ConfigEntry[dict[str, Any]]) -> bool:
     """Set up the component."""
 
     hass.data.setdefault(DOMAIN, {})

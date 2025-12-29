@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 
 from custom_components.dmx.io.dmx_io import DmxUniverse
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 class ServerManager:
     """Manages protocol servers using the abstraction layer."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry[dict[str, Any]]):
+    def __init__(self, hass: HomeAssistant, entry: config_entries.ConfigEntry[dict[str, Any]]):
         self.hass = hass
         self.entry = entry
         self.protocol_servers: dict[str, ProtocolServer] = {}

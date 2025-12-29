@@ -99,12 +99,6 @@ class NodeReport(Enum):
 
 
 class StyleCode(Enum):
-    def __new__(cls, value, description):
-        obj = object.__new__(cls)
-        obj._value_ = value
-        obj.description = description
-        return obj
-    
     # @formatter:off
     ST_NODE = (0x00, "A DMX to / from Art-Net device")
     ST_CONTROLLER = (0x01, "A lighting console.")
@@ -114,6 +108,13 @@ class StyleCode(Enum):
     ST_CONFIG = (0x05, "A configuration or diagnostic tool.")
     ST_VISUAL = (0x06, "A visualiser.")
     # @formatter:on
+
+    @classmethod
+    def from_code(cls, code: int) -> "StyleCode":
+        for member in cls:
+            if member.value[0] == code:
+                return member
+        raise ValueError(f"{code} is not a valid StyleCode")
 
 
 @dataclass(order=True)
@@ -620,8 +621,11 @@ class ArtPoll(ArtBase):
 
             self.__diag_priority = DiagnosticsPriority(packet[index])
             index += 1
-            self.__target_port_top.port_address, index = self._consume_int_msb(packet, index)
-            self.__target_port_bottom.port_address, index = self._consume_int_msb(packet, index)
+
+            if self.__enable_targeted_mode:
+                self.__target_port_top.port_address, index = self._consume_int_msb(packet, index)
+                self.__target_port_bottom.port_address, index = self._consume_int_msb(packet, index)
+
         except SerializationError as e:
             log.exception(e)
 
@@ -864,7 +868,7 @@ class ArtPollReply(ArtBase):
             index += 3
 
             style_code, index = self._pop(packet, index)
-            self.style = StyleCode(style_code)
+            self.style = StyleCode.from_code(style_code)
 
             self.mac_address, index = self._take(packet, 6, index)
             self.bind_ip, index = self._take(packet, 4, index)
@@ -898,8 +902,8 @@ class ArtPollReply(ArtBase):
                 self.supports_failover = bool(status3 >> 5 & 1)
                 self.__supports_llrp = bool(status3 >> 4 & 1)
                 self.supports_switching_port_direction = bool(status3 >> 3 & 1)
-                #trailing data might be optional and packet might end earlier
-            
+                # trailing data might be optional and packet might end earlier
+
             if index + 6 <= len(packet):
                 self.default_resp_uid, index = self._take(packet, 6, index)
 
