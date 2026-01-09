@@ -15,6 +15,7 @@ from custom_components.dmx.server.sacn_server import SacnReceiver, SacnServer, S
 from custom_components.dmx.setup.config_processor import (
     CONF_ANIMATION,
     CONF_ENABLE_PREVIEW_DATA,
+    CONF_INTERFACE_IP,
     CONF_MAX_FPS,
     CONF_MAX_FPS_DEFAULT,
     CONF_MULTICAST_TTL,
@@ -56,6 +57,7 @@ class SacnProtocol(ProtocolServer):
             source_name=config.get(CONF_SOURCE_NAME, CONF_SOURCE_NAME_DEFAULT),
             priority=config.get(CONF_PRIORITY, CONF_PRIORITY_DEFAULT),
             sync_address=config.get(CONF_SYNC_ADDRESS, 0),
+            interface_ip=config.get(CONF_INTERFACE_IP),
             multicast_ttl=config.get(CONF_MULTICAST_TTL, CONF_MULTICAST_TTL_DEFAULT),
             enable_preview_data=config.get(CONF_ENABLE_PREVIEW_DATA, False),
         )
@@ -67,7 +69,9 @@ class SacnProtocol(ProtocolServer):
         self.sacn_server.start_server()
 
         callback_fn = self.create_state_callback(self._rate_limit)
-        self.sacn_receiver = await create_sacn_receiver(self.hass, callback_fn, self._config.source_name)
+        self.sacn_receiver = await create_sacn_receiver(
+            self.hass, callback_fn, self._config.source_name, self._config.interface_ip
+        )
 
         # Process universes
         for universe_dict in config[CONF_UNIVERSES]:

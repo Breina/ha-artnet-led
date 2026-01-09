@@ -82,6 +82,16 @@ show multicast route 239.255.0.1
 
 If multicast fails, configure **unicast addresses** for direct communication.
 
+### Special Considerations
+
+If you have two or more Network Interfaces attached to your Home Assistant interface, you will want to specify the specific network that Ha-ArtNet-LED will bind to. Otherwise, Ha-ArtNet-LED will bind to the primary interface as chosen by Home Assistant.
+
+```yaml
+dmx:
+  sacn:
+    interface_ip: "10.101.97.101"
+```
+
 ### Unicast Reception
 
 For networks that don't support multicast, configure external controllers to send unicast directly to Home Assistant:
@@ -191,7 +201,8 @@ dmx:
   sacn:
     source_name: "HA Backup Controller"
     priority: 85                     # Lower than main console (100)
-    sync_address: 7000              # Receive universe sync from external controllers
+    sync_address: 7000               # Receive universe sync from external controllers
+    interface_ip: "10.101.97.101"    # Listen on a specified interface
     
     universes:
       - 1:  # Receives from external lighting console
@@ -248,6 +259,10 @@ dmx:
 - Review priority hierarchy in all controllers
 - Use unique source names for identification
 - Monitor equipment displays for active source indication
+
+**Tbe sACN data is being broadcast on the wrong IP**
+
+- Configure the ``interface_ip` setting. Ha-Artnet-Led defaults to the primary interface as provided by Home Assistant, due to the potentials of a broadcast storm of providing sACN data to unexpected networks.
 
 ### Debug Logging
 

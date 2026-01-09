@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant
 
 from custom_components.dmx.io.dmx_io import DmxUniverse
 from custom_components.dmx.server import PortAddress
+from custom_components.dmx.setup.config_processor import CONF_COMPATIBILITY, CONF_DEVICES
 
 
 class ProtocolServer(ABC):
@@ -55,5 +56,5 @@ class UniverseConfig:
     def __init__(self, universe_id: int, config: dict[str, Any]):
         self.universe_id = universe_id
         self.config = config
-        self.devices = config.get("devices", [])
-        self.compatibility = config.get("compatibility", {})
+        self.devices = config.get(CONF_DEVICES, [])
+        self.compatibility = config.get(CONF_COMPATIBILITY, {})
