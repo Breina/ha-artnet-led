@@ -15,6 +15,7 @@ class TestSacnServerConfig:
         assert config.source_name == "HA sACN Controller"
         assert config.priority == 100
         assert config.sync_address == 0
+        assert config.interface_ip is None
         assert not config.enable_per_universe_sync
         assert config.multicast_ttl == 64
         assert not config.enable_preview_data
@@ -27,6 +28,7 @@ class TestSacnServerConfig:
             priority=150,
             cid=cid,
             sync_address=100,
+            interface_ip="192.168.1.100",
             enable_per_universe_sync=True,
             multicast_ttl=32,
             enable_preview_data=True,
@@ -36,6 +38,7 @@ class TestSacnServerConfig:
         assert config.priority == 150
         assert config.cid == cid
         assert config.sync_address == 100
+        assert config.interface_ip == "192.168.1.100"
         assert config.enable_per_universe_sync
         assert config.multicast_ttl == 32
         assert config.enable_preview_data

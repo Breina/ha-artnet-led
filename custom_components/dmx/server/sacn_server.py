@@ -21,6 +21,8 @@ class SacnServerConfig:
     priority: int = 100
     cid: bytes | None = None
     sync_address: int = 0
+    interface_ip: str | None = None  # defaults to None, which means the *default* interface
+    """Which interface (by IP) the sACN server should bind to for sending and receiving data."""
     enable_per_universe_sync: bool = False
     multicast_ttl: int = 64
     enable_preview_data: bool = False
@@ -82,10 +84,16 @@ class SacnServer:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, self.config.multicast_ttl)
-            self.socket.bind(("", 0))
+            self.socket.bind((self.config.interface_ip or "", 0))
 
-            self.running = True
-            log.info(f"sACN server started on port {SACN_PORT}")
+            if self.config.interface_ip:
+                packed_interface = socket.inet_aton(self.config.interface_ip)
+                self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, packed_interface)
+                self.running = True
+                log.info(f"sACN server started on {self.config.interface_ip}:{SACN_PORT}")
+            else:
+                self.running = True
+                log.info(f"sACN server started on {SACN_PORT}")
 
         except Exception as e:
             log.error(f"Failed to start sACN server: {e}")
@@ -294,12 +302,14 @@ class SacnReceiver(asyncio.DatagramProtocol):
         hass: HomeAssistant,
         data_callback: Callable[[PortAddress, bytearray, str], None] | None = None,
         own_source_name: str | None = None,
+        interface_ip: str | None = None,
     ) -> None:
         self.hass = hass
         self.data_callback = data_callback
         self.transport: asyncio.DatagramTransport | None = None
         self.subscribed_universes: set[int] = set()
         self.own_source_name = own_source_name
+        self.interface_ip = interface_ip
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         self.transport = transport  # type: ignore[assignment]
@@ -341,7 +351,7 @@ class SacnReceiver(asyncio.DatagramProtocol):
                 )
 
         except Exception as e:
-            log.warning(f"Error processing sACN packet from {addr[0]}:{addr[1]} " f"({len(data)} bytes): {e}")
+            log.warning(f"Error processing sACN packet from {addr[0]}:{addr[1]} ({len(data)} bytes): {e}")
             log.debug(f"Raw packet data: {data[:50].hex()}{'...' if len(data) > 50 else ''}")
 
     def subscribe_universe(self, universe_id: int) -> None:
@@ -369,12 +379,15 @@ class SacnReceiver(asyncio.DatagramProtocol):
         """Join or leave multicast group for a universe"""
         try:
             multicast_addr = f"239.255.{universe_id >> 8}.{universe_id & 0xFF}"
-            mreq = struct.pack("4sl", socket.inet_aton(multicast_addr), socket.INADDR_ANY)
 
             sock = self.transport.get_extra_info("socket") if self.transport else None
             if sock:
                 operation = socket.IP_ADD_MEMBERSHIP if join else socket.IP_DROP_MEMBERSHIP
                 action = "Joined" if join else "Left"
+                if self.interface_ip:
+                    mreq = struct.pack("4s4s", socket.inet_aton(multicast_addr), socket.inet_aton(self.interface_ip))
+                else:
+                    mreq = struct.pack("4sl", socket.inet_aton(multicast_addr), socket.INADDR_ANY)
                 sock.setsockopt(socket.IPPROTO_IP, operation, mreq)
                 log.debug(f"{action} multicast group {multicast_addr} for universe {universe_id}")
             else:
@@ -397,13 +410,15 @@ async def create_sacn_receiver(
     hass: HomeAssistant,
     data_callback: Callable[[PortAddress, bytearray, str], None] | None = None,
     own_source_name: str | None = None,
+    interface_ip: str | None = None,
 ) -> SacnReceiver:
-    receiver = SacnReceiver(hass, data_callback, own_source_name)
+    receiver = SacnReceiver(hass, data_callback, own_source_name, interface_ip)
 
     loop = hass.loop
     try:
         transport, _ = await loop.create_datagram_endpoint(
-            lambda: receiver, local_addr=("0.0.0.0", SACN_PORT)  # noqa: S104
+            lambda: receiver,
+            local_addr=("0.0.0.0", SACN_PORT),  # noqa: S104
         )
 
         # Set socket options for multicast reception

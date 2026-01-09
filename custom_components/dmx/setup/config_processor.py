@@ -37,6 +37,7 @@ CONF_COMPATIBILITY = "compatibility"
 CONF_SEND_PARTIAL_UNIVERSE = "send_partial_universe"
 CONF_MANUAL_NODES = "manual_nodes"
 CONF_DEVICES = "devices"
+CONF_INTERFACE_IP = "interface_ip"
 CONF_NODE_TYPE = "node_type"
 CONF_NODE_MAX_FPS = "max_fps"
 CONF_NODE_REFRESH = "refresh_every"
@@ -193,6 +194,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Optional(CONF_PRIORITY, default=CONF_PRIORITY_DEFAULT): vol.All(
                     vol.Coerce(int), vol.Range(min=0, max=200)
                 ),
+                vol.Optional(CONF_INTERFACE_IP): cv.string,
                 vol.Optional(CONF_SYNC_ADDRESS, default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=63999)),
                 vol.Optional(CONF_MULTICAST_TTL, default=CONF_MULTICAST_TTL_DEFAULT): vol.All(
                     vol.Coerce(int), vol.Range(min=1, max=255)
