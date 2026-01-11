@@ -262,7 +262,7 @@ dmx:
 
 **The sACN data is being broadcast on the wrong IP**
 
-- Configure the ``interface_ip` setting. Ha-Artnet-Led defaults to the primary interface as provided by Home Assistant, due to the potentials of a broadcast storm of providing sACN data to unexpected networks.
+- Configure the `interface_ip` setting. Ha-Artnet-Led defaults to the primary interface as provided by Home Assistant, due to the potentials of a broadcast storm of providing sACN data to unexpected networks.
 
 ### Debug Logging
 
