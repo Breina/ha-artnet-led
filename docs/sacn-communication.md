@@ -84,7 +84,7 @@ If multicast fails, configure **unicast addresses** for direct communication.
 
 ### Special Considerations
 
-If you have two or more Network Interfaces attached to your Home Assistant interface, you will want to specify the specific network that Ha-ArtNet-LED will bind to. Otherwise, Ha-ArtNet-LED will bind to the primary interface as chosen by Home Assistant.
+If you have two or more Network Interfaces attached to your Home Assistant host, you will want to specify the specific network that the integration will bind to. Otherwise, the sACN universe to the primary interface as chosen by the operating system.
 
 ```yaml
 dmx:
@@ -262,7 +262,7 @@ dmx:
 
 **The sACN data is being broadcast on the wrong IP**
 
-- Configure the `interface_ip` setting. Ha-Artnet-Led defaults to the primary interface as provided by Home Assistant, due to the potentials of a broadcast storm of providing sACN data to unexpected networks.
+- Configure the `interface_ip` setting. This defaults to the primary interface as provided by the operating system, due to the potentials of a broadcast storm of providing sACN data to unexpected networks.
 
 ### Debug Logging
 
