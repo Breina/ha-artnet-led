@@ -71,9 +71,11 @@ class SacnPacket:
 
     def serialize(self) -> bytes:
         # Calculate lengths
-        dmp_layer_length = 11 + len(self.dmx_data)  # DMP header (11) + property values
+        dmp_layer_length = 10 + len(
+            self.dmx_data
+        )  # DMP header (10) + property values (dmx_data contains the 0x00 byte)
         framing_layer_length = 77 + dmp_layer_length  # Framing header (77) + DMP layer
-        root_layer_length = 38 + framing_layer_length  # Root header (38) + Framing layer
+        root_layer_length = 22 + framing_layer_length  # Root header (22) + Framing layer
 
         packet = bytearray()
 
