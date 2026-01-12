@@ -89,11 +89,11 @@ class SacnServer:
             if self.config.interface_ip:
                 packed_interface = socket.inet_aton(self.config.interface_ip)
                 self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, packed_interface)
-                self.running = True
                 log.info(f"sACN server started on {self.config.interface_ip}:{SACN_PORT}")
             else:
-                self.running = True
                 log.info(f"sACN server started on {SACN_PORT}")
+
+            self.running = True
 
         except Exception as e:
             log.error(f"Failed to start sACN server: {e}")
