@@ -6,7 +6,7 @@ All your current fixtures are now still supported! Here's the process to get you
 
 Our integration name changed from `artnet_led` to `dmx`. HACS doesn't allow this, so we are unable to upgrade this in-place. Therefore a manual release is needed for the beta.
 
-Under [the release](https://github.com/Breina/ha-artnet-led/releases/tag/v1.0.0-BETA.5) download the [source code](https://github.com/Breina/ha-artnet-led/archive/refs/tags/v1.0.0-BETA.5.zip).
+Under [the release](https://github.com/Breina/ha-artnet-led/releases/tag/v1.0.0-BETA.6) download the [source code](https://github.com/Breina/ha-artnet-led/archive/refs/tags/v1.0.0-BETA.6.zip).
 
 In this ZIP, navigate to `custom_components/dmx` and copy this `dmx` folder into your Home Assistant's `custom_components` folder. 
 

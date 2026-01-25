@@ -622,7 +622,7 @@ class ArtPoll(ArtBase):
             self.__diag_priority = DiagnosticsPriority(packet[index])
             index += 1
 
-            if self.__enable_targeted_mode:
+            if self.__enable_targeted_mode and index < len(packet):
                 self.__target_port_top.port_address, index = self._consume_int_msb(packet, index)
                 self.__target_port_bottom.port_address, index = self._consume_int_msb(packet, index)
 
