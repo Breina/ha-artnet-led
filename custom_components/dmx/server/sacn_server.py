@@ -2,6 +2,7 @@ import asyncio
 import logging
 import socket
 import struct
+import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -26,6 +27,8 @@ class SacnServerConfig:
     enable_per_universe_sync: bool = False
     multicast_ttl: int = 64
     enable_preview_data: bool = False
+    retransmit_interval: float = 0.8
+    """Interval in seconds to retransmit last frame when no new data arrives."""
 
     def __post_init__(self) -> None:
         if self.cid is None:
@@ -36,9 +39,12 @@ class SacnServerConfig:
 class UniverseState:
     sequence_number: int = 0
     last_data: bytearray | None = None
-    send_task: asyncio.Task[None] | None = None
+    stream_task: asyncio.Task[None] | None = None
     termination_sent: bool = False
     unicast_addresses: list[dict[str, Any]] = field(default_factory=list)
+    pending_data: bytearray | None = None
+    last_update_time: float = field(default_factory=lambda: 0.0)
+    last_send_time: float = field(default_factory=lambda: 0.0)
 
     def increment_sequence(self) -> None:
         self.sequence_number = (self.sequence_number + 1) % 256
@@ -53,6 +59,7 @@ class SacnServer:
     - Universe synchronization
     - Configurable priorities and options
     - Integration with existing DMX universe system
+    - Continuous streaming at sACN standard frame rate (44 fps)
     """
 
     def __init__(self, hass: HomeAssistant, config: SacnServerConfig | None = None) -> None:
@@ -165,14 +172,71 @@ class SacnServer:
 
         universe_state = self.universes[universe_id]
 
-        if universe_state.send_task and not universe_state.send_task.done():
-            universe_state.send_task.cancel()
+        universe_state.pending_data = dmx_data.copy()
+        universe_state.last_update_time = time.time()
+        log.debug(f"Universe {universe_id}: received new DMX data")
 
-        universe_state.send_task = self.hass.async_create_task(self._send_universe_data(universe_id, dmx_data))
+        # Start streaming task if not already running
+        if universe_state.stream_task is None or universe_state.stream_task.done():
+            log.debug(f"Universe {universe_id}: creating new streaming task")
+            universe_state.stream_task = self.hass.async_create_task(self._stream_universe_data(universe_id))
+
+        self.hass.async_create_task(self._send_pending_frame(universe_id))
 
         return True
 
-    async def _send_universe_data(self, universe_id: int, dmx_data: bytearray) -> None:
+    async def _stream_universe_data(self, universe_id: int) -> None:
+        """Continuously retransmit last frame on keep-alive timeout.
+
+        New frames are sent immediately via _send_pending_frame when they arrive.
+        This loop only handles retransmission if no new data for retransmit_interval seconds.
+        """
+
+        try:
+            universe_state = self.universes[universe_id]
+            log.debug(f"Started streaming task for universe {universe_id}")
+
+            while self.running and universe_id in self.universes and not universe_state.termination_sent:
+                time_since_send = time.time() - universe_state.last_send_time
+
+                if universe_state.last_data is not None and time_since_send >= self.config.retransmit_interval:
+                    log.debug(f"Universe {universe_id}: retransmitting frame (seq: {universe_state.sequence_number})")
+                    await self._send_packet(universe_id, universe_state.last_data)
+                    universe_state.increment_sequence()
+                    universe_state.last_send_time = time.time()
+                else:
+                    sleep_duration = self.config.retransmit_interval - time_since_send
+                    await asyncio.sleep(sleep_duration)
+
+        except asyncio.CancelledError:
+            log.debug(f"Streaming task for universe {universe_id} cancelled")
+        except Exception as e:
+            log.error(f"Error in streaming loop for universe {universe_id}: {e}")
+        finally:
+            log.debug(f"Stopped streaming for universe {universe_id}")
+
+    async def _send_pending_frame(self, universe_id: int) -> None:
+        """Hot path: send pending frame immediately (called from send_dmx_data)."""
+        import time
+
+        try:
+            universe_state = self.universes[universe_id]
+
+            if universe_state.pending_data is not None:
+                log.debug(f"Universe {universe_id}: sending immediate frame (seq: {universe_state.sequence_number})")
+                await self._send_packet(universe_id, universe_state.pending_data)
+                universe_state.increment_sequence()
+                universe_state.last_data = universe_state.pending_data.copy()
+                universe_state.pending_data = None
+                universe_state.last_send_time = time.time()
+                universe_state.last_update_time = universe_state.last_send_time
+                universe_state.termination_sent = False
+
+        except Exception as e:
+            log.error(f"Error sending pending frame for universe {universe_id}: {e}")
+
+    async def _send_packet(self, universe_id: int, dmx_data: bytearray) -> None:
+        """Send a single sACN packet."""
         try:
             universe_state = self.universes[universe_id]
 
@@ -201,25 +265,26 @@ class SacnServer:
             packet_bytes = packet.serialize()
 
             if self.socket is not None:
+                log.debug(
+                    f"Sending sACN data to universe {universe_id} (multicast {multicast_addr},"
+                    f" seq: {universe_state.sequence_number})"
+                )
                 await self.hass.async_add_executor_job(self.socket.sendto, packet_bytes, (multicast_addr, SACN_PORT))
 
             for unicast_addr in universe_state.unicast_addresses:
                 if self.socket is not None:
+                    log.debug(
+                        f"Sending sACN data to universe {universe_id} (unicast {unicast_addr['host']}:"
+                        f"{unicast_addr['port']}, seq: {universe_state.sequence_number})"
+                    )
                     await self.hass.async_add_executor_job(
-                        self.socket.sendto, packet_bytes, (unicast_addr["host"], unicast_addr["port"])
+                        self.socket.sendto,
+                        packet_bytes,
+                        (unicast_addr["host"], unicast_addr["port"]),
                     )
 
-            unicast_info = (
-                f" + {len(universe_state.unicast_addresses)} unicast" if universe_state.unicast_addresses else ""
-            )
-            log.debug(f"Sent sACN data to universe {universe_id} ({multicast_addr}){unicast_info}")
-
-            universe_state.increment_sequence()
-            universe_state.last_data = dmx_data.copy()
-            universe_state.termination_sent = False
-
         except Exception as e:
-            log.error(f"Error sending sACN data to universe {universe_id}: {e}")
+            log.error(f"Error sending sACN packet for universe {universe_id}: {e}")
 
     def terminate_universe(self, universe_id: int) -> None:
         if universe_id not in self.universes:
@@ -228,6 +293,9 @@ class SacnServer:
         universe_state = self.universes[universe_id]
         if universe_state.termination_sent:
             return
+
+        if universe_state.stream_task and not universe_state.stream_task.done():
+            universe_state.stream_task.cancel()
 
         try:
             options = SacnOptions(preview_data=False, stream_terminated=True, force_synchronization=False)
@@ -324,7 +392,6 @@ class SacnReceiver(asyncio.DatagramProtocol):
 
     def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
         try:
-            log.debug(f"Received {len(data)} bytes from {addr[0]}:{addr[1]}")
             packet = SacnPacket.deserialize(data)
 
             if packet.universe in self.subscribed_universes:
@@ -336,7 +403,6 @@ class SacnReceiver(asyncio.DatagramProtocol):
 
                 # Ignore packets from our own sACN server to prevent feedback loops
                 if self.own_source_name and packet.source_name == self.own_source_name:
-                    log.debug(f"Ignoring sACN packet from own source '{packet.source_name}' to prevent feedback")
                     return
 
                 if self.data_callback:
@@ -377,8 +443,8 @@ class SacnReceiver(asyncio.DatagramProtocol):
 
     def _manage_multicast_group(self, universe_id: int, join: bool) -> None:
         """Join or leave multicast group for a universe"""
+        multicast_addr = f"239.255.{universe_id >> 8}.{universe_id & 0xFF}"
         try:
-            multicast_addr = f"239.255.{universe_id >> 8}.{universe_id & 0xFF}"
 
             sock = self.transport.get_extra_info("socket") if self.transport else None
             if sock:

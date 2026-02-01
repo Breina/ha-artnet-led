@@ -24,6 +24,8 @@ from custom_components.dmx.setup.config_processor import (
     CONF_PRIORITY_DEFAULT,
     CONF_RATE_LIMIT,
     CONF_RATE_LIMIT_DEFAULT,
+    CONF_REFRESH_EVERY,
+    CONF_REFRESH_EVERY_DEFAULT,
     CONF_SOURCE_NAME,
     CONF_SOURCE_NAME_DEFAULT,
     CONF_SYNC_ADDRESS,
@@ -60,6 +62,7 @@ class SacnProtocol(ProtocolServer):
             interface_ip=config.get(CONF_INTERFACE_IP),
             multicast_ttl=config.get(CONF_MULTICAST_TTL, CONF_MULTICAST_TTL_DEFAULT),
             enable_preview_data=config.get(CONF_ENABLE_PREVIEW_DATA, False),
+            retransmit_interval=config.get(CONF_REFRESH_EVERY, CONF_REFRESH_EVERY_DEFAULT),
         )
 
         self._rate_limit = config.get(CONF_RATE_LIMIT, CONF_RATE_LIMIT_DEFAULT)

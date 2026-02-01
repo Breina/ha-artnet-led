@@ -203,6 +203,7 @@ dmx:
     priority: 85                     # Lower than main console (100)
     sync_address: 7000               # Receive universe sync from external controllers
     interface_ip: "10.101.97.101"    # Listen on a specified interface
+    refresh_every: 0.5               # Lower retransmit interval to reduce jitter
     
     universes:
       - 1:  # Receives from external lighting console

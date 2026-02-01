@@ -76,6 +76,10 @@ dmx:
     priority: 100
     multicast_ttl: 64
     enable_preview_data: false
+    interface_ip: "10.101.97.101"
+    sync_address: 7000
+    refresh_every: 0.8
+    rate_limit: 0.5
 
     universes:
       - 1:
@@ -160,6 +164,14 @@ Universe definitions. Each universe can be specified as:
   Time-to-live for multicast packets [1-255]
 - **`enable_preview_data`** *(optional, default: `false`)*  
   Mark transmitted data as preview data (non-live)
+- **`interface_ip`** *(optional, default: `0.0.0.0`)*  
+  IP address of the interface to use for sACN transmission
+- **`sync_address`** *(optional, default: `7000`)*  
+  Sync address for sACN transmission
+- **`refresh_every`** *(optional, default: `0.8`)*  
+  The interval in seconds in which universe data is retransmitted. This is useful when there are external controllers sending to the same universes.
+- **`rate_limit`** *(optional, default: `0.5`)*  
+  The rate limit in seconds between each entity update when received from an external controller. Increase this value if HomeAssistant slows down too much when receiving updates.
 
 #### `dmx.sacn.universes`
 Universe definitions for sACN. Each universe number [1-63999] maps to multicast address `239.255.X.Y` where X.Y represents the universe number.
