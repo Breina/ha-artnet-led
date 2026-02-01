@@ -79,7 +79,7 @@ class LightState:
             log.warning(f"RGB component update called for non-RGB color mode {self.color_mode}")
             return
 
-        new_rgb = list(self.rgb)
+        new_rgb = list(self.rgb or (0, 0, 0))
         new_rgb[component_index] = value
         self._update_rgb_based_on_color_mode(*new_rgb)
 
