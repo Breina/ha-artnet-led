@@ -226,7 +226,7 @@ class SacnServer:
                 log.debug(f"Universe {universe_id}: sending immediate frame (seq: {universe_state.sequence_number})")
                 await self._send_packet(universe_id, universe_state.pending_data)
                 universe_state.increment_sequence()
-                universe_state.last_data = universe_state.pending_data.copy()
+                universe_state.last_data = universe_state.pending_data.copy() if universe_state.pending_data else None
                 universe_state.pending_data = None
                 universe_state.last_send_time = time.time()
                 universe_state.last_update_time = universe_state.last_send_time
