@@ -29,8 +29,6 @@ class DmxUniverse:
         self._channel_values: dict[int, int] = {}
         self._constant_values: dict[int, int] = {}
         self._channel_callbacks: dict[int, list[Callable[[str | None], None]]] = {}
-        self._changed_channels: set[int] = set()
-        self._first_send: bool = True
         self._output_enabled: bool = True
         self.animation_engine: DmxAnimationEngine | None = None
 
@@ -51,7 +49,6 @@ class DmxUniverse:
         for ch in channels:
             self._constant_values[ch] = value
             self._channel_values[ch] = value
-            self._changed_channels.add(ch)
 
     def register_channel_listener(self, channels: int | list[int], callback: Callable[[str | None], None]) -> None:
         if isinstance(channels, int):
@@ -79,7 +76,6 @@ class DmxUniverse:
 
             if ch not in self._channel_values or self._channel_values[ch] != value:
                 self._channel_values[ch] = value
-                self._changed_channels.add(ch)
                 changed_channels.append(ch)
 
         for ch in changed_channels:
@@ -128,7 +124,6 @@ class DmxUniverse:
         for channel, constant_value in self._constant_values.items():
             if self._channel_values.get(channel) != constant_value:
                 self._channel_values[channel] = constant_value
-                self._changed_channels.add(channel)
 
         if not self._channel_values:
             data = bytearray(2)  # Minimum size is 2 bytes
@@ -141,19 +136,12 @@ class DmxUniverse:
                 sacn_data = bytearray([0] + [0] * 24)
                 self.sacn_server.send_dmx_data(self.sacn_universe, sacn_data)
 
-            self._changed_channels.clear()
-            self._first_send = False
             return
 
-        if self.use_partial_universe and not self._first_send and self._changed_channels:
-            max_changed_channel = max(self._changed_channels)
+        if self.use_partial_universe:
+            max_channel = max(self._channel_values.keys()) if self._channel_values else 2
 
-            data_length = (
-                (max_changed_channel + (2 - (max_changed_channel % 2)))
-                if max_changed_channel % 2
-                else max_changed_channel
-            )
-
+            data_length = max_channel + (max_channel % 2)
             data_length = max(2, data_length)
 
             data = bytearray(data_length)
@@ -174,6 +162,3 @@ class DmxUniverse:
             if len(sacn_data) < 25:
                 sacn_data.extend([0] * (25 - len(sacn_data)))
             self.sacn_server.send_dmx_data(self.sacn_universe, sacn_data)
-
-        self._changed_channels.clear()
-        self._first_send = False
