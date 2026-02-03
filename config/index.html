@@ -1085,6 +1085,10 @@
 <span class="w">    </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
 <span class="w">    </span><span class="nt">multicast_ttl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
 <span class="w">    </span><span class="nt">enable_preview_data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">interface_ip</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10.101.97.101&quot;</span>
+<span class="w">    </span><span class="nt">sync_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7000</span>
+<span class="w">    </span><span class="nt">refresh_every</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.8</span>
+<span class="w">    </span><span class="nt">rate_limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
 
 <span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">1</span><span class="p">:</span>
@@ -1193,6 +1197,14 @@
   Time-to-live for multicast packets [1-255]</li>
 <li><strong><code>enable_preview_data</code></strong> <em>(optional, default: <code>false</code>)</em><br />
   Mark transmitted data as preview data (non-live)</li>
+<li><strong><code>interface_ip</code></strong> <em>(optional, default: <code>0.0.0.0</code>)</em><br />
+  IP address of the interface to use for sACN transmission</li>
+<li><strong><code>sync_address</code></strong> <em>(optional, default: <code>7000</code>)</em><br />
+  Sync address for sACN transmission</li>
+<li><strong><code>refresh_every</code></strong> <em>(optional, default: <code>0.8</code>)</em><br />
+  The interval in seconds in which universe data is retransmitted. This is useful when there are external controllers sending to the same universes.</li>
+<li><strong><code>rate_limit</code></strong> <em>(optional, default: <code>0.5</code>)</em><br />
+  The rate limit in seconds between each entity update when received from an external controller. Increase this value if HomeAssistant slows down too much when receiving updates.</li>
 </ul>
 <h4 id="dmxsacnuniverses"><code>dmx.sacn.universes</code><a class="headerlink" href="#dmxsacnuniverses" title="Permanent link">&para;</a></h4>
 <p>Universe definitions for sACN. Each universe number [1-63999] maps to multicast address <code>239.255.X.Y</code> where X.Y represents the universe number.</p>

@@ -467,6 +467,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#special-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Special Considerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#unicast-reception" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -881,6 +892,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#special-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Special Considerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#unicast-reception" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1126,6 +1148,12 @@ show<span class="w"> </span>ip<span class="w"> </span>igmp<span class="w"> </spa
 show<span class="w"> </span>multicast<span class="w"> </span>route<span class="w"> </span><span class="m">239</span>.255.0.1
 </code></pre></div></p>
 <p>If multicast fails, configure <strong>unicast addresses</strong> for direct communication.</p>
+<h3 id="special-considerations">Special Considerations<a class="headerlink" href="#special-considerations" title="Permanent link">&para;</a></h3>
+<p>If you have two or more Network Interfaces attached to your Home Assistant host, you will want to specify the specific network that the integration will bind to. Otherwise, the sACN universe to the primary interface as chosen by the operating system.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">interface_ip</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10.101.97.101&quot;</span>
+</code></pre></div>
 <h3 id="unicast-reception">Unicast Reception<a class="headerlink" href="#unicast-reception" title="Permanent link">&para;</a></h3>
 <p>For networks that don't support multicast, configure external controllers to send unicast directly to Home Assistant:</p>
 <p><strong>Home Assistant Configuration:</strong>
@@ -1221,7 +1249,9 @@ show<span class="w"> </span>multicast<span class="w"> </span>route<span class="w
 <span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">source_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;HA</span><span class="nv"> </span><span class="s">Backup</span><span class="nv"> </span><span class="s">Controller&quot;</span>
 <span class="w">    </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">85</span><span class="w">                     </span><span class="c1"># Lower than main console (100)</span>
-<span class="w">    </span><span class="nt">sync_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7000</span><span class="w">              </span><span class="c1"># Receive universe sync from external controllers</span>
+<span class="w">    </span><span class="nt">sync_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7000</span><span class="w">               </span><span class="c1"># Receive universe sync from external controllers</span>
+<span class="w">    </span><span class="nt">interface_ip</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10.101.97.101&quot;</span><span class="w">    </span><span class="c1"># Listen on a specified interface</span>
+<span class="w">    </span><span class="nt">refresh_every</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w">               </span><span class="c1"># Lower retransmit interval to reduce jitter</span>
 
 <span class="w">    </span><span class="nt">universes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">1</span><span class="p">:</span><span class="w">  </span><span class="c1"># Receives from external lighting console</span>
@@ -1276,6 +1306,10 @@ netsh<span class="w"> </span>advfirewall<span class="w"> </span>firewall<span cl
 <li>Review priority hierarchy in all controllers</li>
 <li>Use unique source names for identification</li>
 <li>Monitor equipment displays for active source indication</li>
+</ul>
+<p><strong>The sACN data is being broadcast on the wrong IP</strong></p>
+<ul>
+<li>Configure the <code>interface_ip</code> setting. This defaults to the primary interface as provided by the operating system, due to the potentials of a broadcast storm of providing sACN data to unexpected networks.</li>
 </ul>
 <h3 id="debug-logging">Debug Logging<a class="headerlink" href="#debug-logging" title="Permanent link">&para;</a></h3>
 <p>Enable detailed sACN logging to monitor external data reception:</p>
