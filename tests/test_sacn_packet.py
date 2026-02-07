@@ -94,13 +94,27 @@ class TestSacnPacket:
         packet.set_dmx_data(test_data)
 
         assert packet.dmx_data == test_data
-        assert packet.dmx_data[0] == 0x00
+        assert packet.start_code == 0x00
+        assert packet.channel_data == test_data[1:]
 
-        no_start_code_data = bytearray([255] + [i % 256 for i in range(1, 513)])
-        packet.set_dmx_data(no_start_code_data)
+        non_zero_start_code_data = bytearray([0xDD] + [i % 256 for i in range(1, 513)])
+        packet.set_dmx_data(non_zero_start_code_data)
 
-        assert packet.dmx_data[0] == 0x00
-        assert packet.dmx_data[1:] == no_start_code_data[1:]
+        assert packet.dmx_data == non_zero_start_code_data
+        assert packet.start_code == 0xDD
+        assert packet.channel_data == non_zero_start_code_data[1:]
+
+    def test_serialize_forces_start_code_zero(self):
+        """Test that serialize() always outputs start code 0x00 regardless of internal value."""
+        packet = SacnPacket()
+
+        non_zero_start_code_data = bytearray([0xDD] + [100] * 512)
+        packet.set_dmx_data(non_zero_start_code_data)
+
+        assert packet.start_code == 0xDD
+
+        serialized = packet.serialize()
+        assert serialized[125] == 0x00
 
     def test_multicast_address_calculation(self):
         test_cases = [

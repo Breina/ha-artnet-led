@@ -1,4 +1,4 @@
-import shutil
+import subprocess
 import time
 import webbrowser
 
@@ -16,8 +16,15 @@ HEADERS = {
 def copy_repo():
     print("Copying repo...")
     # Requires Samba share and it being configured as network location in Windows
-    shutil.rmtree(STAGING_FOLDER)
-    shutil.copytree("custom_components/dmx", STAGING_FOLDER, dirs_exist_ok=True)
+    result = subprocess.run(
+        ["robocopy", "custom_components/dmx", STAGING_FOLDER, "/MIR", "/NJH", "/NJS"],
+        capture_output=True,
+        text=True,
+    )
+    print(result.stdout)
+    # robocopy exit codes 0-7 are success (bitmask: 1=copied, 2=extras deleted, 4=mismatches)
+    if result.returncode >= 8:
+        raise RuntimeError(f"robocopy failed with exit code {result.returncode}\n{result.stderr}")
 
 
 def restart_ha() -> Response:

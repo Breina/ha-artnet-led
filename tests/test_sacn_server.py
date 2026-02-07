@@ -225,7 +225,7 @@ class TestSacnReceiver:
         assert port_address.universe == 1
 
         dmx_data = call_args[1]
-        assert dmx_data == test_packet.dmx_data
+        assert dmx_data == test_packet.dmx_data[1:]
 
         source_name = call_args[2]
         assert source_name == test_packet.source_name
@@ -239,6 +239,21 @@ class TestSacnReceiver:
         serialized_packet = test_packet.serialize()
 
         sacn_receiver.datagram_received(serialized_packet, ("192.168.1.100", 5568))
+
+        data_callback.assert_not_called()
+
+    def test_packet_processing_non_dmx_start_code_ignored(self, sacn_receiver, data_callback):
+        """Test that packets with non-DMX start codes (e.g., 0xDD per-address priority) are ignored."""
+        sacn_receiver.subscribe_universe(1)
+
+        from custom_components.dmx.server.sacn_packet import SacnPacket
+
+        test_packet = SacnPacket(universe=1, dmx_data=bytearray([0] + [100] * 512))
+        serialized_packet = bytearray(test_packet.serialize())
+
+        serialized_packet[125] = 0xDD  # Per-address priority start code
+
+        sacn_receiver.datagram_received(bytes(serialized_packet), ("192.168.1.100", 5568))
 
         data_callback.assert_not_called()
 

@@ -48,8 +48,16 @@ class SacnPacket:
 
         if len(self.dmx_data) == 0:
             self.dmx_data = bytearray(513)
-        if self.dmx_data[0] != 0x00:
-            self.dmx_data[0] = 0x00
+
+    @property
+    def start_code(self) -> int:
+        """Return the DMX start code (first byte of dmx_data)."""
+        return self.dmx_data[0] if len(self.dmx_data) > 0 else 0x00
+
+    @property
+    def channel_data(self) -> bytearray:
+        """Return DMX channel data (bytes 1-512, excluding start code)."""
+        return self.dmx_data[1:] if len(self.dmx_data) > 1 else bytearray()
 
     def set_dmx_channel(self, channel: int, value: int) -> None:
         assert 1 <= channel <= 512, "Channel must be 1-512"
@@ -63,17 +71,17 @@ class SacnPacket:
     def set_dmx_data(self, data: bytearray) -> None:
         assert len(data) <= 513, "DMX data must be <= 513 bytes"
         self.dmx_data = data
-        if len(self.dmx_data) > 0 and self.dmx_data[0] != 0x00:
-            self.dmx_data[0] = 0x00
 
     def get_multicast_address(self) -> str:
         return f"239.255.{self.universe >> 8}.{self.universe & 0xFF}"
 
     def serialize(self) -> bytes:
+        dmx_data_out = bytearray(self.dmx_data)
+        if len(dmx_data_out) > 0:
+            dmx_data_out[0] = 0x00
+
         # Calculate lengths
-        dmp_layer_length = 10 + len(
-            self.dmx_data
-        )  # DMP header (10) + property values (dmx_data contains the 0x00 byte)
+        dmp_layer_length = 10 + len(dmx_data_out)  # DMP header (10) + property values (dmx_data contains the 0x00 byte)
         framing_layer_length = 77 + dmp_layer_length  # Framing header (77) + DMP layer
         root_layer_length = 22 + framing_layer_length  # Root header (22) + Framing layer
 
@@ -113,9 +121,9 @@ class SacnPacket:
         packet.extend(struct.pack(">B", DMP_ADDRESS_TYPE_DATA_TYPE))
         packet.extend(struct.pack(">H", DMP_FIRST_PROPERTY_ADDRESS))
         packet.extend(struct.pack(">H", DMP_ADDRESS_INCREMENT))
-        packet.extend(struct.pack(">H", len(self.dmx_data)))
+        packet.extend(struct.pack(">H", len(dmx_data_out)))
 
-        packet.extend(self.dmx_data)
+        packet.extend(dmx_data_out)
 
         return bytes(packet)
 

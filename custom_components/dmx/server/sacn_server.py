@@ -179,7 +179,10 @@ class SacnServer:
         # Start streaming task if not already running
         if universe_state.stream_task is None or universe_state.stream_task.done():
             log.debug(f"Universe {universe_id}: creating new streaming task")
-            universe_state.stream_task = self.hass.async_create_task(self._stream_universe_data(universe_id))
+            universe_state.stream_task = self.hass.async_create_background_task(
+                self._stream_universe_data(universe_id),
+                name=f"sACN stream universe {universe_id}",
+            )
 
         self.hass.async_create_task(self._send_pending_frame(universe_id))
 
@@ -394,31 +397,41 @@ class SacnReceiver(asyncio.DatagramProtocol):
         try:
             packet = SacnPacket.deserialize(data)
 
-            if packet.universe in self.subscribed_universes:
-                log.debug(
-                    f"Received sACN data for universe {packet.universe} from {addr[0]} "
-                    f"(source: '{packet.source_name}', seq: {packet.sequence_number}, "
-                    f"priority: {packet.priority}, channels: {len(packet.dmx_data)})"
-                )
-
-                # Ignore packets from our own sACN server to prevent feedback loops
-                if self.own_source_name and packet.source_name == self.own_source_name:
-                    return
-
-                if self.data_callback:
-                    port_address = PortAddress(0, 0, packet.universe)
-                    self.data_callback(port_address, packet.dmx_data, packet.source_name)
-                else:
-                    log.warning("No data callback configured for sACN receiver")
+            if packet.start_code == 0x00:
+                self._handle_dmx_packet(packet, addr)
             else:
                 log.debug(
-                    f"Ignoring sACN data for universe {packet.universe} from {addr[0]} "
-                    f"(not subscribed, subscribed universes: {self.subscribed_universes})"
+                    f"Ignoring sACN packet with unsupported start code 0x{packet.start_code:02X} "
+                    f"for universe {packet.universe} from {addr[0]} (source: '{packet.source_name}')"
                 )
 
         except Exception as e:
             log.warning(f"Error processing sACN packet from {addr[0]}:{addr[1]} ({len(data)} bytes): {e}")
             log.debug(f"Raw packet data: {data[:50].hex()}{'...' if len(data) > 50 else ''}")
+
+    def _handle_dmx_packet(self, packet: SacnPacket, addr: tuple[str, int]) -> None:
+        """Handle a DMX512-A data packet (start code 0x00)."""
+        if self.own_source_name and packet.source_name == self.own_source_name:
+            return
+
+        if packet.universe not in self.subscribed_universes:
+            log.debug(
+                f"Ignoring sACN data for universe {packet.universe} from {addr[0]} "
+                f"(not subscribed, subscribed universes: {self.subscribed_universes})"
+            )
+            return
+
+        log.debug(
+            f"Received sACN DMX data for universe {packet.universe} from {addr[0]} "
+            f"(source: '{packet.source_name}', seq: {packet.sequence_number}, "
+            f"priority: {packet.priority}, channels: {len(packet.channel_data)})"
+        )
+
+        if self.data_callback:
+            port_address = PortAddress(0, 0, packet.universe)
+            self.data_callback(port_address, packet.channel_data, packet.source_name)
+        else:
+            log.warning("No data callback configured for sACN receiver")
 
     def subscribe_universe(self, universe_id: int) -> None:
         if not (1 <= universe_id <= 63999):
