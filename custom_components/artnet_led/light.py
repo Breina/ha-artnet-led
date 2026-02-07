@@ -8,6 +8,7 @@ from typing import Union
 
 import homeassistant.helpers.config_validation as cv
 import homeassistant.util.color as color_util
+from homeassistant.util import slugify
 import pyartnet
 import voluptuous as vol
 from homeassistant.components.light import (
@@ -188,7 +189,7 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
             byte_size = CHANNEL_SIZE[device[CONF_CHANNEL_SIZE]][0]
             byte_order = device[CONF_BYTE_ORDER]
 
-            entity_id = f"light.{name.replace(' ', '_').lower()}"
+            entity_id = f"light.{slugify(name)}"
 
             # If the entity has another unique ID, use that until it's migrated properly
             entity = entity_registry.async_get(entity_id)
@@ -239,7 +240,7 @@ class DmxBaseLight(LightEntity, RestoreEntity):
 
         self._unique_id = unique_id
 
-        self.entity_id = f"light.{name.replace(' ', '_').lower()}"
+        self.entity_id = f"light.{slugify(name)}"
         self._attr_brightness = 255
         self._fade_time = kwargs[CONF_DEVICE_TRANSITION]
         self._state = False
