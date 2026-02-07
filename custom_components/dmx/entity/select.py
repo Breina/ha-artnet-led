@@ -2,6 +2,7 @@ import logging
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.util import slugify
 
 from custom_components.dmx.const import DOMAIN
 from custom_components.dmx.entity.icon_helper import determine_icon
@@ -32,7 +33,9 @@ class DmxSelectEntity(SelectEntity):
         self._attr_name = f"{fixture_name} {channel_name}"
         self._attr_device_info = device
         if entity_id_prefix:
-            self._attr_unique_id = f"{entity_id_prefix}_{channel_name.lower()}_{fixture_fingerprint}"
+            slug_prefix = slugify(entity_id_prefix)
+            slug_channel = slugify(channel_name)
+            self._attr_unique_id = f"{slug_prefix}_{slug_channel}_{fixture_fingerprint}"
             self.entity_id = f"select.{self._attr_unique_id}"
         else:
             self._attr_unique_id = (

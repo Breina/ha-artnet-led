@@ -6,6 +6,7 @@ from homeassistant.components.light import ATTR_TRANSITION, ColorMode, LightEnti
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.util import slugify
 
 from custom_components.dmx.const import DOMAIN
 from custom_components.dmx.entity.light import ChannelMapping, ChannelType
@@ -35,7 +36,9 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         self._matrix_key = matrix_key
         self._attr_name = f"{fixture_name} Light {matrix_key}" if matrix_key else f"{fixture_name} Light"
         if entity_id_prefix:
-            base_id = entity_id_prefix if not matrix_key else f"{entity_id_prefix}_{matrix_key}"
+            slug_prefix = slugify(entity_id_prefix)
+            slug_matrix = slugify(matrix_key) if matrix_key else None
+            base_id = slug_prefix if not slug_matrix else f"{slug_prefix}_{slug_matrix}"
             self._attr_unique_id = f"{base_id}_{fixture_fingerprint}"
             self.entity_id = f"light.{self._attr_unique_id}"
         else:
