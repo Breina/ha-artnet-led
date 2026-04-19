@@ -166,8 +166,9 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         if "rgb_color" in attrs:
             rgb = attrs["rgb_color"]
-            self._state.rgb = rgb
-            self._state.last_rgb = rgb
+            if rgb is not None:
+                self._state.rgb = rgb
+                self._state.last_rgb = rgb
 
         if "color_temp_kelvin" in attrs:
             color_temp_kelvin = attrs["color_temp_kelvin"]
