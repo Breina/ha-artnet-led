@@ -40,6 +40,11 @@ class DmxUniverse:
 
     def set_output_enabled(self, enabled: bool) -> None:
         self._output_enabled = enabled
+        if self.sacn_server and self.sacn_universe:
+            if not enabled:
+                self.sacn_server.terminate_universe(self.sacn_universe)
+            else:
+                self.sacn_server.add_universe(self.sacn_universe)
 
     def is_output_enabled(self) -> bool:
         return self._output_enabled
