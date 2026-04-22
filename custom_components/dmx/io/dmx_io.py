@@ -45,6 +45,7 @@ class DmxUniverse:
                 self.sacn_server.terminate_universe(self.sacn_universe)
             else:
                 self.sacn_server.add_universe(self.sacn_universe)
+                self.send_universe_data()
 
     def is_output_enabled(self) -> bool:
         return self._output_enabled
