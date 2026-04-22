@@ -79,7 +79,7 @@ class LightState:
             log.warning(f"RGB component update called for non-RGB color mode {self.color_mode}")
             return
 
-        new_rgb = list(self.rgb or (0, 0, 0))
+        new_rgb = list(self.rgb)
         new_rgb[component_index] = value
         self._update_rgb_based_on_color_mode(*new_rgb)
 
@@ -117,14 +117,11 @@ class LightState:
         if self.color_mode == ColorMode.COLOR_TEMP and self.has_cw_ww():
             self.is_on = self.cold_white > 0 or self.warm_white > 0
         elif self.color_mode == ColorMode.RGBWW:
-            rgb = self.rgb or (0, 0, 0)
-            self.is_on = any(v > 0 for v in (*rgb, self.cold_white, self.warm_white))
+            self.is_on = any(v > 0 for v in (*self.rgb, self.cold_white, self.warm_white))
         elif self.color_mode == ColorMode.RGBW:
-            rgb = self.rgb or (0, 0, 0)
-            self.is_on = any(v > 0 for v in (*rgb, self.warm_white))
+            self.is_on = any(v > 0 for v in (*self.rgb, self.warm_white))
         elif self.color_mode == ColorMode.RGB:
-            rgb = self.rgb or (0, 0, 0)
-            self.is_on = any(v > 0 for v in rgb)
+            self.is_on = any(v > 0 for v in self.rgb)
         elif self.has_channel(ChannelType.COLD_WHITE):
             self.is_on = self.cold_white > 0
         elif self.has_channel(ChannelType.WARM_WHITE):
@@ -294,7 +291,7 @@ class LightState:
     def _update_brightness_from_channels(self) -> None:
         values: list[int] = []
 
-        if self.has_rgb() and self.rgb is not None:
+        if self.has_rgb():
             values.extend(self.rgb)
 
         if self.has_channel(ChannelType.COLD_WHITE):
@@ -329,20 +326,16 @@ class LightState:
 
     @property
     def rgbw_color(self) -> tuple[int, int, int, int]:
-        rgb = self.rgb or (0, 0, 0)
-        return (*rgb, self.warm_white)
+        return (*self.rgb, self.warm_white)
 
     @property
     def rgbww_color(self) -> tuple[int, int, int, int, int]:
-        rgb = self.rgb or (0, 0, 0)
-        return (*rgb, self.cold_white, self.warm_white)
+        return (*self.rgb, self.cold_white, self.warm_white)
 
     @property
     def last_rgbw_color(self) -> tuple[int, int, int, int]:
-        last_rgb = self.last_rgb or (0, 0, 0)
-        return (*last_rgb, self.last_cold_white)
+        return (*self.last_rgb, self.last_cold_white)
 
     @property
     def last_rgbww_color(self) -> tuple[int, int, int, int, int]:
-        last_rgb = self.last_rgb or (0, 0, 0)
-        return (*last_rgb, self.last_cold_white, self.last_warm_white)
+        return (*self.last_rgb, self.last_cold_white, self.last_warm_white)
