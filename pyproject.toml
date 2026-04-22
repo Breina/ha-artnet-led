@@ -19,7 +19,7 @@ dev = [
     "pytest-asyncio",
     "pytest-cov",
     "netifaces",
-    "homeassistant-stubs==2025.9.1",
+    "homeassistant-stubs==2026.2.3",
 ]
 
 [tool.setuptools]
