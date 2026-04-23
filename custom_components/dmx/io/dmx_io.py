@@ -32,6 +32,8 @@ class DmxUniverse:
         self._channel_callbacks: dict[int, list[Callable[[str | None], None]]] = {}
         self._output_enabled: bool = True
         self._send_timer: asyncio.TimerHandle | None = None
+        self._last_send_time: float = 0.0
+        self._frame_interval: float = 1.0 / max_fps
         self.animation_engine: DmxAnimationEngine | None = None
 
         if hass:
@@ -109,18 +111,34 @@ class DmxUniverse:
         if send_update:
             self._schedule_send()
 
-    def _schedule_send(self, delay: float = 0.05) -> None:
-        """Debounce send_universe_data: wait for `delay` seconds of quiet before sending."""
-        if self._send_timer is not None:
-            self._send_timer.cancel()
+    def _schedule_send(self) -> None:
+        """Throttle send_universe_data to at most once per frame interval.
 
-        if self._hass:
-            self._send_timer = self._hass.loop.call_later(delay, self._do_send)
-        else:
-            self.send_universe_data()
+        Sends immediately if enough time has passed since the last send.
+        Otherwise schedules a send at the next frame boundary, coalescing
+        any intermediate updates into a single frame.
+        """
+        import time
+
+        now = time.monotonic()
+        elapsed = now - self._last_send_time
+
+        if elapsed >= self._frame_interval:
+            # Enough time has passed, send immediately
+            if self._send_timer is not None:
+                self._send_timer.cancel()
+                self._send_timer = None
+            self._do_send()
+        elif self._send_timer is None and self._hass:
+            # Schedule send at next frame boundary
+            remaining = self._frame_interval - elapsed
+            self._send_timer = self._hass.loop.call_later(remaining, self._do_send)
 
     def _do_send(self) -> None:
+        import time
+
         self._send_timer = None
+        self._last_send_time = time.monotonic()
         self.send_universe_data()
 
     @staticmethod
