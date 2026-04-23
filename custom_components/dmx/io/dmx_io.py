@@ -25,11 +25,15 @@ class DmxUniverse:
         self.sacn_server = sacn_server
         self.sacn_universe = sacn_universe
         self.use_partial_universe = use_partial_universe
+        self._hass = hass
 
         self._channel_values: dict[int, int] = {}
         self._constant_values: dict[int, int] = {}
         self._channel_callbacks: dict[int, list[Callable[[str | None], None]]] = {}
         self._output_enabled: bool = True
+        self._send_timer: asyncio.TimerHandle | None = None
+        self._last_send_time: float = 0.0
+        self._frame_interval: float = 1.0 / max_fps
         self.animation_engine: DmxAnimationEngine | None = None
 
         if hass:
@@ -111,7 +115,37 @@ class DmxUniverse:
             await self._call_callback(callback, source)
 
         if send_update:
-            self.send_universe_data()
+            self._schedule_send()
+
+    def _schedule_send(self) -> None:
+        """Throttle send_universe_data to at most once per frame interval.
+
+        Sends immediately if enough time has passed since the last send.
+        Otherwise schedules a send at the next frame boundary, coalescing
+        any intermediate updates into a single frame.
+        """
+        import time
+
+        now = time.monotonic()
+        elapsed = now - self._last_send_time
+
+        if elapsed >= self._frame_interval:
+            # Enough time has passed, send immediately
+            if self._send_timer is not None:
+                self._send_timer.cancel()
+                self._send_timer = None
+            self._do_send()
+        elif self._send_timer is None and self._hass:
+            # Schedule send at next frame boundary
+            remaining = self._frame_interval - elapsed
+            self._send_timer = self._hass.loop.call_later(remaining, self._do_send)
+
+    def _do_send(self) -> None:
+        import time
+
+        self._send_timer = None
+        self._last_send_time = time.monotonic()
+        self.send_universe_data()
 
     @staticmethod
     async def _call_callback(callback: Callable[[str | None], None], source: str | None = None) -> None:
