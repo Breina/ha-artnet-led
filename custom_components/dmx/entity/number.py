@@ -79,13 +79,22 @@ class DmxNumberEntity(RestoreNumber):
         """Run when entity about to be added to hass."""
         await super().async_added_to_hass()
 
-        # Restore last state if available
+        # Only write the restored value to the DMX universe if no other code has
+        # already set these channels.  HA's async_add_entities schedules entity
+        # setup tasks that can run *after* the user has already sent a command;
+        # without this guard the restore would silently overwrite the user's value.
+        if any(self.universe.is_channel_set(idx) for idx in self.dmx_indexes):
+            return
+
         last_state: State | None = await self.async_get_last_state()
         last_number: NumberExtraStoredData | None = await self.async_get_last_number_data()
 
+        # Re-check after the awaits: user may have acted while we were suspended.
+        if any(self.universe.is_channel_set(idx) for idx in self.dmx_indexes):
+            return
+
         if last_number is not None and last_number.native_value is not None:
             self._attr_native_value = last_number.native_value
-            # Update the DMX values to match the restored state
             dmx_values: list[int] = self.dynamic_entity.to_dmx_fine(self._attr_native_value, len(self.dmx_indexes))
             dmx_updates: dict[int, int] = {
                 idx: dmx_values[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values)
@@ -93,11 +102,9 @@ class DmxNumberEntity(RestoreNumber):
             await self.universe.update_multiple_values(dmx_updates)
         elif last_state is not None and last_state.state not in ("unknown", "unavailable"):
             try:
-                # Try to convert the state to a float
                 restored_value: float = float(last_state.state)
                 if self._attr_native_min_value <= restored_value <= self._attr_native_max_value:
                     self._attr_native_value = restored_value
-                    # Update the DMX values to match the restored state
                     dmx_values_2: list[int] = self.dynamic_entity.to_dmx_fine(
                         self._attr_native_value, len(self.dmx_indexes)
                     )

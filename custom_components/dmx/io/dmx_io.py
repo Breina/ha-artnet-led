@@ -72,7 +72,12 @@ class DmxUniverse:
                 self._channel_callbacks[channel].append(callback)
 
     async def update_value(
-        self, channel: int | list[int], value: int, send_immediately: bool = False, source: str | None = None
+        self,
+        channel: int | list[int],
+        value: int,
+        send_immediately: bool = False,
+        source: str | None = None,
+        fire_callbacks: bool = True,
     ) -> set[Callable[[str | None], None]]:
 
         channels = [channel] if isinstance(channel, int) else channel
@@ -94,10 +99,11 @@ class DmxUniverse:
                     if callback in callbacks_to_call:
                         continue
                     callbacks_to_call.add(callback)
-                    try:
-                        await self._call_callback(callback, source)
-                    except Exception as e:
-                        print(f"Error calling callback for channel {ch}: {e}")
+                    if fire_callbacks:
+                        try:
+                            await self._call_callback(callback, source)
+                        except Exception as e:
+                            print(f"Error calling callback for channel {ch}: {e}")
 
         if send_immediately:
             self.send_universe_data()
@@ -107,9 +113,15 @@ class DmxUniverse:
     async def update_multiple_values(
         self, updates: dict[int, int], source: str | None = None, send_update: bool = True
     ) -> None:
+        # Collect all affected callbacks without firing them, so every callback
+        # fires exactly once after all channel values have been written.
+        # This matters for 16-bit (fine) channels where coarse and fine bytes
+        # must both be updated before the callback reads the combined value.
         callbacks_to_call: set[Callable[[str | None], None]] = set()
         for channel, value in updates.items():
-            callbacks_to_call.update(await self.update_value(channel, value, send_immediately=False, source=source))
+            callbacks_to_call.update(
+                await self.update_value(channel, value, send_immediately=False, source=source, fire_callbacks=False)
+            )
 
         for callback in callbacks_to_call:
             await self._call_callback(callback, source)
