@@ -763,6 +763,14 @@ class ArtNetServer(asyncio.DatagramProtocol):
             log.debug(f"Received ArtDmx for port address that we don't care about: {dmx.port_address}")
             return
 
+        # Ignore packets we sent ourselves (loopback). Without this guard, our own
+        # retransmits and any echoed copies fan into state_callback and overwrite
+        # _channel_values, which can wipe out a user-initiated update before the
+        # entity's UI state has settled.
+        if sender_addr and inet_aton(sender_addr[0]) == self._own_ip:
+            log.debug(f"Ignoring ArtDmx loopback from {sender_addr[0]} for {dmx.port_address}")
+            return
+
         if not own_port.port.good_input.data_received:
             own_port.port.good_input.data_received = True
             self.update_subscribers()
