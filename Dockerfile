@@ -1,4 +1,7 @@
-FROM ghcr.io/home-assistant/home-assistant:2024.3
+FROM ghcr.io/home-assistant/home-assistant:2026.5
+
+# Pre-install custom component dependencies (HA 2024.12+ no longer auto-installs them reliably)
+RUN pip3 install pyartnet==2.0
 
 # HA
 EXPOSE 8123:8123/tcp

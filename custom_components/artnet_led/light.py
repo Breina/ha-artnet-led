@@ -85,7 +85,7 @@ NODES = {}
 
 
 async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, discovery_info=None):
-    pyartnet.base.CREATE_TASK = hass.async_create_task
+    pyartnet.base.background_task.CREATE_TASK = hass.async_create_task
 
     client_type = config.get(CONF_NODE_TYPE)
     max_fps = config.get(CONF_NODE_MAX_FPS)
@@ -109,14 +109,15 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
 
         __id = f"{host}:{port}"
         if __id not in NODES:
+            from pyartnet.base.network import UnicastNetworkTarget
             __node = pyartnet.ArtNetNode(
-                real_host,
-                real_port,
+                UnicastNetworkTarget.create(real_host, real_port),
                 max_fps=max_fps,
                 refresh_every=refresh_interval,
-                start_refresh_task=(refresh_interval > 0),
-                sequence_counter=True
             )
+            await __node.__aenter__()
+            if not refresh_interval:
+                await __node.stop_refresh()
             NODES[id] = __node
 
         node = NODES[id]
@@ -134,14 +135,16 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
 
         __id = f"{host}:{port}"
         if __id not in NODES:
+            from pyartnet.base.network import UnicastNetworkTarget
             __node = pyartnet.SacnNode(
-                real_host,
-                real_port,
+                UnicastNetworkTarget.create(real_host, real_port),
                 max_fps=max_fps,
                 refresh_every=refresh_interval,
-                start_refresh_task=(refresh_interval > 0),
                 source_name="ha-artnet-led"
             )
+            await __node.__aenter__()
+            if not refresh_interval:
+                await __node.stop_refresh()
             NODES[id] = __node
 
         node = NODES[id]
@@ -151,13 +154,15 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
 
         __id = f"{host}:{port}"
         if __id not in NODES:
+            from pyartnet.base.network import UnicastNetworkTarget
             __node = pyartnet.KiNetNode(
-                real_host,
-                real_port,
+                UnicastNetworkTarget.create(real_host, real_port),
                 max_fps=max_fps,
                 refresh_every=refresh_interval,
-                start_refresh_task=(refresh_interval > 0),
             )
+            await __node.__aenter__()
+            if not refresh_interval:
+                await __node.stop_refresh()
             NODES[id] = __node
 
         node = NODES[id]

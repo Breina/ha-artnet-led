@@ -4,7 +4,7 @@ from asyncio import sleep
 from homeassistant.core import HomeAssistant
 from pyartnet import BaseUniverse
 from pyartnet.base import BaseNode
-from pyartnet.base.base_node import TYPE_U
+from pyartnet.base.network import UnicastNetworkTarget
 from pyartnet.errors import InvalidUniverseAddressError
 
 from custom_components.artnet_led.bridge.universe_bridge import UniverseBridge
@@ -19,7 +19,9 @@ HA_OEM = 0x2BE9
 class ArtNetController(BaseNode):
 
     def __init__(self, hass: HomeAssistant, max_fps: int = 25, refresh_every: float = 2):
-        super().__init__("", 0, max_fps=max_fps, refresh_every=0, start_refresh_task=False)
+        # BaseNode requires a network target, but ArtNetController never uses it —
+        # _send_universe is overridden to route through ArtNetServer instead of _send_data.
+        super().__init__(UnicastNetworkTarget.create('127.0.0.1', 6454), max_fps=max_fps, refresh_every=0)
 
         self._hass = hass
 
@@ -34,10 +36,15 @@ class ArtNetController(BaseNode):
         log.debug(f"Going to send to port address {port_address}")
         self.__server.send_dmx(port_address, universe._data)
 
-    def _create_universe(self, nr: int) -> TYPE_U:
+    def _validate_universe_nr(self, nr: int) -> int:
+        if not isinstance(nr, int) or nr < 0:
+            raise ValueError('Universe must be an int >= 0!')
         if nr >= 32_768:
             raise InvalidUniverseAddressError()
-        return UniverseBridge(self, nr)
+        return int(nr)
+
+    def _create_universe(self, nr: int) -> UniverseBridge:
+        return UniverseBridge(self, self._validate_universe_nr(nr))
 
     def add_universe(self, nr: int = 0) -> BaseUniverse:
         dmx_universe = super().add_universe(nr)
