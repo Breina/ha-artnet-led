@@ -116,7 +116,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
         oem: int = HA_OEM,
         esta: int = 0,
         short_name: str = "HA ArtNet",
-        long_name: str = "HomeAssistant ArtNet controller",
+        long_name: str = "HomeAssistant DMX integration",
         is_server_dhcp_configured: bool = True,
         polling: bool = True,
         sequencing: bool = True,
@@ -344,7 +344,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             stale_count += 1
 
             log.warning(
-                f"Haven't seen node {inet_ntoa(ip)}#{bind_index} for {time_delta.seconds} seconds;" f" removing it."
+                f"Haven't seen node {inet_ntoa(ip)}#{bind_index} for {time_delta.seconds} seconds; removing it."
             )
             nodes_by_ip_to_delete += [(ip, bind_index)]
             for node_address in node.get_addresses():
@@ -372,6 +372,10 @@ class ArtNetServer(asyncio.DatagramProtocol):
         diag_data = ArtDiagData(diag_priority=diagnostics_priority, logical_port=0, text=self.status_message)
         address = addr if diagnostics_mode == DiagnosticsMode.UNICAST and addr is not None else "255.255.255.255"
         self.send_artnet(diag_data, address)
+
+    async def _send_reply_with_delay(self, addr: str) -> None:
+        await asyncio.sleep(random.uniform(0, 1))
+        self.send_reply(addr)
 
     def send_reply(self, addr: str) -> None:
         grouped_ports = self.get_grouped_ports()
@@ -478,7 +482,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             nodes = self.get_node_by_port_address(address)
             if not has_manual_node and not nodes:
                 log.warning(
-                    f"No nodes found that listen to port address {address}. " f"Stopping sending ArtDmx refreshes..."
+                    f"No nodes found that listen to port address {address}. Stopping sending ArtDmx refreshes..."
                 )
                 own_port.port.good_output_a.data_being_transmitted = False
                 self._update_status_message()
@@ -584,9 +588,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             command = ArtCommand()
             command.deserialize(data_array)
 
-            log.debug(
-                f"Received command from {addr[0]}\n" f"  ESTA    : {command.esta}\n" f"  Command : {command.command}"
-            )
+            log.debug(f"Received command from {addr[0]}\n  ESTA    : {command.esta}\n  Command : {command.command}")
             self.handle_command(command)
 
         elif opcode == OpCode.OP_TRIGGER:
@@ -605,7 +607,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
             dmx = ArtDmx()
             dmx.deserialize(data_array)
 
-            log.debug(f"Received DMX data from {addr[0]}\n" f"  Address: {dmx.port_address}")
+            log.debug(f"Received DMX data from {addr[0]}\n  Address: {dmx.port_address}")
             self.handle_dmx(dmx, addr)
 
         elif opcode == OpCode.OP_SYNC:
@@ -634,11 +636,6 @@ class ArtNetServer(asyncio.DatagramProtocol):
         if addr[0] == inet_ntoa(self._own_ip):
             log.debug("Ignoring ArtPollReply as it came ourselves own address.")
             return
-
-        # The device should wait for a random delay of up to 1s before sending the reply. This mechanism is intended
-        # to reduce packet bunching when scaling up to very large systems.
-        # TODO somehow this causes the `reply` to become fucked up?
-        # await asyncio.sleep(random.uniform(0, 1))
 
         if reply.node_report:
             log.debug(f"  {reply.node_report}")
@@ -708,7 +705,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
         if poll.notify_on_change:
             self.node_change_subscribers.add(addr[0])
 
-        self.send_reply(addr[0])
+        self.__hass.async_create_background_task(self._send_reply_with_delay(addr[0]), "Art-Net delayed poll reply")
 
         if poll.is_diagnostics_enabled:
             self.send_diagnostics(

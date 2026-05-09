@@ -525,7 +525,6 @@ class ArtBase:
 
 
 class ArtPoll(ArtBase):
-
     def __init__(
         self,
         protocol_version: int = PROTOCOL_VERSION,
@@ -646,7 +645,7 @@ class ArtPollReply(ArtBase):
         supports_rdm: bool = False,
         esta: int = HOME_ASSISTANT_ESTA,
         short_name: str = "HA ArtNet",
-        long_name: str = "HomeAssistant ArtNet controller",
+        long_name: str = "HomeAssistant DMX integration",
         node_report: str = "",
         ports: list[Port] | None = None,
         acn_priority: int = 100,
@@ -914,7 +913,6 @@ class ArtPollReply(ArtBase):
 
 
 class ArtIpProg(ArtBase):
-
     def __init__(
         self,
         protocol_version: int = PROTOCOL_VERSION,
@@ -979,7 +977,6 @@ class ArtIpProg(ArtBase):
 
 
 class ArtIpProgReply(ArtBase):
-
     def __init__(
         self,
         protocol_version: int = PROTOCOL_VERSION,
@@ -1363,7 +1360,6 @@ class ArtTrigger(ArtBase):
 
 
 class ArtDmx(ArtBase):
-
     def __init__(
         self,
         protocol_version: int = PROTOCOL_VERSION,
@@ -1425,6 +1421,5 @@ class ArtDmx(ArtBase):
 
 
 class SerializationError(Exception):
-
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
