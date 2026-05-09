@@ -129,7 +129,7 @@ class DmxAnimationEngine:
 
         # Send DMX updates to universe (non-blocking)
         if dmx_updates:
-            self.hass.create_task(self.universe.update_multiple_values(dmx_updates))
+            self.hass.async_create_task(self.universe.update_multiple_values(dmx_updates))
         else:
             _LOGGER.debug(f"No DMX updates generated from frame values: {frame_values}")
 

@@ -10,7 +10,6 @@ from homeassistant.components.light import ATTR_TRANSITION
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import IntegrationError
-from homeassistant.helpers import discovery_flow
 from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.const import CONF_FIXTURE_ENTITIES, DOMAIN
@@ -74,7 +73,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     if DOMAIN not in config:
         return True
 
-    discovery_flow.async_create_flow(hass, DOMAIN, context={"source": config_entries.SOURCE_IMPORT}, data=config)
+    hass.async_create_task(
+        hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_IMPORT}, data=config)
+    )
 
     return True
 
