@@ -165,6 +165,24 @@ class LightState:
 
         return updates
 
+    def get_channel_entity_value(self, channel_type: ChannelType) -> int:
+        """Return the current entity-space value for a channel type from the light state."""
+        if channel_type == ChannelType.DIMMER:
+            return self.brightness
+        if channel_type == ChannelType.RED:
+            return self.rgb[0]
+        if channel_type == ChannelType.GREEN:
+            return self.rgb[1]
+        if channel_type == ChannelType.BLUE:
+            return self.rgb[2]
+        if channel_type == ChannelType.COLD_WHITE:
+            return self.cold_white
+        if channel_type == ChannelType.WARM_WHITE:
+            return self.warm_white
+        if channel_type == ChannelType.COLOR_TEMPERATURE:
+            return round(self.color_temp_dmx)
+        return 0
+
     def get_dmx_updates(self, values: dict[ChannelType, int | float]) -> dict[int, int]:
         updates = {}
         for channel_type, val in values.items():

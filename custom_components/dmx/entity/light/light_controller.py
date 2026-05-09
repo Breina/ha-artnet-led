@@ -75,18 +75,20 @@ class LightController:
         current_values = {}
         for channel_type in updates:
             current_entity_value = 0
-            dmx_values = []
             for mapping in self.channel_mappings:
                 if mapping.channel_type == channel_type:
-                    # Get all DMX values for this channel (handles multi-byte channels properly)
-                    dmx_values = [self.universe.get_channel_value(idx) for idx in mapping.dmx_indexes]
-
-                    # Convert DMX values to entity value using the dynamic entity
-                    capabilities = mapping.channel.capabilities
-                    first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
-                    [dynamic_entity] = first_capability.dynamic_entities
-                    normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
-                    current_entity_value = int(dynamic_entity.unnormalize(normalized_value))
+                    if all(self.universe.is_channel_set(idx) for idx in mapping.dmx_indexes):
+                        # DMX values have been written; use them (handles mid-animation restarts)
+                        dmx_values = [self.universe.get_channel_value(idx) for idx in mapping.dmx_indexes]
+                        capabilities = mapping.channel.capabilities
+                        first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
+                        [dynamic_entity] = first_capability.dynamic_entities
+                        normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
+                        current_entity_value = int(dynamic_entity.unnormalize(normalized_value))
+                    else:
+                        # Channel never written (e.g. after HA restart before first DMX send);
+                        # fall back to LightState which was restored from last_state
+                        current_entity_value = self.state.get_channel_entity_value(channel_type)
                     break
 
             current_values[channel_type] = int(current_entity_value)
@@ -201,3 +203,4 @@ class LightController:
     def _on_animation_complete(self) -> None:
         """Called when an animation completes naturally"""
         self._current_animation_id = None
+        self.state._preserve_last_values = False

@@ -135,10 +135,14 @@ class DmxUniverse:
                 self._send_timer.cancel()
                 self._send_timer = None
             self._do_send()
-        elif self._send_timer is None and self._hass:
-            # Schedule send at next frame boundary
-            remaining = self._frame_interval - elapsed
-            self._send_timer = self._hass.loop.call_later(remaining, self._do_send)
+        elif self._send_timer is None:
+            if self._hass:
+                # Schedule send at next frame boundary
+                remaining = self._frame_interval - elapsed
+                self._send_timer = self._hass.loop.call_later(remaining, self._do_send)
+            else:
+                # No event loop available (e.g. unit tests); send synchronously
+                self._do_send()
 
     def _do_send(self) -> None:
         import time
@@ -156,6 +160,9 @@ class DmxUniverse:
 
     def get_channel_value(self, channel: int) -> int:
         return self._channel_values.get(channel, 0)
+
+    def is_channel_set(self, channel: int) -> bool:
+        return channel in self._channel_values
 
     def send_universe_data(self) -> None:
         if not self._output_enabled:
