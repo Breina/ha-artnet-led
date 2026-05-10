@@ -85,7 +85,9 @@ NODES = {}
 
 
 async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, discovery_info=None):
-    pyartnet.base.background_task.CREATE_TASK = hass.async_create_task
+    # pyartnet expects the created asyncio task to be the task running its wrapper.
+    # Home Assistant's task factory can wrap tasks, which breaks pyartnet's assertions.
+    pyartnet.base.background_task.CREATE_TASK = asyncio.create_task
 
     client_type = config.get(CONF_NODE_TYPE)
     max_fps = config.get(CONF_NODE_MAX_FPS)
@@ -118,9 +120,9 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
             await __node.__aenter__()
             if not refresh_interval:
                 await __node.stop_refresh()
-            NODES[id] = __node
+            NODES[__id] = __node
 
-        node = NODES[id]
+        node = NODES[__id]
 
     elif client_type == "artnet-controller":
         if "server" not in NODES:
@@ -145,9 +147,9 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
             await __node.__aenter__()
             if not refresh_interval:
                 await __node.stop_refresh()
-            NODES[id] = __node
+            NODES[__id] = __node
 
-        node = NODES[id]
+        node = NODES[__id]
     elif client_type == "kinet":
         if real_port is None:
             real_port = KINET_DEFAULT_PORT
@@ -163,9 +165,9 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
             await __node.__aenter__()
             if not refresh_interval:
                 await __node.stop_refresh()
-            NODES[id] = __node
+            NODES[__id] = __node
 
-        node = NODES[id]
+        node = NODES[__id]
 
     else:
         raise NotImplementedError(f"Unknown client type '{client_type}'")
