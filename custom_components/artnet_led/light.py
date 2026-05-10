@@ -179,9 +179,9 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
             universe = node.get_universe(universe_nr)
         except UniverseNotFoundError:
             universe: BaseUniverse = node.add_universe(universe_nr)
-            universe.output_correction = AVAILABLE_CORRECTIONS.get(
+            universe.set_output_correction(AVAILABLE_CORRECTIONS.get(
                 universe_cfg[CONF_OUTPUT_CORRECTION]
-            )
+            ))
 
         for device in universe_cfg[CONF_DEVICES]:  # type: dict
             device = device.copy()
@@ -219,9 +219,9 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
                 )
             )
 
-            d.channel.output_correction = AVAILABLE_CORRECTIONS.get(
+            d.channel.set_output_correction(AVAILABLE_CORRECTIONS.get(
                 device[CONF_OUTPUT_CORRECTION]
-            )
+            ))
 
             device_list.append(d)
 
@@ -1054,7 +1054,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
                             vol.Optional(CONF_DEVICE_TRANSITION, default=0): vol.All(
                                 vol.Coerce(float), vol.Range(min=0, max=999)
                             ),
-                            vol.Optional(CONF_OUTPUT_CORRECTION, default='linear'): vol.Any(
+                            vol.Optional(CONF_OUTPUT_CORRECTION, default=None): vol.Any(
                                 None, vol.In(AVAILABLE_CORRECTIONS)
                             ),
                             vol.Optional(CONF_CHANNEL_SIZE, default='8bit'): vol.Any(
