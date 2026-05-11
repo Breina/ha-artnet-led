@@ -142,6 +142,16 @@ class FogTypeOutput(Enum):
     Haze = auto()
 
 
+def _blend_colors(hex_list: list[str]) -> str:
+    if len(hex_list) == 1:
+        return hex_list[0]
+    n = len(hex_list)
+    r = sum(int(c[1:3], 16) for c in hex_list) // n
+    g = sum(int(c[3:5], 16) for c in hex_list) // n
+    b = sum(int(c[5:7], 16) for c in hex_list) // n
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 def _make_interpolater(
     from_range_min: float, from_range_max: float, to_range_min: float, to_range_max: float
 ) -> Callable[[float], float]:
@@ -528,17 +538,36 @@ class ColorPreset(Capability):
         self.colors = colors
         self.color_temperature = color_temperature
 
-        if colors and len(colors) == 2:
-            # TODO this isn't ideal, how to map multiple color ranges at once?
-            self._define_from_entity([ColorHex(0, colors[0][0]), ColorHex(100, colors[1][0])])
+        if colors:
+            blended = [_blend_colors(c) for c in colors]
+            if len(blended) == 1:
+                self._define_from_entity([ColorHex(0, blended[0])])
+            else:
+                self._define_from_entity([ColorHex(0, blended[0]), ColorHex(100, blended[1])])
 
         self._define_from_entity(color_temperature)
 
     def icon(self) -> str:
         return "mdi:palette-swatch"
 
+    def extra_attributes(self) -> dict[str, Any]:
+        attributes = super().extra_attributes()
+        if self.colors:
+            flat = [c for slot in self.colors for c in slot]
+            attributes["Colors"] = flat
+        if self.color_temperature and len(self.color_temperature) == 1:
+            attributes["Color temperature"] = str(self.color_temperature[0])
+        return attributes
+
     def __str__(self) -> str:
-        return self.args_to_str(self.colors, self.color_temperature)
+        if self.comment:
+            return self.comment
+        if self.colors:
+            flat = [c for slot in self.colors for c in slot]
+            return " / ".join(flat)
+        if self.color_temperature:
+            return self.args_to_str(self.color_temperature)
+        return "Color preset"
 
 
 class ColorTemperature(Capability):
@@ -673,6 +702,7 @@ class WheelSlot(Capability):
         super().__init__(**kwargs)
         self.wheel = wheel or name
         self.slot_number = slot_number
+        self.wheel_direction: str | None = None
         self._define_from_entity(slot_number)
 
     def icon(self) -> str:
@@ -681,6 +711,8 @@ class WheelSlot(Capability):
     def extra_attributes(self) -> dict[str, Any]:
         attributes = super().extra_attributes()
         attributes["Wheel"] = self.wheel
+        if self.wheel_direction:
+            attributes["Wheel direction"] = self.wheel_direction
         return attributes
 
     def __str__(self) -> str:
@@ -709,6 +741,7 @@ class WheelShake(Capability):
         self.slot_number = slot_number
         self.shake_speed = shake_speed
         self.shake_angle = shake_angle
+        self.wheel_direction: str | None = None
 
         self._define_from_entity(slot_number)
         self._define_from_entity(shake_speed)
@@ -726,6 +759,9 @@ class WheelShake(Capability):
                 attributes["Wheel"] = self.wheel
             elif len(self.wheel) == 1:
                 attributes["Wheel"] = str(self.wheel[0])
+
+        if self.wheel_direction:
+            attributes["Wheel direction"] = self.wheel_direction
 
         if self.slot_number and len(self.slot_number) == 1:
             attributes["Slot number"] = str(self.slot_number[0])
@@ -761,6 +797,7 @@ class WheelSlotRotation(Capability):
         assert bool(angle) != bool(speed)
         self.wheel = wheel or name
         self.slot_number = slot_number
+        self.wheel_direction: str | None = None
 
         self.speed = speed
         self.angle = angle
@@ -779,6 +816,9 @@ class WheelSlotRotation(Capability):
                 attributes["Wheel"] = self.wheel
             elif len(self.wheel) == 1:
                 attributes["Wheel"] = str(self.wheel[0])
+
+        if self.wheel_direction:
+            attributes["Wheel direction"] = self.wheel_direction
 
         if self.slot_number:
             attributes["Slot number"] = str(self.slot_number)
@@ -813,6 +853,7 @@ class WheelRotation(Capability):
         self.wheel = wheel or name
         self.speed = speed
         self.angle = angle
+        self.wheel_direction: str | None = None
 
         self._define_from_entity(speed)
         self._define_from_entity(angle)
@@ -828,6 +869,9 @@ class WheelRotation(Capability):
                 attributes["Wheel"] = self.wheel
             elif len(self.wheel) == 1:
                 attributes["Wheel"] = str(self.wheel[0])
+
+        if self.wheel_direction:
+            attributes["Wheel direction"] = self.wheel_direction
 
         if self.speed and len(self.speed) == 1:
             attributes["Rotation speed"] = str(self.speed[0])

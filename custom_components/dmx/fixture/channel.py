@@ -2,7 +2,6 @@
 One Channel maps to one DMX value.
 """
 
-import math
 from dataclasses import dataclass
 
 from custom_components.dmx.fixture.capability import Capability, DmxValueResolution
@@ -10,17 +9,17 @@ from custom_components.dmx.fixture.capability import Capability, DmxValueResolut
 Capabilities = Capability | list[Capability]
 
 
-def percent_to_byte(default_value: str | int) -> int:
+def percent_to_dmx(value: str | int, resolution: DmxValueResolution) -> int:
     """
-    Converts a percent string (75%) into a byte (196).
-    :param default_value: If a string, converts it into byte. Otherwise pass
-                          through the number.
-    :return: The converted byte.
+    Converts a percent string ("75%") or raw integer to a DMX value scaled to
+    the given resolution (8-bit → 0-255, 16-bit → 0-65535, 24-bit → 0-16777215).
+    Raw integers are passed through unchanged (assumed already in range).
     """
-    if isinstance(default_value, str):
-        assert default_value[-1] == "%"
-        return int(2.55 * int(default_value[:-1]))
-    return default_value
+    if isinstance(value, str):
+        assert value[-1] == "%"
+        max_val = (256 ** resolution.value) - 1
+        return round(int(value[:-1]) * max_val / 100)
+    return value
 
 
 class Channel:
@@ -47,10 +46,12 @@ class Channel:
 
         self.dmx_value_resolution: DmxValueResolution = dmx_value_resolution
 
-        self.default_value: int = percent_to_byte(default_value) if default_value else 0
+        self.default_value: int = percent_to_dmx(default_value, dmx_value_resolution) if default_value else 0
 
-        self.highlight_value: int | float = (
-            math.pow(255, dmx_value_resolution.value) if not highlight_value else percent_to_byte(highlight_value)
+        self.highlight_value: int = (
+            (256 ** dmx_value_resolution.value) - 1
+            if not highlight_value
+            else percent_to_dmx(highlight_value, dmx_value_resolution)
         )
 
         self.constant: bool = constant

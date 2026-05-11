@@ -72,6 +72,9 @@ def _parse_fixture_data(data: dict[str, Any]) -> Fixture:
             available_template_channels_json, fixture_model.define_template_channel, fixture_model.config_url
         )
 
+    if fixture_model.wheels:
+        __inject_wheel_direction(fixture_model)
+
     fixture_model.resolve_channels()
 
     __parse_modes(fixture_model, data["modes"])
@@ -382,6 +385,24 @@ def __extract_single_value(value_json: Any, type_annotation: type) -> Any:
         return bool(value_json)
 
     raise FixtureConfigurationError(f"I don't know what kind of type this is: {type_annotation}")
+
+
+def __inject_wheel_direction(fixture_model: Fixture) -> None:
+    all_channels: list = (
+        [co.channel for co in fixture_model.channels.values() if co.byte_offset == 0]
+        + list(fixture_model.template_channels.values())
+    )
+    for ch in all_channels:
+        caps = ch.capabilities if isinstance(ch.capabilities, list) else [ch.capabilities]
+        for cap in caps:
+            wheel_name = getattr(cap, "wheel", None)
+            if isinstance(wheel_name, list):
+                wheel_name = wheel_name[0] if wheel_name else None
+            if not wheel_name or wheel_name not in fixture_model.wheels:
+                continue
+            direction = fixture_model.wheels[wheel_name].direction
+            if direction:
+                cap.wheel_direction = direction
 
 
 def __parse_modes(fixture_model: Fixture, modes_yaml: list[dict[str, Any]]) -> None:

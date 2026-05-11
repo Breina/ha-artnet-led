@@ -206,7 +206,7 @@ def matrix_from_pixel_count(x_size: int, y_size: int, z_size: int) -> Matrix:
     return Matrix(
         [
             [
-                [Pixel(x, y, z, str((x + 1) + y * x_size + z * (x_size + y_size))) for x in range(x_size)]
+                [Pixel(x, y, z, str((x + 1) + y * x_size + z * (x_size * y_size))) for x in range(x_size)]
                 for y in range(y_size)
             ]
             for z in range(z_size)
