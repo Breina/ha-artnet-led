@@ -864,26 +864,39 @@ class ArtPollReply(ArtBase):
             self.sw_macro_bitmap, index = self._pop(packet, index)
             self.sw_remote_bitmap, index = self._pop(packet, index)
 
-            index += 3
+            # Art-Net 2 minimum is 197 bytes, ending after sw_remote_bitmap.
+            # All fields below are Art-Net 3+ extensions; guard against short packets.
+            good_output_b_flags = bytearray(4)
 
-            style_code, index = self._pop(packet, index)
-            self.style = StyleCode.from_code(style_code)
+            if index < len(packet):
+                index += 3
 
-            self.mac_address, index = self._take(packet, 6, index)
-            self.bind_ip, index = self._take(packet, 4, index)
-            self.bind_index, index = self._pop(packet, index)
+                if index < len(packet):
+                    style_code, index = self._pop(packet, index)
+                    self.style = StyleCode.from_code(style_code)
 
-            status2, index = self._pop(packet, index)
-            self.supports_web_browser_configuration = bool(status2 & 1)
-            self.dhcp_configured = bool(status2 >> 1 & 1)
-            self.dhcp_capable = bool(status2 >> 2 & 1)
-            self.supports_15_bit_port_address = bool(status2 >> 3 & 1)
-            self.supports_switching_to_sacn = bool(status2 >> 4 & 1)
-            self.squawking = bool(status2 >> 5 & 1)
-            self.supports_switching_of_output_style = bool(status2 >> 6 & 1)
-            self.supports_rdm_through_artnet = bool(status2 >> 7 & 1)
+                if index + 6 <= len(packet):
+                    self.mac_address, index = self._take(packet, 6, index)
 
-            good_output_b_flags, index = self._take(packet, 4, index)
+                if index + 4 <= len(packet):
+                    self.bind_ip, index = self._take(packet, 4, index)
+
+                if index < len(packet):
+                    self.bind_index, index = self._pop(packet, index)
+
+                if index < len(packet):
+                    status2, index = self._pop(packet, index)
+                    self.supports_web_browser_configuration = bool(status2 & 1)
+                    self.dhcp_configured = bool(status2 >> 1 & 1)
+                    self.dhcp_capable = bool(status2 >> 2 & 1)
+                    self.supports_15_bit_port_address = bool(status2 >> 3 & 1)
+                    self.supports_switching_to_sacn = bool(status2 >> 4 & 1)
+                    self.squawking = bool(status2 >> 5 & 1)
+                    self.supports_switching_of_output_style = bool(status2 >> 6 & 1)
+                    self.supports_rdm_through_artnet = bool(status2 >> 7 & 1)
+
+                if index + 4 <= len(packet):
+                    good_output_b_flags, index = self._take(packet, 4, index)
 
             for i in range(port_count):
                 port = self.ports[i]
