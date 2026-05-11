@@ -254,7 +254,7 @@ class DmxBaseLight(LightEntity, RestoreEntity):
         self._channel_size = CHANNEL_SIZE[kwargs[CONF_CHANNEL_SIZE]]
         self._color_mode = kwargs[CONF_DEVICE_TYPE]
         self._vals = []
-        self._features = 0
+        self._features = LightEntityFeature(0)
         self._supported_color_modes = set()
         self._channel_last_update = 0
         self._channel_width = 0
@@ -450,6 +450,7 @@ class DmxFixed(DmxBaseLight):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._color_mode = ColorMode.ONOFF
+        self._supported_color_modes.add(ColorMode.ONOFF)
         self._channel_setup = kwargs.get(CONF_CHANNEL_SETUP) or [255]
         self._channel_width = len(self._channel_setup)
 
