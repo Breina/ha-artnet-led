@@ -4,6 +4,7 @@ from itertools import groupby
 from homeassistant.components.light import ColorMode
 from homeassistant.helpers.entity import DeviceInfo, Entity
 
+from custom_components.dmx.correction import OutputCorrection
 from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from custom_components.dmx.entity.light.light_entity import DmxLightEntity
 from custom_components.dmx.entity.number import DmxNumberEntity
@@ -35,8 +36,21 @@ def __get_all_channels(
     return [c for channel_sub in index_channels for c in __get_channel(channel_sub)]
 
 
+def _correction_for_channel(channel: Channel, output_correction: OutputCorrection | None) -> OutputCorrection | None:
+    """Return correction only for correctable intensity channels (not CT, pan, tilt, etc.)."""
+    if output_correction is None:
+        return None
+    cap = channel.capabilities
+    if isinstance(cap, list):
+        cap = cap[0] if cap else None
+    return output_correction if isinstance(cap, (ColorIntensity, Intensity)) else None
+
+
 def __accumulate_light_entities(
-    accumulator: dict[str, list[ChannelMapping]], dmx_channel_indexes: list[int], channel: Channel
+    accumulator: dict[str, list[ChannelMapping]],
+    dmx_channel_indexes: list[int],
+    channel: Channel,
+    output_correction: OutputCorrection | None = None,
 ) -> None:
     capabilities = channel.capabilities
     if isinstance(capabilities, list):
@@ -72,7 +86,8 @@ def __accumulate_light_entities(
     else:
         return
 
-    accumulated_light_channel = ChannelMapping(dmx_channel_indexes, channel, light_channel)
+    correction_for_channel = None if light_channel == ChannelType.COLOR_TEMPERATURE else output_correction
+    accumulated_light_channel = ChannelMapping(dmx_channel_indexes, channel, light_channel, correction_for_channel)
     matrix_key = channel.matrix_key or ""  # Use empty string as default key for non-matrix channels
     if matrix_key in accumulator:
         accumulator[matrix_key].append(accumulated_light_channel)
@@ -237,6 +252,7 @@ def create_entities(
     entity_id_prefix: str | None = None,
     fixture_name: str | None = None,
     mode_name: str | None = None,
+    output_correction: OutputCorrection | None = None,
 ) -> list[Entity]:
     entities: list[Entity] = []
     lights_accumulator: dict[str, list[ChannelMapping]] = {}
@@ -262,9 +278,10 @@ def create_entities(
                     dmx_indexes,
                     device,
                     fixture_fingerprint,
+                    output_correction=_correction_for_channel(channel, output_correction),
                 )
             )
-            __accumulate_light_entities(lights_accumulator, dmx_indexes, channel)
+            __accumulate_light_entities(lights_accumulator, dmx_indexes, channel, output_correction)
 
         else:
             assert len(dmx_indexes) == 1

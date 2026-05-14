@@ -85,6 +85,10 @@ class LightController:
                         [dynamic_entity] = first_capability.dynamic_entities
                         normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
                         current_entity_value = int(dynamic_entity.unnormalize(normalized_value))
+                        if mapping.output_correction is not None:
+                            current_entity_value = round(
+                                mapping.output_correction.invert(current_entity_value / 255.0) * 255.0
+                            )
                     else:
                         # Channel never written (e.g. after HA restart before first DMX send);
                         # fall back to LightState which was restored from last_state

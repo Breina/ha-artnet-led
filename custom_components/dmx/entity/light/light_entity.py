@@ -88,6 +88,9 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
         value = dynamic_entity.unnormalize(normalized_value)
 
+        if channel_mapping.output_correction is not None:
+            value = channel_mapping.output_correction.invert(value / 255.0) * 255.0
+
         if not self.hass:
             log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
             return

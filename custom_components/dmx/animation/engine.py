@@ -115,10 +115,13 @@ class DmxAnimationEngine:
                     if mapping.channel_type == channel_type:
                         try:
                             # Convert to DMX values using the mapping
+                            value_for_dmx = value
+                            if mapping.output_correction is not None:
+                                value_for_dmx = mapping.output_correction.apply(float(value_for_dmx) / 255.0) * 255.0
                             capabilities = mapping.channel.capabilities
                             first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
                             [entity] = first_capability.dynamic_entities
-                            norm_val = entity.normalize(value)
+                            norm_val = entity.normalize(value_for_dmx)
                             dmx_values = entity.to_dmx_fine(norm_val, len(mapping.dmx_indexes))
 
                             for i, dmx_index in enumerate(mapping.dmx_indexes):

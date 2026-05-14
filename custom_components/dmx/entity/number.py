@@ -6,6 +6,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.util import slugify
 
 from custom_components.dmx.const import DOMAIN
+from custom_components.dmx.correction import OutputCorrection
 from custom_components.dmx.fixture.capability import Capability, DynamicEntity
 from custom_components.dmx.io.dmx_io import DmxUniverse
 
@@ -24,6 +25,7 @@ class DmxNumberEntity(RestoreNumber):
         device: DeviceInfo,
         fixture_fingerprint: str,
         available: bool = True,
+        output_correction: OutputCorrection | None = None,
     ) -> None:
         super().__init__()
 
@@ -67,13 +69,41 @@ class DmxNumberEntity(RestoreNumber):
         native_value_range: float = self._attr_native_max_value - self._attr_native_min_value
         self._attr_native_step = native_value_range / float(possible_dmx_states)
 
-        if capability.menu_click and capability.menu_click_value is not None:
-            self._attr_native_value = self.dynamic_entity.from_dmx(capability.menu_click_value)
-        else:
-            self._attr_native_value = self.dynamic_entity.from_dmx(0)
+        self.output_correction = output_correction
 
+        if capability.menu_click and capability.menu_click_value is not None:
+            self._attr_native_value = self._from_dmx_corrected(
+                self.dynamic_entity.from_dmx(capability.menu_click_value)
+            )
+        else:
+            self._attr_native_value = self._from_dmx_corrected(self.dynamic_entity.from_dmx(0))
         self._is_updating = False
         self.universe.register_channel_listener(dmx_indexes, self.update_value)
+
+    def _native_range(self) -> float:
+        return self._attr_native_max_value - self._attr_native_min_value
+
+    def _from_dmx_corrected(self, raw_native: float) -> float:
+        """Convert a raw (corrected) DMX-space native value to intended HA-space value."""
+        if self.output_correction is None:
+            return raw_native
+        span = self._native_range()
+        if span == 0:
+            return raw_native
+        t_corrected = (raw_native - self._attr_native_min_value) / span
+        t_intended = self.output_correction.invert(t_corrected)
+        return t_intended * span + self._attr_native_min_value
+
+    def _to_dmx_corrected(self, intended_native: float) -> float:
+        """Convert an intended HA-space native value to corrected DMX-space native value."""
+        if self.output_correction is None:
+            return intended_native
+        span = self._native_range()
+        if span == 0:
+            return intended_native
+        t_intended = (intended_native - self._attr_native_min_value) / span
+        t_corrected = self.output_correction.apply(t_intended)
+        return t_corrected * span + self._attr_native_min_value
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
@@ -95,7 +125,8 @@ class DmxNumberEntity(RestoreNumber):
 
         if last_number is not None and last_number.native_value is not None:
             self._attr_native_value = last_number.native_value
-            dmx_values: list[int] = self.dynamic_entity.to_dmx_fine(self._attr_native_value, len(self.dmx_indexes))
+            corrected = self._to_dmx_corrected(self._attr_native_value)
+            dmx_values: list[int] = self.dynamic_entity.to_dmx_fine(corrected, len(self.dmx_indexes))
             dmx_updates: dict[int, int] = {
                 idx: dmx_values[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values)
             }
@@ -105,8 +136,9 @@ class DmxNumberEntity(RestoreNumber):
                 restored_value: float = float(last_state.state)
                 if self._attr_native_min_value <= restored_value <= self._attr_native_max_value:
                     self._attr_native_value = restored_value
+                    corrected_2 = self._to_dmx_corrected(self._attr_native_value)
                     dmx_values_2: list[int] = self.dynamic_entity.to_dmx_fine(
-                        self._attr_native_value, len(self.dmx_indexes)
+                        corrected_2, len(self.dmx_indexes)
                     )
                     dmx_updates_2: dict[int, int] = {
                         idx: dmx_values_2[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values_2)
@@ -126,7 +158,8 @@ class DmxNumberEntity(RestoreNumber):
         self._attr_attribution = source
 
         dmx_values: list[int] = [self.universe.get_channel_value(idx) for idx in self.dmx_indexes]
-        self._attr_native_value = self.dynamic_entity.from_dmx_fine(dmx_values)
+        raw_native = self.dynamic_entity.from_dmx_fine(dmx_values)
+        self._attr_native_value = self._from_dmx_corrected(raw_native)
 
         if not self.hass:
             log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
@@ -135,15 +168,16 @@ class DmxNumberEntity(RestoreNumber):
         self.async_schedule_update_ha_state()
 
     async def async_set_native_value(self, value: float) -> None:
-        dmx_values: list[int] = self.dynamic_entity.to_dmx_fine(value, len(self.dmx_indexes))
+        corrected = self._to_dmx_corrected(value)
+        dmx_values: list[int] = self.dynamic_entity.to_dmx_fine(corrected, len(self.dmx_indexes))
 
-        self._attr_native_value = self.dynamic_entity.from_dmx_fine(
-            dmx_values
-        )  # Set to closest value that can be represented through DMX values
+        # Store the closest intended value representable via this DMX quantisation.
+        raw_native = self.dynamic_entity.from_dmx_fine(dmx_values)
+        self._attr_native_value = self._from_dmx_corrected(raw_native)
 
         dmx_updates: dict[int, int] = {}
         for i, dmx_index in enumerate(self.dmx_indexes):
-            if i < len(dmx_values):  # Safety check
+            if i < len(dmx_values):
                 dmx_updates[dmx_index] = dmx_values[i]
 
         self._is_updating = True

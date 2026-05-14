@@ -8,6 +8,7 @@ import voluptuous as vol
 from homeassistant.const import CONF_HOST, CONF_MODE, CONF_PORT
 from homeassistant.core import HomeAssistant
 
+from custom_components.dmx.correction import AVAILABLE_CURVES
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.server import PortAddress
 
@@ -157,6 +158,20 @@ DEVICE_CONFIG = vol.Schema(
         vol.Required(CONF_FIXTURE): cv.string,
         vol.Optional(CONF_MODE): vol.Any(None, cv.string),
         vol.Optional(CONF_ENTITY_ID_PREFIX): vol.Any(None, cv.string),
+        vol.Optional(CONF_OUTPUT_CORRECTION): vol.Any(
+            vol.In(AVAILABLE_CURVES),
+            vol.Schema(
+                {
+                    vol.Optional("curve", default="linear"): vol.In(AVAILABLE_CURVES),
+                    vol.Optional("min", default=0.0): vol.All(
+                        vol.Coerce(float), vol.Range(min=0.0, max=1.0)
+                    ),
+                    vol.Optional("max", default=1.0): vol.All(
+                        vol.Coerce(float), vol.Range(min=0.0, max=1.0)
+                    ),
+                }
+            ),
+        ),
     }
 )
 

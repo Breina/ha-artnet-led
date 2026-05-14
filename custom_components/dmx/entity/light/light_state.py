@@ -190,6 +190,10 @@ class LightState:
                 continue
 
             mapping = self.channels[channel_type]
+
+            if mapping.output_correction is not None:
+                val = mapping.output_correction.apply(float(val) / 255.0) * 255.0
+
             capabilities = mapping.channel.capabilities
             first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
             [entity] = first_capability.dynamic_entities

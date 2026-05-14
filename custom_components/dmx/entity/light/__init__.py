@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 
+from custom_components.dmx.correction import OutputCorrection
 from custom_components.dmx.fixture.channel import Channel
 
 
@@ -19,3 +20,4 @@ class ChannelMapping:
     dmx_indexes: list[int]
     channel: Channel
     channel_type: ChannelType
+    output_correction: OutputCorrection | None = field(default=None)

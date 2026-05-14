@@ -7,6 +7,7 @@ from homeassistant.const import CONF_MODE
 from homeassistant.helpers.entity import DeviceInfo, Entity
 
 from custom_components.dmx.const import DOMAIN
+from custom_components.dmx.correction import parse_output_correction
 from custom_components.dmx.fixture.delegator import create_entities
 from custom_components.dmx.fixture.fixture import Fixture
 from custom_components.dmx.io.dmx_io import DmxUniverse
@@ -15,6 +16,7 @@ from custom_components.dmx.setup.config_processor import (
     CONF_DEVICES,
     CONF_ENTITY_ID_PREFIX,
     CONF_FIXTURE,
+    CONF_OUTPUT_CORRECTION,
     CONF_START_ADDRESS,
 )
 from custom_components.dmx.util.fixture_fingerprint import generate_fixture_fingerprint
@@ -45,6 +47,7 @@ class EntityFactory:
             fixture_name = device_yaml[CONF_FIXTURE]
             mode = device_yaml.get(CONF_MODE)
             entity_id_prefix = device_yaml.get(CONF_ENTITY_ID_PREFIX)
+            output_correction = parse_output_correction(device_yaml.get(CONF_OUTPUT_CORRECTION))
 
             if fixture_name not in self.processed_fixtures:
                 log.warning("Could not find fixture '%s'. Ignoring device %s", fixture_name, device_name)
@@ -73,7 +76,8 @@ class EntityFactory:
 
             entities.extend(
                 create_entities(
-                    device_name, start_address, channels, device, universe, entity_id_prefix, fixture_name, mode
+                    device_name, start_address, channels, device, universe, entity_id_prefix, fixture_name, mode,
+                    output_correction=output_correction,
                 )
             )
 

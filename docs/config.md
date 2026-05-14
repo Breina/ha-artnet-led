@@ -142,7 +142,22 @@ Universe definitions. Each universe can be specified as:
 - - Number entities: `number.{entity_id_prefix}_{channel_name}` or `nubmer.{entity_id_prefix}_{channel_name}_{capability_name}`
 - - Select entities: `select.{entity_id_prefix}_{channel_name}`
 - - Light entities: `light.{entity_id_prefix}`
-  
+- **`output_correction`** *(optional)*  
+  Applies a dimming curve to all intensity channels of this fixture, correcting for the non-linear
+  relationship between DMX values and perceived brightness.
+
+  **Shorthand** (curve name only):
+  ```yaml
+  output_correction: quadratic
+  ```
+
+  **Full form** (curve + dead zone + de-rating):
+  ```yaml
+  output_correction:
+    curve: quadratic   # linear (default), quadratic, cubic, quartic, sine
+    min: 0.05          # DMX floor when ON — skips fixture dead zone (fraction 0.0–1.0)
+    max: 0.90          # DMX ceiling — de-rates max brightness (fraction 0.0–1.0)
+  ```
 
 #### Compatibility Options
 - **`send_partial_universe`** *(optional, default: true)*  
