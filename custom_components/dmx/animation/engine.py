@@ -76,7 +76,7 @@ class DmxAnimationEngine:
                 frame_values = animation.calculate_frame_values()
                 progress = animation.get_progress()
 
-                self._output_frame(frame_values)
+                self._output_frame(animation, frame_values)
 
                 if progress >= 1.0:
                     _LOGGER.debug(f"Animation {animation.animation_id} completed")
@@ -101,7 +101,7 @@ class DmxAnimationEngine:
         finally:
             self._cleanup_animation(animation.animation_id)
 
-    def _output_frame(self, frame_values: dict[ChannelType, int]) -> None:
+    def _output_frame(self, animation: AnimationTask, frame_values: dict[ChannelType, int]) -> None:
         """Output frame data to DMX universe"""
         if not self.universe:
             return
@@ -109,26 +109,32 @@ class DmxAnimationEngine:
         # Convert ChannelType values to DMX updates
         dmx_updates = {}
         for channel_type, value in frame_values.items():
-            # Find the channel mapping for this channel type
-            for animation in self.active_animations.values():
-                for mapping in animation.channel_mappings:
-                    if mapping.channel_type == channel_type:
-                        try:
-                            # Convert to DMX values using the mapping
-                            value_for_dmx = value
-                            if mapping.output_correction is not None:
-                                value_for_dmx = mapping.output_correction.apply(float(value_for_dmx) / 255.0) * 255.0
-                            capabilities = mapping.channel.capabilities
-                            first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
-                            [entity] = first_capability.dynamic_entities
-                            norm_val = entity.normalize(value_for_dmx)
-                            dmx_values = entity.to_dmx_fine(norm_val, len(mapping.dmx_indexes))
+            # Find the channel mapping for this channel type. Must be scoped to THIS
+            # animation's own channel_mappings, not searched across every active
+            # animation: ChannelType (RED/GREEN/BLUE/DIMMER/...) is a generic enum
+            # shared by all fixtures, so searching self.active_animations.values()
+            # here could match a *different* fixture's mapping whenever 2+ fixtures
+            # animate concurrently (e.g. any scene touching multiple DMX lights at
+            # once), writing this fixture's interpolated value to the wrong DMX
+            # indexes and corrupting/flickering unrelated lights.
+            for mapping in animation.channel_mappings:
+                if mapping.channel_type == channel_type:
+                    try:
+                        # Convert to DMX values using the mapping
+                        value_for_dmx = value
+                        if mapping.output_correction is not None:
+                            value_for_dmx = mapping.output_correction.apply(float(value_for_dmx) / 255.0) * 255.0
+                        capabilities = mapping.channel.capabilities
+                        first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
+                        [entity] = first_capability.dynamic_entities
+                        norm_val = entity.normalize(value_for_dmx)
+                        dmx_values = entity.to_dmx_fine(norm_val, len(mapping.dmx_indexes))
 
-                            for i, dmx_index in enumerate(mapping.dmx_indexes):
-                                dmx_updates[dmx_index] = dmx_values[i]
-                        except Exception as e:
-                            _LOGGER.error(f"Error converting channel {channel_type} value {value} to DMX: {e}")
-                        break
+                        for i, dmx_index in enumerate(mapping.dmx_indexes):
+                            dmx_updates[dmx_index] = dmx_values[i]
+                    except Exception as e:
+                        _LOGGER.error(f"Error converting channel {channel_type} value {value} to DMX: {e}")
+                    break
 
         # Send DMX updates to universe (non-blocking)
         if dmx_updates:
