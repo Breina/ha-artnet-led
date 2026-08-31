@@ -198,6 +198,54 @@ class TestSelectEntity(unittest.TestCase):
         self.assertEqual("Strobe effect 1", select.current_option, "Restore must not override an already-set channel")
         assert_dmx(self.universe, select.dmx_index, 20)
 
+    def test_stale_number_sibling_does_not_clobber_channel_on_restart(self):
+        """Regression test for a real live bug found 2026-08-31: a select's
+        "menu-click" number sibling (e.g. a strobe-speed slider) keeps its own
+        stuck native_value once it goes unavailable -- update_value() no-ops
+        while unavailable, so it never re-syncs to a later channel write. On
+        restart, that sibling's own restore used to write this stale value
+        straight to the shared DMX channel regardless of which capability was
+        actually last selected, silently overriding the select's own (correct)
+        restored option. owns_channel=False on select-linked numbers fixes
+        this by making the select the sole writer to the shared channel.
+        """
+        fixture_path = Path(__file__).parent / "fixtures" / "dj_scan_led.json"
+        fixture = parser.parse(str(fixture_path))
+        channels = fixture.select_mode("Normal")
+
+        # "Before restart": select ends up on "Open", but its "Strobe effect 1"
+        # sibling's own last-tracked value is stuck at 1 from when it was still
+        # the active capability.
+        live_entities = delegator.create_entities("DJ Scan LED", 1, channels, None, self.universe)
+        live_select: DmxSelectEntity = get_entity_by_name(live_entities, "DJ Scan LED Shutter")
+        live_strobe1: DmxNumberEntity = get_entity_by_name(
+            live_entities, "DJ Scan LED Shutter Strobe effect 1"
+        )
+        asyncio.run(live_select.async_select_option("Strobe effect 1"))
+        asyncio.run(live_select.async_select_option("Open"))
+        self.assertFalse(live_strobe1.available)
+        self.assertEqual(1, live_strobe1.native_value)
+
+        # "After restart": brand new entities on a fresh universe. Patch
+        # restore to report exactly what was true live -- select -> "Open",
+        # strobe1's own stale value -> 1 -- and fire the stale sibling's
+        # restore *before* the select's, the worst-case ordering.
+        fresh_universe = MockDmxUniverse()
+        entities = delegator.create_entities("DJ Scan LED", 1, channels, None, fresh_universe)
+        select: DmxSelectEntity = get_entity_by_name(entities, "DJ Scan LED Shutter")
+        strobe1: DmxNumberEntity = get_entity_by_name(entities, "DJ Scan LED Shutter Strobe effect 1")
+
+        with patch.object(DmxNumberEntity, "async_get_last_number_data", return_value=None), \
+             patch.object(DmxNumberEntity, "async_get_last_state", return_value=State("number.x", "1.0")), \
+             patch.object(DmxSelectEntity, "async_get_last_state", return_value=State("select.x", "Open")):
+            asyncio.run(strobe1.async_added_to_hass())
+            asyncio.run(select.async_added_to_hass())
+
+        self.assertEqual("Open", select.current_option)
+        assert_dmx(fresh_universe, select.dmx_index, 14)
+        self.assertEqual(1, strobe1.native_value, "still restored for display")
+        self.assertFalse(strobe1.available)
+
 
 if __name__ == "__main__":
     unittest.main()

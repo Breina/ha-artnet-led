@@ -296,6 +296,7 @@ def create_entities(
                     device,
                     fixture_fingerprint,
                     available=False,
+                    owns_channel=False,
                 )
                 for capability in channel.capabilities
                 if capability.is_dynamic_entity()

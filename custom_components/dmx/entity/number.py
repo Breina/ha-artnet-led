@@ -26,6 +26,7 @@ class DmxNumberEntity(RestoreNumber):
         fixture_fingerprint: str,
         available: bool = True,
         output_correction: OutputCorrection | None = None,
+        owns_channel: bool = True,
     ) -> None:
         super().__init__()
 
@@ -71,6 +72,14 @@ class DmxNumberEntity(RestoreNumber):
 
         self.output_correction = output_correction
 
+        # False for the "menu-click" sub-value numbers a DmxSelectEntity owns
+        # (e.g. a strobe-speed slider that only applies while its select is on
+        # the matching option). Those share a DMX channel with sibling
+        # capabilities and with the select itself, which is the sole authority
+        # for what gets written to that channel on restore -- see
+        # async_added_to_hass() below.
+        self.owns_channel = owns_channel
+
         if capability.menu_click and capability.menu_click_value is not None:
             self._attr_native_value = self._from_dmx_corrected(
                 self.dynamic_entity.from_dmx(capability.menu_click_value)
@@ -113,18 +122,29 @@ class DmxNumberEntity(RestoreNumber):
         # already set these channels.  HA's async_add_entities schedules entity
         # setup tasks that can run *after* the user has already sent a command;
         # without this guard the restore would silently overwrite the user's value.
-        if any(self.universe.is_channel_set(idx) for idx in self.dmx_indexes):
+        # Not applicable when a sibling DmxSelectEntity owns this channel (see
+        # owns_channel below) since we never write to the universe in that case.
+        if self.owns_channel and any(self.universe.is_channel_set(idx) for idx in self.dmx_indexes):
             return
 
         last_state: State | None = await self.async_get_last_state()
         last_number: NumberExtraStoredData | None = await self.async_get_last_number_data()
 
         # Re-check after the awaits: user may have acted while we were suspended.
-        if any(self.universe.is_channel_set(idx) for idx in self.dmx_indexes):
+        if self.owns_channel and any(self.universe.is_channel_set(idx) for idx in self.dmx_indexes):
             return
 
         if last_number is not None and last_number.native_value is not None:
             self._attr_native_value = last_number.native_value
+            if not self.owns_channel:
+                # A sibling select owns this channel and is the sole authority
+                # for what gets written to it on restore (its own restore logic
+                # picks the right capability's representative value) -- restore
+                # our own displayed value only, don't touch the DMX universe.
+                # Otherwise this stale/stuck value (see update_value()'s
+                # availability guard) would clobber whatever the select
+                # actually restored to.
+                return
             corrected = self._to_dmx_corrected(self._attr_native_value)
             dmx_values: list[int] = self.dynamic_entity.to_dmx_fine(corrected, len(self.dmx_indexes))
             dmx_updates: dict[int, int] = {
@@ -136,6 +156,8 @@ class DmxNumberEntity(RestoreNumber):
                 restored_value: float = float(last_state.state)
                 if self._attr_native_min_value <= restored_value <= self._attr_native_max_value:
                     self._attr_native_value = restored_value
+                    if not self.owns_channel:
+                        return
                     corrected_2 = self._to_dmx_corrected(self._attr_native_value)
                     dmx_values_2: list[int] = self.dynamic_entity.to_dmx_fine(
                         corrected_2, len(self.dmx_indexes)
