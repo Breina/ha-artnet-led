@@ -76,6 +76,9 @@ class MockDmxUniverse(DmxUniverse):
                 assert 0 <= value <= 255, f"DMX value {value} for channel {channel} must be between 0 and 255"
                 assert isinstance(value, int), f"DMX value {value} for channel {channel} must be an integer"
                 self.values[channel - 1] = value
+                # Keep the base class's _channel_values in sync too, since
+                # is_channel_set() (unoverridden here) reads from it.
+                self._channel_values[channel] = value
                 changed_channels.append(channel)
 
         called_callbacks = set()

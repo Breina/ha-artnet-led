@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import homeassistant.helpers.device_registry
+from homeassistant.core import State
 
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.entity.select import DmxSelectEntity
@@ -145,6 +146,57 @@ class TestSelectEntity(unittest.TestCase):
         self.assertTrue(speed.available)
         self.assertFalse(sound.available)
         assert_dmx_range(self.universe, 9, [31, 255])
+
+    def test_restores_option_after_restart(self):
+        """A select that was left on a non-default option before an HA restart
+        must come back on that same option, and must re-push the corresponding
+        DMX value onto the wire -- the physical fixture has no memory of its
+        own and silently reverts to its own default the moment DMX goes quiet,
+        so restoring HA's in-memory state alone isn't enough.
+        """
+        fixture_path = Path(__file__).parent / "fixtures" / "dj_scan_led.json"
+        fixture = parser.parse(str(fixture_path))
+        channels = fixture.select_mode("Normal")
+        entities = delegator.create_entities("DJ Scan LED", 1, channels, None, self.universe)
+
+        select: DmxSelectEntity = get_entity_by_name(entities, "DJ Scan LED Shutter")
+        strobe1: DmxNumberEntity = get_entity_by_name(entities, "DJ Scan LED Shutter Strobe effect 1")
+
+        # Simulate a fresh universe (as after an HA/fixture restart) where the
+        # select entity's own channel hasn't been written to yet, and HA's
+        # restore-state cache reports the option it was left on before restart.
+        self.assertEqual("Open", select.current_option, "Fresh entity still on its default")
+        self.assertFalse(self.universe.is_channel_set(select.dmx_index))
+
+        with patch.object(
+            DmxSelectEntity, "async_get_last_state", return_value=State("select.dj_scan_led_shutter", "Strobe effect 1")
+        ):
+            asyncio.run(select.async_added_to_hass())
+
+        self.assertEqual("Strobe effect 1", select.current_option)
+        assert_dmx(self.universe, select.dmx_index, 20)
+        self.assertTrue(strobe1.available)
+
+    def test_does_not_restore_over_a_value_already_on_the_wire(self):
+        """If something already wrote to this channel (e.g. a racing user
+        command) before the restore runs, the restore must not clobber it.
+        """
+        fixture_path = Path(__file__).parent / "fixtures" / "dj_scan_led.json"
+        fixture = parser.parse(str(fixture_path))
+        channels = fixture.select_mode("Normal")
+        entities = delegator.create_entities("DJ Scan LED", 1, channels, None, self.universe)
+
+        select: DmxSelectEntity = get_entity_by_name(entities, "DJ Scan LED Shutter")
+        asyncio.run(select.async_select_option("Strobe effect 1"))
+        assert_dmx(self.universe, select.dmx_index, 20)
+
+        with patch.object(
+            DmxSelectEntity, "async_get_last_state", return_value=State("select.dj_scan_led_shutter", "Strobe effect 2")
+        ):
+            asyncio.run(select.async_added_to_hass())
+
+        self.assertEqual("Strobe effect 1", select.current_option, "Restore must not override an already-set channel")
+        assert_dmx(self.universe, select.dmx_index, 20)
 
 
 if __name__ == "__main__":

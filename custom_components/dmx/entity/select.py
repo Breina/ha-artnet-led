@@ -1,7 +1,9 @@
 import logging
 
 from homeassistant.components.select import SelectEntity
+from homeassistant.core import State
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import slugify
 
 from custom_components.dmx.const import DOMAIN
@@ -15,7 +17,7 @@ from custom_components.dmx.io.dmx_io import DmxUniverse
 log = logging.getLogger(__name__)
 
 
-class DmxSelectEntity(SelectEntity):
+class DmxSelectEntity(SelectEntity, RestoreEntity):
     def __init__(
         self,
         fixture_name: str,
@@ -77,6 +79,34 @@ class DmxSelectEntity(SelectEntity):
         # Initialize with default value - note: this is sync initialization so we can't await
         # The value will be properly set when the entity is added to Home Assistant
         self.update_option_to_dmx_value(channel.default_value)
+
+    async def async_added_to_hass(self) -> None:
+        """Run when entity about to be added to hass."""
+        await super().async_added_to_hass()
+
+        # Same guard as DmxNumberEntity.async_added_to_hass(): don't clobber a
+        # value some other code path (e.g. a user command racing this restore)
+        # already wrote to this channel.
+        if self.universe.is_channel_set(self.dmx_index):
+            return
+
+        last_state: State | None = await self.async_get_last_state()
+
+        # Re-check after the await: state may have changed while we were suspended.
+        if self.universe.is_channel_set(self.dmx_index):
+            return
+
+        if last_state is None or last_state.state not in self.capability_types:
+            return
+
+        option = last_state.state
+        capability = self.capability_types[option]
+        dmx_value: int = (
+            capability.menu_click_value if capability.menu_click_value is not None else capability.dmx_range_start
+        )
+
+        self._update_current_option_sync(option)
+        await self.universe.update_value(self.dmx_index, dmx_value, send_immediately=True)
 
     def link_switching_entities(self, entities: list[DmxNumberEntity]) -> None:
         for capability_name, capability in self.capability_types.items():
