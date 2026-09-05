@@ -218,9 +218,7 @@ class TestSelectEntity(unittest.TestCase):
         # the active capability.
         live_entities = delegator.create_entities("DJ Scan LED", 1, channels, None, self.universe)
         live_select: DmxSelectEntity = get_entity_by_name(live_entities, "DJ Scan LED Shutter")
-        live_strobe1: DmxNumberEntity = get_entity_by_name(
-            live_entities, "DJ Scan LED Shutter Strobe effect 1"
-        )
+        live_strobe1: DmxNumberEntity = get_entity_by_name(live_entities, "DJ Scan LED Shutter Strobe effect 1")
         asyncio.run(live_select.async_select_option("Strobe effect 1"))
         asyncio.run(live_select.async_select_option("Open"))
         self.assertFalse(live_strobe1.available)
@@ -235,9 +233,11 @@ class TestSelectEntity(unittest.TestCase):
         select: DmxSelectEntity = get_entity_by_name(entities, "DJ Scan LED Shutter")
         strobe1: DmxNumberEntity = get_entity_by_name(entities, "DJ Scan LED Shutter Strobe effect 1")
 
-        with patch.object(DmxNumberEntity, "async_get_last_number_data", return_value=None), \
-             patch.object(DmxNumberEntity, "async_get_last_state", return_value=State("number.x", "1.0")), \
-             patch.object(DmxSelectEntity, "async_get_last_state", return_value=State("select.x", "Open")):
+        with (
+            patch.object(DmxNumberEntity, "async_get_last_number_data", return_value=None),
+            patch.object(DmxNumberEntity, "async_get_last_state", return_value=State("number.x", "1.0")),
+            patch.object(DmxSelectEntity, "async_get_last_state", return_value=State("select.x", "Open")),
+        ):
             asyncio.run(strobe1.async_added_to_hass())
             asyncio.run(select.async_added_to_hass())
 

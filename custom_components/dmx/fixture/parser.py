@@ -388,9 +388,8 @@ def __extract_single_value(value_json: Any, type_annotation: type) -> Any:
 
 
 def __inject_wheel_direction(fixture_model: Fixture) -> None:
-    all_channels: list = (
-        [co.channel for co in fixture_model.channels.values() if co.byte_offset == 0]
-        + list(fixture_model.template_channels.values())
+    all_channels: list = [co.channel for co in fixture_model.channels.values() if co.byte_offset == 0] + list(
+        fixture_model.template_channels.values()
     )
     for ch in all_channels:
         caps = ch.capabilities if isinstance(ch.capabilities, list) else [ch.capabilities]
@@ -409,7 +408,7 @@ def __parse_modes(fixture_model: Fixture, modes_yaml: list[dict[str, Any]]) -> N
     for mode_yaml in modes_yaml:
         name = mode_yaml["name"]
         short_name = mode_yaml.get("shortName")
-        channels_yaml: list[None | str | dict[str, Any]] = mode_yaml["channels"]
+        channels_yaml: list[str | dict[str, Any] | None] = mode_yaml["channels"]
 
         channels = list(map(__parse_mode_channel, channels_yaml))
 
@@ -417,7 +416,7 @@ def __parse_modes(fixture_model: Fixture, modes_yaml: list[dict[str, Any]]) -> N
         fixture_model.define_mode(mode)
 
 
-def __parse_mode_channel(mode_channel: None | str | dict[str, Any]) -> None | str | MatrixChannelInsertBlock:
+def __parse_mode_channel(mode_channel: str | dict[str, Any] | None) -> str | MatrixChannelInsertBlock | None:
     if mode_channel is None or isinstance(mode_channel, str):
         return mode_channel
 

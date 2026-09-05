@@ -159,9 +159,7 @@ class DmxNumberEntity(RestoreNumber):
                     if not self.owns_channel:
                         return
                     corrected_2 = self._to_dmx_corrected(self._attr_native_value)
-                    dmx_values_2: list[int] = self.dynamic_entity.to_dmx_fine(
-                        corrected_2, len(self.dmx_indexes)
-                    )
+                    dmx_values_2: list[int] = self.dynamic_entity.to_dmx_fine(corrected_2, len(self.dmx_indexes))
                     dmx_updates_2: dict[int, int] = {
                         idx: dmx_values_2[i] for i, idx in enumerate(self.dmx_indexes) if i < len(dmx_values_2)
                     }

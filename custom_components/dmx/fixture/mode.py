@@ -69,7 +69,7 @@ class MatrixChannelInsertBlock:
 
     repeat_for: RepeatFor | list[str]
     order: ChannelOrder
-    template_channels: list[None | str]
+    template_channels: list[str | None]
 
     def __repr__(self) -> str:
         return "matrixChannels"
@@ -82,7 +82,7 @@ class Mode:
     """
 
     name: str
-    channels: list[None | str | MatrixChannelInsertBlock]
+    channels: list[str | MatrixChannelInsertBlock | None]
     short_name: str | None = None
 
     def __post_init__(self) -> None:

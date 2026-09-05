@@ -163,12 +163,8 @@ DEVICE_CONFIG = vol.Schema(
             vol.Schema(
                 {
                     vol.Optional("curve", default="linear"): vol.In(AVAILABLE_CURVES),
-                    vol.Optional("min", default=0.0): vol.All(
-                        vol.Coerce(float), vol.Range(min=0.0, max=1.0)
-                    ),
-                    vol.Optional("max", default=1.0): vol.All(
-                        vol.Coerce(float), vol.Range(min=0.0, max=1.0)
-                    ),
+                    vol.Optional("min", default=0.0): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=1.0)),
+                    vol.Optional("max", default=1.0): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=1.0)),
                 }
             ),
         ),

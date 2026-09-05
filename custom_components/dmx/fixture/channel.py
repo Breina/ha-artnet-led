@@ -17,7 +17,7 @@ def percent_to_dmx(value: str | int, resolution: DmxValueResolution) -> int:
     """
     if isinstance(value, str):
         assert value[-1] == "%"
-        max_val = (256 ** resolution.value) - 1
+        max_val = (256**resolution.value) - 1
         return round(int(value[:-1]) * max_val / 100)
     return value
 
@@ -49,7 +49,7 @@ class Channel:
         self.default_value: int = percent_to_dmx(default_value, dmx_value_resolution) if default_value else 0
 
         self.highlight_value: int = (
-            (256 ** dmx_value_resolution.value) - 1
+            (256**dmx_value_resolution.value) - 1
             if not highlight_value
             else percent_to_dmx(highlight_value, dmx_value_resolution)
         )

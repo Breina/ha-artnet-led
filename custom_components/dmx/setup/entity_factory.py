@@ -76,7 +76,14 @@ class EntityFactory:
 
             entities.extend(
                 create_entities(
-                    device_name, start_address, channels, device, universe, entity_id_prefix, fixture_name, mode,
+                    device_name,
+                    start_address,
+                    channels,
+                    device,
+                    universe,
+                    entity_id_prefix,
+                    fixture_name,
+                    mode,
                     output_correction=output_correction,
                 )
             )

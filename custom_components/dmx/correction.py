@@ -21,8 +21,8 @@ AVAILABLE_CURVES: dict[str, tuple[CurveFunction, CurveFunction]] = {
 @dataclass
 class OutputCorrection:
     curve_name: str = "linear"
-    min_value: float = 0.0  # DMX floor when ON (fraction 0–1)
-    max_value: float = 1.0  # DMX ceiling (fraction 0–1)
+    min_value: float = 0.0  # DMX floor when ON (fraction 0-1)
+    max_value: float = 1.0  # DMX ceiling (fraction 0-1)
 
     def apply(self, t: float) -> float:
         """Map intended intensity t ∈ [0,1] to corrected DMX fraction.

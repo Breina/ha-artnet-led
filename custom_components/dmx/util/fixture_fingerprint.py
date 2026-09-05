@@ -11,7 +11,7 @@ from custom_components.dmx.fixture.channel import Channel, ChannelOffset, Switch
 
 
 def generate_fixture_fingerprint(
-    fixture_name: str, mode_name: str, channels: list[None | ChannelOffset | SwitchingChannel]
+    fixture_name: str, mode_name: str, channels: list[ChannelOffset | SwitchingChannel | None]
 ) -> str:
     """
     Generate a fingerprint for a specific fixture mode configuration.

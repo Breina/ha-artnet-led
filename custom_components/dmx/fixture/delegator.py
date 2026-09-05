@@ -21,7 +21,7 @@ class MappedChannel:
     channel: Channel
 
 
-def __get_channel(source: tuple[int, None | ChannelOffset | SwitchingChannel]) -> list[tuple[int, ChannelOffset]]:
+def __get_channel(source: tuple[int, ChannelOffset | SwitchingChannel | None]) -> list[tuple[int, ChannelOffset]]:
     if isinstance(source[1], ChannelOffset):
         return [(source[0], source[1])]
     elif isinstance(source[1], SwitchingChannel):
@@ -31,7 +31,7 @@ def __get_channel(source: tuple[int, None | ChannelOffset | SwitchingChannel]) -
 
 
 def __get_all_channels(
-    index_channels: list[tuple[int, None | ChannelOffset | SwitchingChannel]],
+    index_channels: list[tuple[int, ChannelOffset | SwitchingChannel | None]],
 ) -> list[tuple[int, ChannelOffset]]:
     return [c for channel_sub in index_channels for c in __get_channel(channel_sub)]
 
@@ -246,7 +246,7 @@ def __build_light_entities(
 def create_entities(
     name: str,
     dmx_start: int,
-    channels: list[None | ChannelOffset | SwitchingChannel],
+    channels: list[ChannelOffset | SwitchingChannel | None],
     device: DeviceInfo,
     universe: DmxUniverse,
     entity_id_prefix: str | None = None,

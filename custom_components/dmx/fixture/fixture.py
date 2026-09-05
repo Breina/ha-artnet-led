@@ -133,7 +133,7 @@ class Fixture:
                 {channel_offset.channel.name: channel_offset for channel_offset in switched_channels},
             )
 
-    def select_mode(self, mode_name: str) -> list[None | ChannelOffset | SwitchingChannel]:
+    def select_mode(self, mode_name: str) -> list[ChannelOffset | SwitchingChannel | None]:
         """
         Selects a mode based on its name, and returns the relevant channels.
         :param mode_name: The name of the mode, which should exist.
@@ -153,8 +153,8 @@ class Fixture:
         ]
 
     def __mode_channel_to_channel(
-        self, mode_channel: None | str | MatrixChannelInsertBlock
-    ) -> list[None | ChannelOffset | SwitchingChannel]:
+        self, mode_channel: str | MatrixChannelInsertBlock | None
+    ) -> list[ChannelOffset | SwitchingChannel | None]:
 
         if mode_channel is None:
             return [None]
