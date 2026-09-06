@@ -47,6 +47,11 @@ class SacnProtocol(ProtocolServer):
         self._config: SacnServerConfig | None = None
         self._rate_limit = CONF_RATE_LIMIT_DEFAULT
         self._universe_rate_limiters: dict[PortAddress, tuple[RateLimiter, dict[int, int]]] = {}
+        # Most recent sender per universe. process_updates() is created once per
+        # universe and would otherwise close over the `source` argument of the very
+        # first call, pinning attribution to whichever controller happened to send
+        # the first frame after startup.
+        self._universe_sources: dict[PortAddress, str | None] = {}
 
     @property
     def protocol_name(self) -> str:
@@ -160,7 +165,9 @@ class SacnProtocol(ProtocolServer):
 
                     if updates_to_process:
                         log.debug(f"Processing {len(updates_to_process)} sACN channel updates for {port_address}")
-                        await callback_universe.update_multiple_values(updates_to_process, source, send_update=False)
+                        await callback_universe.update_multiple_values(
+                            updates_to_process, self._universe_sources.get(port_address), send_update=False
+                        )
 
                 def update_callback() -> None:
                     self.hass.async_create_task(process_updates())
@@ -175,6 +182,8 @@ class SacnProtocol(ProtocolServer):
                 self._universe_rate_limiters[port_address] = (limiter, updates_dict)
 
             limiter, updates_dict = self._universe_rate_limiters[port_address]
+            # Record the current sender for the batch process_updates() will flush.
+            self._universe_sources[port_address] = source
 
             changes_detected = False
 
