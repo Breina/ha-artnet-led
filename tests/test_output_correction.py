@@ -139,7 +139,7 @@ class TestOutputCorrectionDmxOutput(unittest.TestCase):
         entities = delegator.create_entities(
             "RGBW fader", 1, channels, None, self.universe, output_correction=output_correction
         )
-        return get_entity_by_name(entities, "RGBW fader Light")
+        return get_entity_by_name(entities, "RGBW fader")
 
     def test_no_correction_is_linear(self):
         light = self._make_light()
@@ -240,7 +240,7 @@ class TestColorTemperatureNotCorrected(unittest.TestCase):
             "CT fixture", 1, channels, None, self.universe, output_correction=correction
         )
 
-        light: DmxLightEntity = get_entity_by_name(entities, "CT fixture Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "CT fixture")
 
         # The COLOR_TEMPERATURE channel mapping must carry no correction
         ct_mapping = light._state.channels.get(ChannelType.COLOR_TEMPERATURE)

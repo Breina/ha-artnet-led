@@ -33,6 +33,26 @@ class TestSelectEntity(unittest.TestCase):
         channels = fixture.select_mode("A")
         delegator.create_entities("PAR UV", 1, channels, None, self.universe)
 
+    def test_light_entity_name_has_no_light_suffix(self):
+        """The light's name drives its entity_id.
+
+        The old artnet_led integration produced light.{slugify(name)}. Appending
+        anything to the name here (a " Light" suffix, say) changes the entity_id HA
+        derives from it and silently breaks every migrated automation, scene and group.
+        """
+        from custom_components.dmx.entity.light.light_entity import DmxLightEntity
+        from homeassistant.util import slugify
+
+        fixture_path = Path(__file__).parent / "fixtures" / "rgbw-fader.json"
+        fixture = parser.parse(str(fixture_path))
+        channels = fixture.select_mode(next(iter(fixture.modes)))
+        entities = delegator.create_entities("Bureau NO", 1, channels, None, self.universe)
+
+        lights = [e for e in entities if isinstance(e, DmxLightEntity)]
+        self.assertEqual(len(lights), 1)
+        self.assertEqual(lights[0]._attr_name, "Bureau NO")
+        self.assertEqual(f"light.{slugify(lights[0]._attr_name)}", "light.bureau_no")
+
 
 if __name__ == "__main__":
     unittest.main()

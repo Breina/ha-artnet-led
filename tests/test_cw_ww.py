@@ -38,7 +38,7 @@ class TestRgbwFixture(unittest.TestCase):
 
         warm_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Warm White")
         cold_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Cold White")
-        light: DmxLightEntity = get_entity_by_name(entities, "WC fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "WC fader")
 
         asyncio.run(warm_white.async_set_native_value(100))
         asyncio.run(cold_white.async_set_native_value(0))
@@ -71,7 +71,7 @@ class TestRgbwFixture(unittest.TestCase):
 
         warm_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Warm White")
         cold_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Cold White")
-        light: DmxLightEntity = get_entity_by_name(entities, "WC fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "WC fader")
 
         asyncio.run(light.async_turn_on(brightness=255, color_temp_kelvin=light.min_color_temp_kelvin))
         assert_dmx_range(self.universe, 2, [255, 0])
@@ -100,7 +100,7 @@ class TestRgbwFixture(unittest.TestCase):
 
         warm_white: DmxNumberEntity = get_entity_by_name(entities, "CW fader Warm White")
         cold_white: DmxNumberEntity = get_entity_by_name(entities, "CW fader Cold White")
-        light: DmxLightEntity = get_entity_by_name(entities, "CW fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "CW fader")
 
         asyncio.run(warm_white.async_set_native_value(100))
         asyncio.run(cold_white.async_set_native_value(0))
@@ -133,7 +133,7 @@ class TestRgbwFixture(unittest.TestCase):
 
         warm_white: DmxNumberEntity = get_entity_by_name(entities, "CW fader Warm White")
         cold_white: DmxNumberEntity = get_entity_by_name(entities, "CW fader Cold White")
-        light: DmxLightEntity = get_entity_by_name(entities, "CW fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "CW fader")
 
         asyncio.run(light.async_turn_on(brightness=255, color_temp_kelvin=light.min_color_temp_kelvin))
         assert_dmx_range(self.universe, 4, [0, 0, 255, 255])
@@ -157,7 +157,7 @@ class TestRgbwFixture(unittest.TestCase):
 
         warm_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Warm White")
         cold_white: DmxNumberEntity = get_entity_by_name(entities, "WC fader Cold White")
-        light: DmxLightEntity = get_entity_by_name(entities, "WC fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "WC fader")
 
         asyncio.run(warm_white.async_set_native_value(100))
         asyncio.run(cold_white.async_set_native_value(25))

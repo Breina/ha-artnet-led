@@ -37,7 +37,7 @@ class TestColorTemperatureFader(unittest.TestCase):
         entities = delegator.create_entities("Color Temp fader", 1, channels, None, self.universe)
 
         color_temp: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Color Temperature")
-        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader")
 
         self.assertEqual(color_temp.min_value, 6500)
         self.assertEqual(color_temp.max_value, 8500)
@@ -50,7 +50,7 @@ class TestColorTemperatureFader(unittest.TestCase):
 
         dimmer: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Intensity")
         color_temp: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Color Temperature")
-        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader")
 
         asyncio.run(dimmer.async_set_native_value(100))
         asyncio.run(color_temp.async_set_native_value(color_temp.max_value))
@@ -78,7 +78,7 @@ class TestColorTemperatureFader(unittest.TestCase):
 
         dimmer: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Intensity")
         color_temp: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Color Temperature")
-        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader")
 
         asyncio.run(light.async_turn_on(brightness=69, color_temp_kelvin=light.min_color_temp_kelvin))
         assert_dmx_range(self.universe, 1, [69, 0])
@@ -107,7 +107,7 @@ class TestColorTemperatureFader(unittest.TestCase):
 
         dimmer: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Intensity")
         color_temp: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Color Temperature")
-        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader")
 
         asyncio.run(dimmer.async_set_native_value(100))
         asyncio.run(color_temp.async_set_native_value(color_temp.max_value))
@@ -135,7 +135,7 @@ class TestColorTemperatureFader(unittest.TestCase):
 
         dimmer: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Intensity")
         color_temp: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Color Temperature")
-        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader")
 
         asyncio.run(light.async_turn_on(brightness=69.2, color_temp_kelvin=light.min_color_temp_kelvin))
         assert_dmx_range(self.universe, 1, [69, 120, 0, 0])
@@ -159,7 +159,7 @@ class TestColorTemperatureFader(unittest.TestCase):
 
         dimmer: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Intensity")
         color_temp: DmxNumberEntity = get_entity_by_name(entities, "Color Temp fader Color Temperature")
-        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "Color Temp fader")
 
         mid_value = (color_temp.max_value + color_temp.min_value) / 2
 

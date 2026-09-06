@@ -38,7 +38,7 @@ class TestColorTemperatureFader(unittest.TestCase):
         entities = delegator.create_entities("Desk channel", 1, channels, None, self.universe)
 
         dimmer: DmxNumberEntity = get_entity_by_name(entities, "Desk channel Intensity")
-        light: DmxLightEntity = get_entity_by_name(entities, "Desk channel Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "Desk channel")
 
         asyncio.run(dimmer.async_set_native_value(0))
         assert_dmx_range(self.universe, 1, [0])
@@ -61,7 +61,7 @@ class TestColorTemperatureFader(unittest.TestCase):
         entities = delegator.create_entities("Desk channel", 1, channels, None, self.universe)
 
         dimmer: DmxNumberEntity = get_entity_by_name(entities, "Desk channel Intensity")
-        light: DmxLightEntity = get_entity_by_name(entities, "Desk channel Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "Desk channel")
 
         asyncio.run(light.async_turn_on(brightness=0))
         assert_dmx_range(self.universe, 1, [0])
@@ -101,7 +101,7 @@ class TestColorTemperatureFader(unittest.TestCase):
         channels = self.fixture.select_mode("16bit")
         entities = delegator.create_entities("Desk channel", 1, channels, None, self.universe)
 
-        light: DmxLightEntity = get_entity_by_name(entities, "Desk channel Light")
+        light: DmxLightEntity = get_entity_by_name(entities, "Desk channel")
 
         asyncio.run(light.async_turn_on(brightness=0))
         assert_dmx_range(self.universe, 1, [0, 0])

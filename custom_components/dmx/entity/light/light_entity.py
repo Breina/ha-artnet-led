@@ -34,7 +34,10 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         max_kelvin: int = 6500,
     ) -> None:
         self._matrix_key = matrix_key
-        self._attr_name = f"{fixture_name} Light {matrix_key}" if matrix_key else f"{fixture_name} Light"
+        # No " Light" suffix: the entity_id HA derives from this name has to match the
+        # old artnet_led integration's light.{slugify(name)} so migrated configs keep
+        # their entity_ids (and their automations, scenes and groups) working.
+        self._attr_name = f"{fixture_name} {matrix_key}" if matrix_key else fixture_name
         if entity_id_prefix:
             slug_prefix = slugify(entity_id_prefix)
             slug_matrix = slugify(matrix_key) if matrix_key else None
