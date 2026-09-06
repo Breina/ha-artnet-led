@@ -43,7 +43,11 @@ class DmxLightEntity(LightEntity, RestoreEntity):
             slug_matrix = slugify(matrix_key) if matrix_key else None
             base_id = slug_prefix if not slug_matrix else f"{slug_prefix}_{slug_matrix}"
             self._attr_unique_id = f"{base_id}_{fixture_fingerprint}"
-            self.entity_id = f"light.{self._attr_unique_id}"
+            # The fingerprint identifies the fixture mode and belongs in unique_id only.
+            # entity_id_prefix exists to give a predictable, user-facing entity_id, so the
+            # hash must not leak into it -- a migrated config relies on this to reproduce
+            # the entity_ids the old artnet_led integration generated.
+            self.entity_id = f"light.{base_id}"
         else:
             self._attr_unique_id = f"{DOMAIN}_{universe.port_address!s}_{fixture_name}_{fixture_fingerprint}"
             if matrix_key:

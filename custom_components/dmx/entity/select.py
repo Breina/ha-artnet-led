@@ -38,7 +38,8 @@ class DmxSelectEntity(SelectEntity, RestoreEntity):
             slug_prefix = slugify(entity_id_prefix)
             slug_channel = slugify(channel_name)
             self._attr_unique_id = f"{slug_prefix}_{slug_channel}_{fixture_fingerprint}"
-            self.entity_id = f"select.{self._attr_unique_id}"
+            # Fingerprint stays in unique_id; entity_id must stay predictable.
+            self.entity_id = f"select.{slug_prefix}_{slug_channel}"
         else:
             self._attr_unique_id = (
                 f"{DOMAIN}_{universe.port_address!s}_{fixture_name.lower()}_"
