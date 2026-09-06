@@ -1,0 +1,24 @@
+{
+  "issues": {
+    "ha_artnet_led_migration": {
+      "title": "Old artnet_led configuration detected",
+      "description": "Found {device_count} device(s) across {universe_count} universe(s) using the old `artnet_led` / `ha_artnet_led` platform format. Click **Fix** to automatically generate fixture files and a new `dmx:` configuration snippet.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Migrate artnet_led → dmx",
+            "description": "The migration will generate:\n\n- **{fixture_count}** OFL fixture file(s) written to `config/fixtures/`\n- A `dmx_migration.yaml` snippet written to your config directory\n\nDevices found: **{device_count}** across **{universe_count}** universe(s).\n\nYour `configuration.yaml` is **not** modified automatically — you will paste the generated snippet in the next step."
+          },
+          "done": {
+            "title": "Migration complete",
+            "description": "Files written:\n\n{file_list}\n\n**Next steps:**\n\n1. Add the contents of `dmx_migration.yaml` to your `configuration.yaml`\n2. Remove the old `light: platform: artnet_led` block\n3. Restart Home Assistant\n\n{warnings_section}"
+          }
+        },
+        "abort": {
+          "no_entries": "No `artnet_led` entries were found in memory. Restart Home Assistant and try again.",
+          "write_failed": "Failed to write migration output files: {error}"
+        }
+      }
+    }
+  }
+}

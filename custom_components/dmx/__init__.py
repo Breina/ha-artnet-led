@@ -10,9 +10,11 @@ from homeassistant.components.light import ATTR_TRANSITION
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import IntegrationError
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.typing import ConfigType
 
 from custom_components.dmx.const import CONF_FIXTURE_ENTITIES, DOMAIN
+from custom_components.dmx.migration import extract_old_entries
 from custom_components.dmx.setup.config_processor import (
     CONF_FIXTURES,
     CONF_FOLDER,
@@ -29,6 +31,7 @@ from custom_components.dmx.util.entity_cleanup import cleanup_obsolete_entities,
 log = logging.getLogger(__name__)
 
 CONF_TRANSITION = ATTR_TRANSITION
+REPAIR_ISSUE_ID = "ha_artnet_led_migration"
 
 PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.LIGHT, Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR]
 
@@ -70,6 +73,27 @@ async def async_update_options(hass: HomeAssistant, config_entry: config_entries
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Your controller/hub specific code."""
 
+    old_entries = extract_old_entries(config)
+    if old_entries:
+        device_count = sum(len(u.get("devices", [])) for e in old_entries for u in e.get("universes", {}).values())
+        universe_count = sum(len(e.get("universes", {})) for e in old_entries)
+        hass.data.setdefault(DOMAIN, {})["_old_entries"] = old_entries
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            REPAIR_ISSUE_ID,
+            is_fixable=True,
+            is_persistent=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="ha_artnet_led_migration",
+            translation_placeholders={
+                "device_count": str(device_count),
+                "universe_count": str(universe_count),
+            },
+        )
+    else:
+        ir.async_delete_issue(hass, DOMAIN, REPAIR_ISSUE_ID)
+
     if DOMAIN not in config:
         return True
 
@@ -87,7 +111,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: config_entries.ConfigEnt
 
     dmx_yaml = entry.data[DOMAIN]
 
-    fixtures_yaml = dmx_yaml[CONF_FIXTURES]
+    fixtures_yaml = dmx_yaml.get(CONF_FIXTURES) or {}
     fixture_folder = fixtures_yaml.get(CONF_FOLDER, CONF_FOLDER_DEFAULT)
 
     log.debug("Processing fixtures folder: %s/...", str(Path(fixture_folder).absolute()))
