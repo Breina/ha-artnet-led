@@ -172,7 +172,7 @@ class ArtNetProtocol(ProtocolServer):
             changes_detected = False
 
             for channel, value in enumerate(data, start=1):  # DMX channels are 1-based
-                if value > 0 or callback_universe.get_channel_value(channel) != value:
+                if updates_dict.get(channel, callback_universe.get_channel_value(channel)) != value:
                     updates_dict[channel] = value
                     changes_detected = True
 
