@@ -31,6 +31,10 @@ def _default_calculation_function(channel_value):
     return channel_value if isinstance(channel_value, int) else 0
 
 
+def clamp_color_temp_kelvin(color_temp_kelvin: int | float, min_kelvin: int, max_kelvin: int) -> int | float:
+    return max(min_kelvin, min(max_kelvin, color_temp_kelvin))
+
+
 def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightness: int = 255, red: int = -1,
               green: int = -1, blue: int = -1, cold_white: int = -1, warm_white: int = -1,
               color_temp_kelvin: int | None = None, min_kelvin: int | None = None, max_kelvin: int | None = None,
@@ -39,6 +43,9 @@ def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightn
 
     if min_kelvin is not None and max_kelvin is not None:
         kelvin_diff = (max_kelvin - min_kelvin)
+
+        if color_temp_kelvin is not None:
+            color_temp_kelvin = clamp_color_temp_kelvin(color_temp_kelvin, min_kelvin, max_kelvin)
 
         if cold_white == -1 and warm_white == -1 and color_temp_kelvin is not None:
             cold_white = 255 * (color_temp_kelvin - min_kelvin) / kelvin_diff

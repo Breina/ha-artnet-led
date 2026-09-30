@@ -1,4 +1,4 @@
-from custom_components.artnet_led.util.channel_switch import to_values, from_values
+from custom_components.artnet_led.util.channel_switch import from_values, to_values
 
 mid_k = 4268
 min_k = 2000
@@ -47,6 +47,24 @@ def test_to_values_color_temp():
 
     assert values[0] >= 254
     assert values[1] >= 254
+
+
+def test_to_values_color_temp_below_minimum_is_clamped():
+    values = to_values("ch", 256, True, 102,
+                       color_temp_kelvin=2000,
+                       min_kelvin=2700,
+                       max_kelvin=6000)
+
+    assert values == [0, 102 * 256]
+
+
+def test_to_values_color_temp_above_maximum_is_clamped():
+    values = to_values("ch", 256, True, 102,
+                       color_temp_kelvin=7000,
+                       min_kelvin=2700,
+                       max_kelvin=6000)
+
+    assert values == [102 * 256, 0]
 
 
 def test_from_values_ch():
