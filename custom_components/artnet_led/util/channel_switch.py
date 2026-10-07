@@ -32,7 +32,8 @@ def _default_calculation_function(channel_value):
 
 
 def clamp_color_temp_kelvin(color_temp_kelvin: int | float, min_kelvin: int, max_kelvin: int) -> int | float:
-    return max(min_kelvin, min(max_kelvin, color_temp_kelvin))
+    low, high = sorted((min_kelvin, max_kelvin))
+    return max(low, min(high, color_temp_kelvin))
 
 
 def to_values(channel_setup: str, channel_size: int, is_on: bool = True, brightness: int = 255, red: int = -1,
