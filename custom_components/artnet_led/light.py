@@ -36,7 +36,7 @@ from pyartnet.errors import UniverseNotFoundError
 
 from custom_components.artnet_led.bridge.artnet_controller import ArtNetController
 from custom_components.artnet_led.bridge.channel_bridge import ChannelBridge
-from custom_components.artnet_led.util.channel_switch import validate, to_values, from_values
+from custom_components.artnet_led.util.channel_switch import clamp_color_temp_kelvin, from_values, to_values, validate
 
 ARTNET_DEFAULT_PORT = 6454
 SACN_DEFAULT_PORT = 5568
@@ -637,7 +637,11 @@ class DmxWhite(DmxBaseLight):
         old_brightness = self._attr_brightness
 
         if ATTR_COLOR_TEMP_KELVIN in kwargs:
-            self._vals = kwargs[ATTR_COLOR_TEMP_KELVIN]
+            self._vals = clamp_color_temp_kelvin(
+                kwargs[ATTR_COLOR_TEMP_KELVIN],
+                self._min_kelvin,
+                self._max_kelvin,
+            )
 
         elif ATTR_WHITE in kwargs:
             self._vals = (self._max_kelvin + self._min_kelvin) / 2
@@ -658,7 +662,12 @@ class DmxWhite(DmxBaseLight):
 
         if old_state:
             prev_vals = old_state.attributes.get('values')
-            self._vals = prev_vals
+            if prev_vals is not None:
+                self._vals = clamp_color_temp_kelvin(
+                    prev_vals,
+                    self._min_kelvin,
+                    self._max_kelvin,
+                )
             prev_brightness = old_state.attributes.get('bright')
             self._attr_brightness = prev_brightness
 
@@ -844,7 +853,7 @@ class DmxRGBWW(DmxBaseLight):
         # Intentionally switching min and max here; it's inverted in the conversion.
         self._min_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MIN_TEMP])
         self._max_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MAX_TEMP])
-        self._vals = [255, 255, 255, 255, 255, (self._max_kelvin - self._min_kelvin) / 2]
+        self._vals = [255, 255, 255, 255, 255, (self._max_kelvin + self._min_kelvin) / 2]
 
         self._channel_setup = kwargs.get(CONF_CHANNEL_SETUP) or "rgbch"
         validate(self._channel_setup, self.CONF_TYPE)
@@ -918,7 +927,11 @@ class DmxRGBWW(DmxBaseLight):
             self._attr_brightness = kwargs[ATTR_BRIGHTNESS]
 
         if ATTR_COLOR_TEMP_KELVIN in kwargs:
-            self._vals[5] = kwargs[ATTR_COLOR_TEMP_KELVIN]
+            self._vals[5] = clamp_color_temp_kelvin(
+                kwargs[ATTR_COLOR_TEMP_KELVIN],
+                self._min_kelvin,
+                self._max_kelvin,
+            )
             _, _, _, self._vals[3], self._vals[4] = color_util.color_temperature_to_rgbww(
                 self._vals[5], self._attr_brightness, self.min_color_temp_kelvin, self.max_color_temp_kelvin)
             self._channel_value_change()
@@ -935,8 +948,14 @@ class DmxRGBWW(DmxBaseLight):
 
         if old_state:
             prev_vals = old_state.attributes.get('values')
-            if len(prev_vals) == 6:
-                self._vals = prev_vals
+            if prev_vals is not None and len(prev_vals) == 6:
+                self._vals = list(prev_vals)
+                if self._vals[5] is not None:
+                    self._vals[5] = clamp_color_temp_kelvin(
+                        self._vals[5],
+                        self._min_kelvin,
+                        self._max_kelvin,
+                    )
 
             prev_brightness = old_state.attributes.get('bright')
             self._attr_brightness = prev_brightness
