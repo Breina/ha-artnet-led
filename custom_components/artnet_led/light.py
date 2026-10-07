@@ -853,7 +853,7 @@ class DmxRGBWW(DmxBaseLight):
         # Intentionally switching min and max here; it's inverted in the conversion.
         self._min_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MIN_TEMP])
         self._max_kelvin = convert_to_kelvin(kwargs[CONF_DEVICE_MAX_TEMP])
-        self._vals = [255, 255, 255, 255, 255, (self._max_kelvin - self._min_kelvin) / 2]
+        self._vals = [255, 255, 255, 255, 255, (self._max_kelvin + self._min_kelvin) / 2]
 
         self._channel_setup = kwargs.get(CONF_CHANNEL_SETUP) or "rgbch"
         validate(self._channel_setup, self.CONF_TYPE)
@@ -950,11 +950,12 @@ class DmxRGBWW(DmxBaseLight):
             prev_vals = old_state.attributes.get('values')
             if prev_vals is not None and len(prev_vals) == 6:
                 self._vals = list(prev_vals)
-                self._vals[5] = clamp_color_temp_kelvin(
-                    self._vals[5],
-                    self._min_kelvin,
-                    self._max_kelvin,
-                )
+                if self._vals[5] is not None:
+                    self._vals[5] = clamp_color_temp_kelvin(
+                        self._vals[5],
+                        self._min_kelvin,
+                        self._max_kelvin,
+                    )
 
             prev_brightness = old_state.attributes.get('bright')
             self._attr_brightness = prev_brightness
