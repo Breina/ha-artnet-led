@@ -214,11 +214,11 @@ class TestRgbWithColorTemperature(ConfigurationTestCase):
     def test_incoming_dmx_switches_the_mode(self) -> None:
         turn_on(self.light, brightness=255, color_temp_kelvin=4600)
 
-        asyncio.run(self.universe.update_multiple_values({3: 200}, source="sender"))
+        asyncio.run(self.universe.receive_values({3: 200}, "sender"))
         self.assertEqual(ColorMode.RGB, self.light.color_mode)
         self.assertEqual((200, 0, 0), self.light.rgb_color)
 
-        asyncio.run(self.universe.update_multiple_values({3: 0}, source="sender"))
+        asyncio.run(self.universe.receive_values({3: 0}, "sender"))
         self.assertEqual(ColorMode.COLOR_TEMP, self.light.color_mode)
 
         turn_on(self.light)
@@ -355,9 +355,9 @@ class TestReversedColorTemperature(ConfigurationTestCase):
 
     def test_incoming_dmx(self) -> None:
         light, universe = make_light("DV")
-        asyncio.run(universe.update_multiple_values({1: 255, 2: 255}, source="sender"))
+        asyncio.run(universe.receive_values({1: 255, 2: 255}, "sender"))
         self.assertEqual(2700, light.color_temp_kelvin)
-        asyncio.run(universe.update_multiple_values({2: 0}, source="sender"))
+        asyncio.run(universe.receive_values({2: 0}, "sender"))
         self.assertEqual(8000, light.color_temp_kelvin)
 
 

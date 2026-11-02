@@ -172,7 +172,7 @@ class TestOutputCorrectionDmxOutput(unittest.TestCase):
         light = self._make_light(output_correction=correction)
         asyncio.run(light.async_turn_on(rgbw_color=(255, 0, 0, 0)))
         # Simulate external controller sending DMX=64 (≈ quadratic-corrected 50%)
-        asyncio.run(self.universe.update_multiple_values({1: 64}, source="external"))
+        asyncio.run(self.universe.receive_values({1: 64}, "external"))
         expected_ha = round(math.sqrt(64 / 255) * 255)
         self.assertAlmostEqual(expected_ha, light.brightness, delta=2)
 

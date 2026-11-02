@@ -48,10 +48,14 @@ class MockDmxUniverse(DmxUniverse):
             channel = [channel]
         await self.update_multiple_values(dict.fromkeys(channel, value), source)
 
-    async def update_multiple_values(self, updates: dict[int, int], source: str | None = None, send_update=True):
+    async def update_multiple_values(self, updates: dict[int, int], send_update=True):
         """Update multiple values.
         :param send_update:
         """
+        self.set_values(updates)
+
+    async def receive_values(self, updates: dict[int, int], source: str | None):
+        """Take in values from the network, which the mock doesn't keep apart."""
         self.set_values(updates)
 
     def get_values(self):

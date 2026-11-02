@@ -178,7 +178,8 @@ class DmxNumberEntity(RestoreNumber):
         if not self.available:
             return
 
-        if getattr(self, "_is_updating", False):
+        # We know the value we're setting ourselves, unless another source wins and the channel isn't going there.
+        if getattr(self, "_is_updating", False) and source is None:
             return
 
         self._attr_attribution = source

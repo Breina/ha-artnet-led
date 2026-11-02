@@ -10,10 +10,24 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 
-from custom_components.dmx.server import PortAddress
-from custom_components.dmx.server.sacn_packet import SACN_PORT, SacnOptions, SacnPacket, SacnSyncPacket
+from custom_components.dmx.server.sacn_packet import (
+    SACN_PORT,
+    START_CODE_LEVELS,
+    START_CODE_PER_ADDRESS_PRIORITY,
+    SacnOptions,
+    SacnPacket,
+    SacnSyncPacket,
+)
 
 log = logging.getLogger(__name__)
+
+PRIORITY_INTERVAL = 0.9
+"""Seconds between per-address priority frames while they don't change."""
+
+PRIORITY_CHANGE_EXTRA_FRAMES = 3
+"""How many more times changed per-address priorities are sent, right after the first time."""
+
+PRIORITY_CHANGE_FRAME_SPACING = 0.023
 
 
 @dataclass
@@ -45,6 +59,9 @@ class UniverseState:
     pending_data: bytearray | None = None
     last_update_time: float = field(default_factory=lambda: 0.0)
     last_send_time: float = field(default_factory=lambda: 0.0)
+    address_priorities: bytes | None = None
+    priorities_changed: bool = False
+    last_priorities_time: float = 0.0
 
     def increment_sequence(self) -> None:
         self.sequence_number = (self.sequence_number + 1) % 256
@@ -161,7 +178,10 @@ class SacnServer:
         if self.universe_removed_callback:
             self.universe_removed_callback(universe_id)
 
-    def send_dmx_data(self, universe_id: int, dmx_data: bytearray) -> bool:
+    def send_dmx_data(self, universe_id: int, dmx_data: bytearray, address_priorities: bytes | None = None) -> bool:
+        """
+        :param address_priorities: The priority of each slot, without start code. 0 means we're not sourcing that slot.
+        """
         if not self.running:
             log.error("sACN server not running")
             return False
@@ -174,7 +194,14 @@ class SacnServer:
 
         universe_state.pending_data = dmx_data.copy()
         universe_state.last_update_time = time.time()
+        universe_state.termination_sent = False
         log.debug(f"Universe {universe_id}: received new DMX data")
+
+        if address_priorities != universe_state.address_priorities:
+            universe_state.address_priorities = address_priorities
+            universe_state.priorities_changed = True
+            # They're about to be sent by _send_pending_frame, which the keep-alive shouldn't get ahead of.
+            universe_state.last_priorities_time = time.time()
 
         # Start streaming task if not already running
         if universe_state.stream_task is None or universe_state.stream_task.done():
@@ -189,10 +216,10 @@ class SacnServer:
         return True
 
     async def _stream_universe_data(self, universe_id: int) -> None:
-        """Continuously retransmit last frame on keep-alive timeout.
+        """Continuously retransmit the last levels and per-address priorities on keep-alive timeout.
 
         New frames are sent immediately via _send_pending_frame when they arrive.
-        This loop only handles retransmission if no new data for retransmit_interval seconds.
+        This loop only handles retransmission if nothing new was sent for their interval.
         """
 
         try:
@@ -200,16 +227,27 @@ class SacnServer:
             log.debug(f"Started streaming task for universe {universe_id}")
 
             while self.running and universe_id in self.universes and not universe_state.termination_sent:
-                time_since_send = time.time() - universe_state.last_send_time
+                now = time.time()
 
-                if universe_state.last_data is not None and time_since_send >= self.config.retransmit_interval:
+                if (
+                    universe_state.last_data is not None
+                    and now - universe_state.last_send_time >= self.config.retransmit_interval
+                ):
                     log.debug(f"Universe {universe_id}: retransmitting frame (seq: {universe_state.sequence_number})")
+                    universe_state.last_send_time = now
                     await self._send_packet(universe_id, universe_state.last_data)
-                    universe_state.increment_sequence()
-                    universe_state.last_send_time = time.time()
-                else:
-                    sleep_duration = self.config.retransmit_interval - time_since_send
-                    await asyncio.sleep(sleep_duration)
+
+                if (
+                    universe_state.address_priorities is not None
+                    and now - universe_state.last_priorities_time >= PRIORITY_INTERVAL
+                ):
+                    await self._send_priorities(universe_id)
+
+                now = time.time()
+                delay = self.config.retransmit_interval - (now - universe_state.last_send_time)
+                if universe_state.address_priorities is not None:
+                    delay = min(delay, PRIORITY_INTERVAL - (now - universe_state.last_priorities_time))
+                await asyncio.sleep(max(delay, 0.01))
 
         except asyncio.CancelledError:
             log.debug(f"Streaming task for universe {universe_id} cancelled")
@@ -220,32 +258,50 @@ class SacnServer:
 
     async def _send_pending_frame(self, universe_id: int) -> None:
         """Hot path: send pending frame immediately (called from send_dmx_data)."""
-        import time
 
         try:
             universe_state = self.universes[universe_id]
 
+            # Priorities go first, because a receiver holds back the levels of a new source until it knows them.
+            priorities_changed = universe_state.priorities_changed
+            universe_state.priorities_changed = False
+            if priorities_changed:
+                await self._send_priorities(universe_id)
+
             if universe_state.pending_data is not None:
                 log.debug(f"Universe {universe_id}: sending immediate frame (seq: {universe_state.sequence_number})")
-                await self._send_packet(universe_id, universe_state.pending_data)
-                universe_state.increment_sequence()
-                universe_state.last_data = universe_state.pending_data.copy() if universe_state.pending_data else None
+                pending_data = universe_state.pending_data
+                universe_state.last_data = pending_data.copy()
                 universe_state.pending_data = None
                 universe_state.last_send_time = time.time()
                 universe_state.last_update_time = universe_state.last_send_time
-                universe_state.termination_sent = False
+                await self._send_packet(universe_id, pending_data)
+
+            if priorities_changed:
+                for _ in range(PRIORITY_CHANGE_EXTRA_FRAMES):
+                    await asyncio.sleep(PRIORITY_CHANGE_FRAME_SPACING)
+                    await self._send_priorities(universe_id)
 
         except Exception as e:
             log.error(f"Error sending pending frame for universe {universe_id}: {e}")
 
+    async def _send_priorities(self, universe_id: int) -> None:
+        universe_state = self.universes[universe_id]
+        if universe_state.address_priorities is None or universe_state.termination_sent:
+            return
+
+        universe_state.last_priorities_time = time.time()
+        await self._send_packet(
+            universe_id, bytearray([START_CODE_PER_ADDRESS_PRIORITY, *universe_state.address_priorities])
+        )
+
     async def _send_packet(self, universe_id: int, dmx_data: bytearray) -> None:
-        """Send a single sACN packet."""
+        """Send a single sACN packet, whose first byte is the start code."""
         try:
             universe_state = self.universes[universe_id]
 
             processed_data = bytearray(max(25, len(dmx_data)))
-            processed_data[0] = 0x00
-            processed_data[1 : len(dmx_data)] = dmx_data[1:] if len(dmx_data) > 1 else []
+            processed_data[0 : len(dmx_data)] = dmx_data
 
             options = SacnOptions(
                 preview_data=self.config.enable_preview_data,
@@ -267,10 +323,14 @@ class SacnServer:
             multicast_addr = packet.get_multicast_address()
             packet_bytes = packet.serialize()
 
+            # Before the first await, as frames of a universe can be on their way concurrently.
+            sequence_number = universe_state.sequence_number
+            universe_state.increment_sequence()
+
             if self.socket is not None:
                 log.debug(
                     f"Sending sACN data to universe {universe_id} (multicast {multicast_addr},"
-                    f" seq: {universe_state.sequence_number})"
+                    f" seq: {sequence_number})"
                 )
                 await self.hass.async_add_executor_job(self.socket.sendto, packet_bytes, (multicast_addr, SACN_PORT))
 
@@ -278,7 +338,7 @@ class SacnServer:
                 if self.socket is not None:
                     log.debug(
                         f"Sending sACN data to universe {universe_id} (unicast {unicast_addr['host']}:"
-                        f"{unicast_addr['port']}, seq: {universe_state.sequence_number})"
+                        f"{unicast_addr['port']}, seq: {sequence_number})"
                     )
                     await self.hass.async_add_executor_job(
                         self.socket.sendto,
@@ -327,6 +387,8 @@ class SacnServer:
                         self.socket.sendto(packet_bytes, (unicast_addr["host"], unicast_addr["port"]))
 
             universe_state.termination_sent = True
+            # Coming back is a change for receivers, which will have forgotten about them.
+            universe_state.address_priorities = None
             log.info(f"Sent termination packet for sACN universe {universe_id}")
 
         except Exception as e:
@@ -371,15 +433,15 @@ class SacnReceiver(asyncio.DatagramProtocol):
     def __init__(
         self,
         hass: HomeAssistant,
-        data_callback: Callable[[PortAddress, bytearray, str], None] | None = None,
-        own_source_name: str | None = None,
+        packet_callback: Callable[[SacnPacket], None] | None = None,
+        own_cid: bytes | None = None,
         interface_ip: str | None = None,
     ) -> None:
         self.hass = hass
-        self.data_callback = data_callback
+        self.packet_callback = packet_callback
         self.transport: asyncio.DatagramTransport | None = None
         self.subscribed_universes: set[int] = set()
-        self.own_source_name = own_source_name
+        self.own_cid = own_cid
         self.interface_ip = interface_ip
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
@@ -397,7 +459,7 @@ class SacnReceiver(asyncio.DatagramProtocol):
         try:
             packet = SacnPacket.deserialize(data)
 
-            if packet.start_code == 0x00:
+            if packet.start_code in (START_CODE_LEVELS, START_CODE_PER_ADDRESS_PRIORITY):
                 self._handle_dmx_packet(packet, addr)
             else:
                 log.debug(
@@ -410,8 +472,13 @@ class SacnReceiver(asyncio.DatagramProtocol):
             log.debug(f"Raw packet data: {data[:50].hex()}{'...' if len(data) > 50 else ''}")
 
     def _handle_dmx_packet(self, packet: SacnPacket, addr: tuple[str, int]) -> None:
-        """Handle a DMX512-A data packet (start code 0x00)."""
-        if self.own_source_name and packet.source_name == self.own_source_name:
+        """Handle a packet with levels (start code 0x00) or per-address priorities (start code 0xDD)."""
+        if self.own_cid and packet.cid == self.own_cid:
+            return
+
+        # Preview data is meant for visualizers, the fixtures aren't showing it.
+        if packet.options.preview_data:
+            log.debug(f"Ignoring sACN preview data for universe {packet.universe} from {addr[0]}")
             return
 
         if packet.universe not in self.subscribed_universes:
@@ -422,16 +489,15 @@ class SacnReceiver(asyncio.DatagramProtocol):
             return
 
         log.debug(
-            f"Received sACN DMX data for universe {packet.universe} from {addr[0]} "
+            f"Received sACN start code 0x{packet.start_code:02X} for universe {packet.universe} from {addr[0]} "
             f"(source: '{packet.source_name}', seq: {packet.sequence_number}, "
             f"priority: {packet.priority}, channels: {len(packet.channel_data)})"
         )
 
-        if self.data_callback:
-            port_address = PortAddress(0, 0, packet.universe)
-            self.data_callback(port_address, packet.channel_data, packet.source_name)
+        if self.packet_callback:
+            self.packet_callback(packet)
         else:
-            log.warning("No data callback configured for sACN receiver")
+            log.warning("No packet callback configured for sACN receiver")
 
     def subscribe_universe(self, universe_id: int) -> None:
         if not (1 <= universe_id <= 63999):
@@ -487,11 +553,11 @@ class SacnReceiver(asyncio.DatagramProtocol):
 
 async def create_sacn_receiver(
     hass: HomeAssistant,
-    data_callback: Callable[[PortAddress, bytearray, str], None] | None = None,
-    own_source_name: str | None = None,
+    packet_callback: Callable[[SacnPacket], None] | None = None,
+    own_cid: bytes | None = None,
     interface_ip: str | None = None,
 ) -> SacnReceiver:
-    receiver = SacnReceiver(hass, data_callback, own_source_name, interface_ip)
+    receiver = SacnReceiver(hass, packet_callback, own_cid, interface_ip)
 
     loop = hass.loop
     try:

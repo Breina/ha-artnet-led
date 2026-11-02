@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from custom_components.dmx.server import PortAddress
 from custom_components.dmx.server.sacn_server import SacnReceiver, SacnServer, SacnServerConfig
 from tests.dmx_test_framework import MockHomeAssistant
 
@@ -188,7 +187,7 @@ class TestSacnReceiver:
         return SacnReceiver(mock_hass, data_callback)
 
     def test_receiver_initialization(self, sacn_receiver, data_callback):
-        assert sacn_receiver.data_callback == data_callback
+        assert sacn_receiver.packet_callback == data_callback
         assert sacn_receiver.transport is None
         assert len(sacn_receiver.subscribed_universes) == 0
 
@@ -218,17 +217,11 @@ class TestSacnReceiver:
         sacn_receiver.datagram_received(serialized_packet, ("192.168.1.100", 5568))
 
         data_callback.assert_called_once()
-        call_args = data_callback.call_args[0]
+        packet = data_callback.call_args[0][0]
 
-        port_address = call_args[0]
-        assert isinstance(port_address, PortAddress)
-        assert port_address.universe == 1
-
-        dmx_data = call_args[1]
-        assert dmx_data == test_packet.dmx_data[1:]
-
-        source_name = call_args[2]
-        assert source_name == test_packet.source_name
+        assert packet.universe == 1
+        assert packet.channel_data == test_packet.dmx_data[1:]
+        assert packet.source_name == test_packet.source_name
 
     def test_packet_processing_unsubscribed(self, sacn_receiver, data_callback):
         sacn_receiver.subscribe_universe(1)
@@ -242,20 +235,62 @@ class TestSacnReceiver:
 
         data_callback.assert_not_called()
 
-    def test_packet_processing_non_dmx_start_code_ignored(self, sacn_receiver, data_callback):
-        """Test that packets with non-DMX start codes (e.g., 0xDD per-address priority) are ignored."""
+    def test_packet_processing_other_start_code_ignored(self, sacn_receiver, data_callback):
+        """Test that packets with a start code that's neither levels nor priorities (e.g., text) are ignored."""
         sacn_receiver.subscribe_universe(1)
 
         from custom_components.dmx.server.sacn_packet import SacnPacket
 
-        test_packet = SacnPacket(universe=1, dmx_data=bytearray([0] + [100] * 512))
-        serialized_packet = bytearray(test_packet.serialize())
+        test_packet = SacnPacket(universe=1, dmx_data=bytearray([0x17] + [100] * 512))
 
-        serialized_packet[125] = 0xDD  # Per-address priority start code
-
-        sacn_receiver.datagram_received(bytes(serialized_packet), ("192.168.1.100", 5568))
+        sacn_receiver.datagram_received(test_packet.serialize(), ("192.168.1.100", 5568))
 
         data_callback.assert_not_called()
+
+    def test_packet_processing_per_address_priority(self, sacn_receiver, data_callback):
+        sacn_receiver.subscribe_universe(1)
+
+        from custom_components.dmx.server.sacn_packet import SacnPacket
+
+        test_packet = SacnPacket(universe=1, dmx_data=bytearray([0xDD] + [100] * 512))
+
+        sacn_receiver.datagram_received(test_packet.serialize(), ("192.168.1.100", 5568))
+
+        assert data_callback.call_args[0][0].start_code == 0xDD
+
+    def test_own_packets_are_recognized_by_cid(self, mock_hass, data_callback):
+        from custom_components.dmx.server.sacn_packet import SacnPacket
+
+        own_cid = uuid.uuid4().bytes
+        receiver = SacnReceiver(mock_hass, data_callback, own_cid)
+        receiver.subscribe_universe(1)
+
+        own = SacnPacket(universe=1, source_name="Same name", cid=own_cid)
+        receiver.datagram_received(own.serialize(), ("192.168.1.100", 5568))
+        data_callback.assert_not_called()
+
+        other = SacnPacket(universe=1, source_name="Same name")
+        receiver.datagram_received(other.serialize(), ("192.168.1.100", 5568))
+        data_callback.assert_called_once()
+
+    def test_preview_data_is_ignored(self, sacn_receiver, data_callback):
+        from custom_components.dmx.server.sacn_packet import SacnOptions, SacnPacket
+
+        sacn_receiver.subscribe_universe(1)
+
+        preview = SacnPacket(universe=1, options=SacnOptions(preview_data=True))
+        sacn_receiver.datagram_received(preview.serialize(), ("192.168.1.100", 5568))
+
+        data_callback.assert_not_called()
+
+    def test_universes_beyond_the_art_net_range_are_delivered(self, sacn_receiver, data_callback):
+        from custom_components.dmx.server.sacn_packet import SacnPacket
+
+        sacn_receiver.subscribe_universe(513)
+
+        sacn_receiver.datagram_received(SacnPacket(universe=513).serialize(), ("192.168.1.100", 5568))
+
+        data_callback.assert_called_once()
 
     def test_connection_lifecycle(self, sacn_receiver):
         mock_transport = MagicMock()
@@ -275,10 +310,7 @@ class TestSacnIntegration:
         server = SacnServer(mock_hass)
         received_data = []
 
-        def data_callback(port_address, dmx_data, source_name):
-            received_data.append((port_address.universe, dmx_data, source_name))
-
-        receiver = SacnReceiver(mock_hass, data_callback)
+        receiver = SacnReceiver(mock_hass, received_data.append)
 
         server.add_universe(1)
         receiver.subscribe_universe(1)

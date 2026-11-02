@@ -23,10 +23,29 @@ Unlike Art-Net's polling mechanism, sACN uses a **priority-based system** for co
 
 When Home Assistant receives sACN data from external controllers:
 
-- **Entity Updates**: The integration updates corresponding entity values in real-time
+- **Entity Updates**: Entities show what each channel effectively is, along with the source that's winning it as their attribution
 - **Rate Limiting**: Updates are limited to prevent flooding Home Assistant with rapid changes
-- **Priority Handling**: Higher-priority sources override lower-priority ones automatically
-- **Stream Monitoring**: Integration tracks active streams and handles timeouts (2.5 seconds)
+- **Priority Handling**: Higher-priority sources override lower-priority ones automatically, per channel
+- **Stream Monitoring**: Integration tracks active streams and handles timeouts (2.5 seconds) and stream termination
+- **Preview Data**: Packets marked as preview data are ignored
+
+### How Home Assistant Shares a Universe
+
+Home Assistant takes part as one source among the others. It never retransmits what it receives, it only sends the levels it was asked to set.
+
+**What it sends:** Levels, along with [per-address priorities](https://etclabs.github.io/sACNDocs/2.0.1/per_address_priority.html) (start code `0xDD`). Those give the channels Home Assistant has set the configured `priority`, and every other channel priority 0, meaning "not sourced". A channel is claimed from the first time it gets set, including being turned off.
+
+**What it shows:** For each channel, the highest priority wins, and among equal priorities the highest level does. This uses the received per-address priorities, or else the source's universe priority.
+
+| Situation | Entity shows |
+|---|---|
+| Console at 100 sends 0, Home Assistant at 110 sets 64 | 64 |
+| Console at 120 sends 0, Home Assistant at 110 sets 64 | 0, attributed to the console |
+| That console stops or terminates its stream | 64 again |
+| Console and Home Assistant both at 100, sending 200 and 64 | 200, attributed to the console |
+
+!!! warning "Receivers without per-address priority"
+    A receiver that doesn't support per-address priority only looks at the universe priority, and lets the source with the highest one control the entire universe. To share a universe with other controllers on such a receiver, give them the same `priority` and have it merge them, or use separate universes.
 
 ### Priority System in Action
 
@@ -171,7 +190,8 @@ sACN receivers expect regular data updates. The integration automatically:
 
 - Sends data packets at minimum 1Hz when channels change
 - Sends **stream termination packets** when universes are disabled
-- Handles receiver timeout detection (2.5 seconds without data)
+- Considers a source lost after 2.5 seconds without levels, or as soon as it terminates its stream
+- Gives a new source up to 1.5 seconds to send per-address priorities before its levels count
 
 ## Configuration for Receiving External sACN
 
@@ -251,9 +271,8 @@ dmx:
 
 **External controller not taking control:**
 
-- **Check priority settings**: External controller priority must be higher than Home Assistant's priority
-- **Verify source names**: Check logs for multiple source identification
-- **Monitor stream status**: Look for timeout/recovery messages in logs
+- **Check priority settings**: To override channels Home Assistant has set, the external controller's priority must be higher than Home Assistant's, or equal with a higher level
+- **Verify source names**: Check the attribution of the entity, which names the source that's winning it
 
 **Priority conflicts between multiple controllers:**
 
@@ -279,11 +298,8 @@ logger:
 
 **Useful log patterns for external data:**
 
-- `Received sACN data from [source] on universe X` - External controller sending data
-- `Priority switch: [old_source] -> [new_source]` - Controller takeover
-- `sACN stream timeout from [source] on universe X` - External controller disconnected
+- `Received sACN start code 0xXX for universe X from [ip]` - External controller sending levels (`0x00`) or per-address priorities (`0xDD`)
 - `Joined multicast group 239.255.X.Y` - Successfully listening for external data
-- `Rate limiting updates from external sACN source` - High-frequency external data
 
 ### Testing External sACN Controllers
 

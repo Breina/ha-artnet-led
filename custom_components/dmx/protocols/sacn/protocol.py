@@ -1,7 +1,8 @@
 """sACN (E1.31) protocol implementation."""
 
+import asyncio
 import logging
-from collections.abc import Callable
+import time
 from typing import Any
 
 from homeassistant import config_entries
@@ -11,6 +12,8 @@ from homeassistant.core import HomeAssistant
 from custom_components.dmx.io.dmx_io import DmxUniverse
 from custom_components.dmx.protocols.base import ProtocolServer, UniverseConfig
 from custom_components.dmx.server import PortAddress
+from custom_components.dmx.server.sacn_merge import SacnMerger
+from custom_components.dmx.server.sacn_packet import SacnPacket
 from custom_components.dmx.server.sacn_server import SacnReceiver, SacnServer, SacnServerConfig, create_sacn_receiver
 from custom_components.dmx.setup.config_processor import (
     CONF_ANIMATION,
@@ -36,6 +39,18 @@ from custom_components.dmx.util.rate_limiter import RateLimiter
 
 log = logging.getLogger(__name__)
 
+SOURCE_CHECK_INTERVAL = 0.5
+"""Seconds between checks for what happens by remote sources staying silent, such as being lost."""
+
+
+class _ReceivingUniverse:
+    """What's kept per universe to merge what's being received into it."""
+
+    def __init__(self, universe: DmxUniverse, limiter: RateLimiter, merger: SacnMerger) -> None:
+        self.universe = universe
+        self.limiter = limiter
+        self.merger = merger
+
 
 class SacnProtocol(ProtocolServer):
     """sACN (E1.31) protocol server implementation."""
@@ -46,12 +61,8 @@ class SacnProtocol(ProtocolServer):
         self.sacn_receiver: SacnReceiver | None = None
         self._config: SacnServerConfig | None = None
         self._rate_limit = CONF_RATE_LIMIT_DEFAULT
-        self._universe_rate_limiters: dict[PortAddress, tuple[RateLimiter, dict[int, int]]] = {}
-        # Most recent sender per universe. process_updates() is created once per
-        # universe and would otherwise close over the `source` argument of the very
-        # first call, pinning attribution to whichever controller happened to send
-        # the first frame after startup.
-        self._universe_sources: dict[PortAddress, str | None] = {}
+        self._receiving: dict[int, _ReceivingUniverse] = {}
+        self._source_watcher: asyncio.Task[None] | None = None
 
     @property
     def protocol_name(self) -> str:
@@ -76,9 +87,11 @@ class SacnProtocol(ProtocolServer):
         self.sacn_server = SacnServer(self.hass, self._config)
         self.sacn_server.start_server()
 
-        callback_fn = self.create_state_callback(self._rate_limit)
         self.sacn_receiver = await create_sacn_receiver(
-            self.hass, callback_fn, self._config.source_name, self._config.interface_ip
+            self.hass, self._handle_packet, self._config.cid, self._config.interface_ip
+        )
+        self._source_watcher = self.hass.async_create_background_task(
+            self._watch_sources(), name="sACN remote source watcher"
         )
 
         # Process universes
@@ -98,6 +111,10 @@ class SacnProtocol(ProtocolServer):
 
     def stop_server(self) -> None:
         """Stop the sACN server."""
+        if self._source_watcher:
+            self._source_watcher.cancel()
+            self._source_watcher = None
+
         if self.sacn_server:
             # sACN server doesn't have an explicit stop method in the current implementation
             log.info("sACN server stopped")
@@ -140,67 +157,37 @@ class SacnProtocol(ProtocolServer):
         universe = DmxUniverse(port_address, None, True, self.sacn_server, universe_id, self.hass, max_fps)
         self.universes[port_address] = universe
 
+        merger = SacnMerger()
+
+        def update_callback() -> None:
+            self.hass.async_create_task(universe.set_received(merger.merge()))
+
+        limiter = RateLimiter(
+            self.hass,
+            update_method=update_callback,
+            update_interval=self._rate_limit,
+            force_update_after=self._rate_limit * 4,
+        )
+        self._receiving[universe_id] = _ReceivingUniverse(universe, limiter, merger)
+
         return universe
 
-    def create_state_callback(self, rate_limit: float) -> Callable[[PortAddress, bytearray, str | None], None]:
-        """Create a callback function for handling sACN DMX data updates."""
+    def _handle_packet(self, packet: SacnPacket) -> None:
+        receiving = self._receiving.get(packet.universe)
+        if receiving is None:
+            log.warning(f"Received sACN data for unknown universe: {packet.universe}")
+            return
 
-        def sacn_state_callback(port_address: PortAddress, data: bytearray, source: str | None = None) -> None:
-            log.debug(
-                f"sACN state callback triggered for {port_address} from source '{source}' with {len(data)} channels"
-            )
+        if receiving.merger.handle_packet(packet, time.monotonic()):
+            receiving.limiter.schedule_update()
 
-            callback_universe = self.universes.get(port_address)
-            if callback_universe is None:
-                log.warning(f"Received sACN data for unknown universe: {port_address}")
-                return
-
-            if port_address not in self._universe_rate_limiters:
-                updates_dict: dict[int, int] = {}
-
-                async def process_updates() -> None:
-                    nonlocal updates_dict
-                    updates_to_process = updates_dict.copy()
-                    updates_dict.clear()
-
-                    if updates_to_process:
-                        log.debug(f"Processing {len(updates_to_process)} sACN channel updates for {port_address}")
-                        await callback_universe.update_multiple_values(
-                            updates_to_process, self._universe_sources.get(port_address), send_update=False
-                        )
-
-                def update_callback() -> None:
-                    self.hass.async_create_task(process_updates())
-
-                limiter = RateLimiter(
-                    self.hass,
-                    update_method=update_callback,
-                    update_interval=rate_limit,
-                    force_update_after=rate_limit * 4,
-                )
-
-                self._universe_rate_limiters[port_address] = (limiter, updates_dict)
-
-            limiter, updates_dict = self._universe_rate_limiters[port_address]
-            # Record the current sender for the batch process_updates() will flush.
-            self._universe_sources[port_address] = source
-
-            changes_detected = False
-
-            for channel, value in enumerate(data, start=1):  # DMX channels are 1-based
-                if updates_dict.get(channel, callback_universe.get_channel_value(channel)) != value:
-                    updates_dict[channel] = value
-                    changes_detected = True
-
-            if changes_detected:
-                log.debug(
-                    f"Detected changes in {len([k for k, v in updates_dict.items()])} channels for {port_address}"
-                )
-                limiter.schedule_update()
-            else:
-                log.debug(f"No changes detected for {port_address}")
-
-        return sacn_state_callback
+    async def _watch_sources(self) -> None:
+        while True:
+            await asyncio.sleep(SOURCE_CHECK_INTERVAL)
+            now = time.monotonic()
+            for receiving in self._receiving.values():
+                if receiving.merger.expire(now):
+                    receiving.limiter.schedule_update()
 
     def get_sacn_server(self) -> SacnServer | None:
         """Get the sACN server instance."""

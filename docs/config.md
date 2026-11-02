@@ -174,7 +174,7 @@ Universe definitions. Each universe can be specified as:
 - **`source_name`** *(optional, default: `HA sACN Controller`)*  
   Source name transmitted in sACN packets (max 63 characters)
 - **`priority`** *(optional, default: `100`)*  
-  sACN data priority [0-200]. Higher values take precedence over lower priority sources.
+  sACN data priority [0-200]. Higher values take precedence over lower priority sources, on the channels Home Assistant has set. See [how Home Assistant shares a universe](sacn-communication.md#how-home-assistant-shares-a-universe).
 - **`multicast_ttl`** *(optional, default: `64`)*  
   Time-to-live for multicast packets [1-255]
 - **`enable_preview_data`** *(optional, default: `false`)*  

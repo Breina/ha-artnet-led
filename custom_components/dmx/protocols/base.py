@@ -1,7 +1,6 @@
 """Base protocol interface for DMX protocols."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from typing import Any
 
 from homeassistant import config_entries
@@ -35,10 +34,6 @@ class ProtocolServer(ABC):
     @abstractmethod
     def add_universe(self, universe_config: dict[str, Any]) -> DmxUniverse:
         """Add a universe to the server and return the DmxUniverse instance."""
-
-    @abstractmethod
-    def create_state_callback(self, rate_limit: float) -> Callable[[PortAddress, bytearray, str | None], None]:
-        """Create a callback function for handling DMX data updates."""
 
     def get_universes(self) -> dict[PortAddress, DmxUniverse]:
         """Get all configured universes."""

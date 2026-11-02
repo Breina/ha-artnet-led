@@ -104,7 +104,7 @@ class TestSacnPacket:
         assert packet.start_code == 0xDD
         assert packet.channel_data == non_zero_start_code_data[1:]
 
-    def test_serialize_forces_start_code_zero(self):
+    def test_serialize_keeps_start_code(self):
         """Test that serialize() always outputs start code 0x00 regardless of internal value."""
         packet = SacnPacket()
 
@@ -114,7 +114,7 @@ class TestSacnPacket:
         assert packet.start_code == 0xDD
 
         serialized = packet.serialize()
-        assert serialized[125] == 0x00
+        assert serialized[125] == 0xDD
 
     def test_multicast_address_calculation(self):
         test_cases = [

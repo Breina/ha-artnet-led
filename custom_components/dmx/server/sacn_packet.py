@@ -10,6 +10,8 @@ DMP_VECTOR = 0x02
 DMP_ADDRESS_TYPE_DATA_TYPE = 0xA1
 DMP_FIRST_PROPERTY_ADDRESS = 0x0000
 DMP_ADDRESS_INCREMENT = 0x0001
+START_CODE_LEVELS = 0x00
+START_CODE_PER_ADDRESS_PRIORITY = 0xDD
 
 
 @dataclass
@@ -77,8 +79,6 @@ class SacnPacket:
 
     def serialize(self) -> bytes:
         dmx_data_out = bytearray(self.dmx_data)
-        if len(dmx_data_out) > 0:
-            dmx_data_out[0] = 0x00
 
         # Calculate lengths
         dmp_layer_length = 10 + len(dmx_data_out)  # DMP header (10) + property values (dmx_data contains the 0x00 byte)

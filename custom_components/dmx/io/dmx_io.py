@@ -5,6 +5,7 @@ from typing import Any
 from custom_components.dmx.animation.engine import DmxAnimationEngine
 from custom_components.dmx.server import PortAddress
 from custom_components.dmx.server.artnet_server import ArtNetServer
+from custom_components.dmx.server.sacn_merge import ReceivedSlot, merge_priority
 from custom_components.dmx.server.sacn_server import SacnServer
 
 
@@ -27,7 +28,12 @@ class DmxUniverse:
         self.use_partial_universe = use_partial_universe
         self._hass = hass
 
+        # What we send ourselves, which only local changes write to. Anything received stays in _received, otherwise
+        # we'd end up transmitting other controllers' levels as our own.
         self._channel_values: dict[int, int] = {}
+        self._received: dict[int, ReceivedSlot] = {}
+        # Art-Net has no priorities: there, whoever wrote a channel last wins.
+        self._output_priority = merge_priority(sacn_server.config.priority) if sacn_server else None
         self._constant_values: dict[int, int] = {}
         self._channel_callbacks: dict[int, list[Callable[[str | None], None]]] = {}
         self._output_enabled: bool = True
@@ -76,58 +82,100 @@ class DmxUniverse:
         channel: int | list[int],
         value: int,
         send_immediately: bool = False,
-        source: str | None = None,
         fire_callbacks: bool = True,
-    ) -> set[Callable[[str | None], None]]:
+    ) -> dict[Callable[[str | None], None], str | None]:
+        """Changes a value we're sending ourselves."""
 
         channels = [channel] if isinstance(channel, int) else channel
 
-        callbacks_to_call: set[Callable[[str | None], None]] = set()
-        changed_channels: list[int] = []
+        callbacks_to_call: dict[Callable[[str | None], None], str | None] = {}
+        affected_channels: list[int] = []
 
         for ch in channels:
-            if ch in self._constant_values and source is None:
+            if ch in self._constant_values:
                 continue
 
-            if ch not in self._channel_values or self._channel_values[ch] != value:
-                self._channel_values[ch] = value
-                changed_channels.append(ch)
+            changed = ch not in self._channel_values or self._channel_values[ch] != value
+            self._channel_values[ch] = value
 
-        for ch in changed_channels:
-            if ch in self._channel_callbacks:
-                for callback in self._channel_callbacks[ch]:
-                    if callback in callbacks_to_call:
-                        continue
-                    callbacks_to_call.add(callback)
-                    if fire_callbacks:
-                        try:
-                            await self._call_callback(callback, source)
-                        except Exception as e:
-                            print(f"Error calling callback for channel {ch}: {e}")
+            overwrote_received = self._output_priority is None and self._received.pop(ch, None) is not None
+
+            # Also when nothing changed: if another source still wins, whoever asked for this has to hear about it.
+            if changed or overwrote_received or self._winning_slot(ch) is not None:
+                affected_channels.append(ch)
+
+        for ch in affected_channels:
+            source = self.get_channel_source(ch)
+            for callback in self._channel_callbacks.get(ch, ()):
+                if callback in callbacks_to_call:
+                    continue
+                callbacks_to_call[callback] = source
+                if fire_callbacks:
+                    try:
+                        await self._call_callback(callback, source)
+                    except Exception as e:
+                        print(f"Error calling callback for channel {ch}: {e}")
 
         if send_immediately:
             self.send_universe_data()
 
         return callbacks_to_call
 
-    async def update_multiple_values(
-        self, updates: dict[int, int], source: str | None = None, send_update: bool = True
-    ) -> None:
+    async def update_multiple_values(self, updates: dict[int, int], send_update: bool = True) -> None:
+        """Changes values we're sending ourselves."""
         # Collect all affected callbacks without firing them, so every callback
         # fires exactly once after all channel values have been written.
         # This matters for 16-bit (fine) channels where coarse and fine bytes
         # must both be updated before the callback reads the combined value.
-        callbacks_to_call: set[Callable[[str | None], None]] = set()
+        callbacks_to_call: dict[Callable[[str | None], None], str | None] = {}
         for channel, value in updates.items():
-            callbacks_to_call.update(
-                await self.update_value(channel, value, send_immediately=False, source=source, fire_callbacks=False)
-            )
+            for callback, source in (
+                await self.update_value(channel, value, send_immediately=False, fire_callbacks=False)
+            ).items():
+                callbacks_to_call.setdefault(callback, source)
 
-        for callback in callbacks_to_call:
+        for callback, source in callbacks_to_call.items():
             await self._call_callback(callback, source)
 
         if send_update:
             self._schedule_send()
+
+    async def receive_values(self, updates: dict[int, int], source: str | None) -> None:
+        """Takes in levels from a controller on the network, for protocols without priorities."""
+        received = {channel: ReceivedSlot(value, 0, source) for channel, value in updates.items()}
+        await self.set_received({**self._received, **received})
+
+    async def set_received(self, received: dict[int, ReceivedSlot]) -> None:
+        """Replaces what the network is sending. Never gets transmitted, it's only what entities get to show."""
+        channels = self._received.keys() | received.keys()
+        previous_values = {channel: self.get_channel_value(channel) for channel in channels}
+
+        self._received = received
+
+        callbacks_to_call: dict[Callable[[str | None], None], str | None] = {}
+        for channel in channels:
+            if self.get_channel_value(channel) != previous_values[channel]:
+                source = self.get_channel_source(channel)
+                for callback in self._channel_callbacks.get(channel, ()):
+                    callbacks_to_call.setdefault(callback, source)
+
+        for callback, source in callbacks_to_call.items():
+            await self._call_callback(callback, source)
+
+    def _winning_slot(self, channel: int) -> ReceivedSlot | None:
+        """What was received for this channel, if that takes precedence over what we're sending ourselves."""
+        received = self._received.get(channel)
+        if received is None:
+            return None
+
+        own_value = self._channel_values.get(channel)
+        if own_value is None or self._output_priority is None:
+            return received
+
+        if received.priority != self._output_priority:
+            return received if received.priority > self._output_priority else None
+
+        return received if received.level > own_value else None
 
     def _schedule_send(self) -> None:
         """Throttle send_universe_data to at most once per frame interval.
@@ -171,18 +219,22 @@ class DmxUniverse:
             callback(source)
 
     def get_channel_value(self, channel: int) -> int:
-        return self._channel_values.get(channel, 0)
+        """The level this channel is effectively at, considering everyone sending to this universe."""
+        winning_slot = self._winning_slot(channel)
+        return winning_slot.level if winning_slot else self._channel_values.get(channel, 0)
+
+    def get_channel_source(self, channel: int) -> str | None:
+        """Who the channel's effective level comes from, None if that's us."""
+        winning_slot = self._winning_slot(channel)
+        return winning_slot.source if winning_slot else None
 
     def is_channel_set(self, channel: int) -> bool:
+        """Whether we've given this channel a level ourselves."""
         return channel in self._channel_values
 
     def send_universe_data(self) -> None:
         if not self._output_enabled:
             return
-
-        for channel, constant_value in self._constant_values.items():
-            if self._channel_values.get(channel) != constant_value:
-                self._channel_values[channel] = constant_value
 
         if not self._channel_values:
             data = bytearray(2)  # Minimum size is 2 bytes
@@ -193,7 +245,7 @@ class DmxUniverse:
             # Send via sACN if available
             if self.sacn_server and self.sacn_universe:
                 sacn_data = bytearray([0] + [0] * 24)
-                self.sacn_server.send_dmx_data(self.sacn_universe, sacn_data)
+                self.sacn_server.send_dmx_data(self.sacn_universe, sacn_data, b"")
 
             return
 
@@ -220,4 +272,10 @@ class DmxUniverse:
             sacn_data = bytearray([0, *data])  # Add start code
             if len(sacn_data) < 25:
                 sacn_data.extend([0] * (25 - len(sacn_data)))
-            self.sacn_server.send_dmx_data(self.sacn_universe, sacn_data)
+
+            # Only claim the slots we've given a level, the others are free for other controllers to use.
+            assert self._output_priority is not None  # Set whenever there's an sACN server
+            address_priorities = bytes(
+                self._output_priority if channel in self._channel_values else 0 for channel in range(1, len(data) + 1)
+            )
+            self.sacn_server.send_dmx_data(self.sacn_universe, sacn_data, address_priorities)

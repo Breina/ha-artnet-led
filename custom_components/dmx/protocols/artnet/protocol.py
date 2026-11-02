@@ -158,8 +158,8 @@ class ArtNetProtocol(ProtocolServer):
                     updates_dict.clear()
 
                     if updates_to_process:
-                        await callback_universe.update_multiple_values(
-                            updates_to_process, self._universe_sources.get(port_address), send_update=False
+                        await callback_universe.receive_values(
+                            updates_to_process, self._universe_sources.get(port_address)
                         )
 
                 def update_callback() -> None:
