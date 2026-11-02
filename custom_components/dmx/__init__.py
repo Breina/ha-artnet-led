@@ -75,8 +75,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     old_entries = extract_old_entries(config)
     if old_entries:
-        device_count = sum(len(u.get("devices", [])) for e in old_entries for u in e.get("universes", {}).values())
-        universe_count = sum(len(e.get("universes", {})) for e in old_entries)
         hass.data.setdefault(DOMAIN, {})["_old_entries"] = old_entries
         ir.async_create_issue(
             hass,
@@ -86,10 +84,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             is_persistent=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key="ha_artnet_led_migration",
-            translation_placeholders={
-                "device_count": str(device_count),
-                "universe_count": str(universe_count),
-            },
         )
     else:
         ir.async_delete_issue(hass, DOMAIN, REPAIR_ISSUE_ID)
