@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import groupby
 
 from homeassistant.components.light import ColorMode
@@ -95,6 +95,29 @@ def __accumulate_light_entities(
         accumulator[matrix_key] = [accumulated_light_channel]
 
 
+def _color_temperature_bounds(mapping: ChannelMapping) -> tuple[int, int]:
+    """
+    Return the Kelvin bounds of a color temperature channel, lowest first.
+
+    Fixture profiles may run either way (Robe: 8000K -> 2700K), but ColorConverter and Home Assistant both
+    need min < max. The direction itself is handled by the channel's own DMX mapping.
+    """
+    min_kelvin, max_kelvin = 2000, 6500
+
+    capabilities = mapping.channel.capabilities
+    capability = capabilities[0] if isinstance(capabilities, list) else capabilities
+    if not isinstance(capability, ColorTemperature) or len(capability.color_temperature) != 2:
+        return min_kelvin, max_kelvin
+
+    start, end = capability.color_temperature
+    if start.unit == "K":
+        min_kelvin = int(start.value)
+    if end.unit == "K":
+        max_kelvin = int(end.value)
+
+    return min(min_kelvin, max_kelvin), max(min_kelvin, max_kelvin)
+
+
 def __build_light_entities(
     name: str,
     entity_id_prefix: str | None,
@@ -108,7 +131,17 @@ def __build_light_entities(
     for matrix_key, accumulated_channels in accumulator.items():
         channel_map: dict[ChannelType, ChannelMapping] = {}
         for accumulated_channel in accumulated_channels:
-            channel_map[accumulated_channel.channel_type] = accumulated_channel
+            if accumulated_channel.channel_type == ChannelType.COLOR_TEMPERATURE:
+                # Later CCT channels are secondary, e.g. Kelvin Epos' "RGB Device white point"; they stay numbers.
+                channel_map.setdefault(ChannelType.COLOR_TEMPERATURE, accumulated_channel)
+            else:
+                channel_map[accumulated_channel.channel_type] = accumulated_channel
+
+        # A lone white channel is a white intensity, whatever its shade: same convention as plain White above.
+        if ChannelType.COLD_WHITE in channel_map and ChannelType.WARM_WHITE not in channel_map:
+            channel_map[ChannelType.WARM_WHITE] = replace(
+                channel_map.pop(ChannelType.COLD_WHITE), channel_type=ChannelType.WARM_WHITE
+            )
 
         has_rgb = (
             ChannelType.RED in channel_map and ChannelType.GREEN in channel_map and ChannelType.BLUE in channel_map
@@ -120,7 +153,7 @@ def __build_light_entities(
 
         has_temp_control = has_cold_warm or has_color_temp
 
-        has_single_white = ChannelType.COLD_WHITE in channel_map or ChannelType.WARM_WHITE in channel_map
+        has_single_white = ChannelType.WARM_WHITE in channel_map and not has_cold_warm
 
         has_dimmer = ChannelType.DIMMER in channel_map
 
@@ -128,6 +161,7 @@ def __build_light_entities(
         has_separate_dimmer = False
         min_kelvin = 2000
         max_kelvin = 6500
+        supported_color_modes: set[ColorMode] | None = None
 
         if has_rgb:
             if has_dimmer:
@@ -138,39 +172,34 @@ def __build_light_entities(
             channels_data.append(channel_map[ChannelType.GREEN])
             channels_data.append(channel_map[ChannelType.BLUE])
 
-            if has_temp_control:
+            if has_cold_warm:
                 color_mode = ColorMode.RGBWW
 
-                if ChannelType.COLD_WHITE in channel_map:
-                    channels_data.append(channel_map[ChannelType.COLD_WHITE])
+                channels_data.append(channel_map[ChannelType.COLD_WHITE])
+                channels_data.append(channel_map[ChannelType.WARM_WHITE])
 
-                if ChannelType.WARM_WHITE in channel_map:
+                if has_color_temp:
+                    channels_data.append(channel_map[ChannelType.COLOR_TEMPERATURE])
+                    min_kelvin, max_kelvin = _color_temperature_bounds(channel_map[ChannelType.COLOR_TEMPERATURE])
+
+            elif has_color_temp and (has_single_white or has_dimmer):
+                # RGB next to a CCT channel, without separately controllable cold and warm whites. Home Assistant
+                # models this as two modes, either showing a color or showing white at a color temperature.
+                # Without a dimmer or white channel, there is nothing to dim or switch off that white with, so
+                # that case is handled as plain RGB below and CCT stays available as a number entity.
+                color_mode = ColorMode.COLOR_TEMP
+                supported_color_modes = {ColorMode.COLOR_TEMP, ColorMode.RGBW if has_single_white else ColorMode.RGB}
+
+                if has_single_white:
                     channels_data.append(channel_map[ChannelType.WARM_WHITE])
 
-                if ChannelType.COLOR_TEMPERATURE in channel_map:
-                    channel_temp = channel_map[ChannelType.COLOR_TEMPERATURE]
-                    channels_data.append(channel_temp)
-
-                    capabilities = channel_temp.channel.capabilities
-                    first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
-
-                    if isinstance(first_capability, ColorTemperature):
-                        color_temperature: ColorTemperature = first_capability
-
-                        min_color_temp_entity, max_color_temp_entity = color_temperature.color_temperature
-                        if min_color_temp_entity.unit == "K":
-                            min_kelvin = int(min_color_temp_entity.value)
-
-                        if max_color_temp_entity.unit == "K":
-                            max_kelvin = int(max_color_temp_entity.value)
+                channels_data.append(channel_map[ChannelType.COLOR_TEMPERATURE])
+                min_kelvin, max_kelvin = _color_temperature_bounds(channel_map[ChannelType.COLOR_TEMPERATURE])
 
             elif has_single_white:
                 color_mode = ColorMode.RGBW
 
-                if ChannelType.COLD_WHITE in channel_map:
-                    channels_data.append(channel_map[ChannelType.COLD_WHITE])
-                elif ChannelType.WARM_WHITE in channel_map:
-                    channels_data.append(channel_map[ChannelType.WARM_WHITE])
+                channels_data.append(channel_map[ChannelType.WARM_WHITE])
 
             else:
                 color_mode = ColorMode.RGB
@@ -190,22 +219,9 @@ def __build_light_entities(
             if ChannelType.WARM_WHITE in channel_map:
                 channels_data.append(channel_map[ChannelType.WARM_WHITE])
 
-            if ChannelType.COLOR_TEMPERATURE in channel_map:
-                channel_temp = channel_map[ChannelType.COLOR_TEMPERATURE]
-                channels_data.append(channel_temp)
-
-                capabilities = channel_temp.channel.capabilities
-                first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
-
-                if isinstance(first_capability, ColorTemperature):
-                    color_temperature_2: ColorTemperature = first_capability
-
-                    min_color_temp_entity, max_color_temp_entity = color_temperature_2.color_temperature
-                    if min_color_temp_entity.unit == "K":
-                        min_kelvin = int(min_color_temp_entity.value)
-
-                    if max_color_temp_entity.unit == "K":
-                        max_kelvin = int(max_color_temp_entity.value)
+            if has_color_temp:
+                channels_data.append(channel_map[ChannelType.COLOR_TEMPERATURE])
+                min_kelvin, max_kelvin = _color_temperature_bounds(channel_map[ChannelType.COLOR_TEMPERATURE])
 
         elif has_single_white or has_dimmer:
             color_mode = ColorMode(ColorMode.BRIGHTNESS)
@@ -215,10 +231,7 @@ def __build_light_entities(
                 channels_data.append(channel_map[ChannelType.DIMMER])
 
             if has_single_white:
-                if ChannelType.COLD_WHITE in channel_map:
-                    channels_data.append(channel_map[ChannelType.COLD_WHITE])
-                elif ChannelType.WARM_WHITE in channel_map:
-                    channels_data.append(channel_map[ChannelType.WARM_WHITE])
+                channels_data.append(channel_map[ChannelType.WARM_WHITE])
 
         else:
             # No suitable channels for a light entity
@@ -230,6 +243,7 @@ def __build_light_entities(
                 entity_id_prefix=entity_id_prefix,
                 matrix_key=matrix_key,
                 color_mode=color_mode,
+                supported_color_modes=supported_color_modes,
                 channels=channels_data,
                 device=device,
                 universe=universe,

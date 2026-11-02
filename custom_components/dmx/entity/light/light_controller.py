@@ -30,6 +30,8 @@ class LightController:
         updates = self._collect_updates_from_kwargs(kwargs)
         if not updates:
             updates = self._restore_previous_state()
+        else:
+            self._add_updates_to_become_visible(updates)
 
         # Clear preserve flag when user explicitly turns light on
         if self.state._preserve_last_values:
@@ -77,25 +79,9 @@ class LightController:
             current_entity_value = 0
             for mapping in self.channel_mappings:
                 if mapping.channel_type == channel_type:
-                    if all(self.universe.is_channel_set(idx) for idx in mapping.dmx_indexes):
-                        # DMX values have been written; use them (handles mid-animation restarts)
-                        dmx_values = [self.universe.get_channel_value(idx) for idx in mapping.dmx_indexes]
-                        capabilities = mapping.channel.capabilities
-                        first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
-                        [dynamic_entity] = first_capability.dynamic_entities
-                        normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
-                        # round(), not int(): the DMX->entity->DMX round-trip through
-                        # from_dmx_fine()/unnormalize() is floating-point interpolation
-                        # (capability.py's _make_interpolater), so an exact value like
-                        # 255 can come back as 254.999999999997. int() truncated that
-                        # down to 254, making every reapply look 1 unit "changed" and
-                        # triggering an unnecessary re-animation (visible as a brief
-                        # flicker) even when nothing actually changed on the wire.
-                        current_entity_value = round(dynamic_entity.unnormalize(normalized_value))
-                        if mapping.output_correction is not None:
-                            current_entity_value = round(
-                                mapping.output_correction.invert(current_entity_value / 255.0) * 255.0
-                            )
+                    written_value = self._read_written_value(mapping)
+                    if written_value is not None:
+                        current_entity_value = written_value
                     else:
                         # Channel never written (e.g. after HA restart before first DMX send);
                         # fall back to LightState which was restored from last_state
@@ -107,9 +93,6 @@ class LightController:
         relevant_mappings = [mapping for mapping in self.channel_mappings if mapping.channel_type in updates]
 
         if relevant_mappings:
-            # Preserve last_* values during animation to prevent animation frames from corrupting them
-            self.state._preserve_last_values = True
-
             log.debug(
                 "Creating animation with %d mappings, current: %s, desired: %s",
                 len(relevant_mappings),
@@ -127,9 +110,52 @@ class LightController:
                 completion_callback=self._on_animation_complete,
             )
 
-            # Update state to target values immediately (for UI consistency)
+            # Update state to target values immediately (for UI consistency). This is the new state to come back
+            # to, as opposed to what follows.
+            self.state._preserve_last_values = False
             for ct, val in updates.items():
                 self.state.apply_channel_update(ct, val)
+
+            # Preserve last_* values during animation to prevent animation frames from corrupting them
+            self.state._preserve_last_values = True
+
+    def _read_written_value(self, mapping: ChannelMapping) -> int | None:
+        """Read a channel's value in entity space from DMX, or None if it hasn't been written yet."""
+        if not all(self.universe.is_channel_set(idx) for idx in mapping.dmx_indexes):
+            return None
+
+        # DMX values have been written; use them (handles mid-animation restarts)
+        dmx_values = [self.universe.get_channel_value(idx) for idx in mapping.dmx_indexes]
+        capabilities = mapping.channel.capabilities
+        first_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
+        [dynamic_entity] = first_capability.dynamic_entities
+        normalized_value = dynamic_entity.from_dmx_fine(dmx_values)
+
+        value = round(dynamic_entity.unnormalize(normalized_value))
+        if mapping.output_correction is not None:
+            value = round(mapping.output_correction.invert(value / 255.0) * 255.0)
+        return value
+
+    def _is_channel_dark(self, channel_type: ChannelType) -> bool:
+        return not self._read_written_value(self.state.channels[channel_type])
+
+    def _add_updates_to_become_visible(self, updates: dict[ChannelType, int]) -> None:
+        """
+        A dimmer multiplies the output channels, so turning on with only one of them changed stays dark if the
+        other one is at zero: a color on a dimmer that has been turned off, or a brightness on a fixture whose
+        color channels have never been written. The unchanged one needs its previous value back in that case.
+        """
+        if not self.state.has_channel(ChannelType.DIMMER):
+            return
+
+        if ChannelType.DIMMER not in updates and self._is_channel_dark(ChannelType.DIMMER):
+            updates[ChannelType.DIMMER] = self.state.last_brightness or 255
+
+        output_channels = self.state.output_channels()
+        if not any(channel in updates for channel in output_channels) and all(
+            self._is_channel_dark(channel) for channel in output_channels
+        ):
+            updates.update(self.state.last_output_values())
 
     def _collect_updates_from_kwargs(self, kwargs: dict[str, Any]) -> dict[ChannelType, int]:
         updates = {}
@@ -139,17 +165,21 @@ class LightController:
             brightness_updates = self.state.get_scaled_brightness_updates(brightness)
             updates.update(brightness_updates)
 
+        color_updates: dict[ChannelType, int] = {}
+
         if "rgb_color" in kwargs and self.state.has_rgb():
             r, g, b = kwargs["rgb_color"]
-            updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b})
+            color_updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b})
 
         if "rgbw_color" in kwargs:
             r, g, b, w = kwargs["rgbw_color"]
-            updates.update({ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b, ChannelType.WARM_WHITE: w})
+            color_updates.update(
+                {ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b, ChannelType.WARM_WHITE: w}
+            )
 
         if "rgbww_color" in kwargs:
             r, g, b, cw, ww = kwargs["rgbww_color"]
-            updates.update(
+            color_updates.update(
                 {
                     ChannelType.RED: r,
                     ChannelType.GREEN: g,
@@ -159,21 +189,41 @@ class LightController:
                 }
             )
 
+        # Home Assistant's conversions can overshoot on a color temperature that's beyond the light's range.
+        color_updates = {channel: max(0, min(255, value)) for channel, value in color_updates.items()}
+
+        has_dimmer = self.state.has_channel(ChannelType.DIMMER)
+
+        # Without a dimmer, the color channels are the only place to express a requested brightness.
+        if "brightness" in kwargs and not has_dimmer:
+            color_updates = self.state.scale_to_brightness(color_updates, kwargs["brightness"])
+
+        updates.update(color_updates)
+
         if "color_temp_kelvin" in kwargs:
             kelvin = kwargs["color_temp_kelvin"]
             self.state.update_color_temp_kelvin(kelvin)
-            brightness = kwargs.get("brightness", self.state.brightness)
 
-            if brightness is None:
-                brightness = 255
+            # A dimmer already provides the brightness, the white channels shouldn't apply it a second time.
+            brightness = 255 if has_dimmer else self._requested_or_last_brightness(kwargs)
 
             if self.state.has_channel(ChannelType.COLOR_TEMPERATURE):
                 updates[ChannelType.COLOR_TEMPERATURE] = self.state.color_temp_dmx  # type: ignore[assignment]
-            elif self.state.has_cw_ww():
+
+            if self.state.has_cw_ww():
                 cw, ww = self.state.converter.temp_to_cw_ww(kelvin, brightness)
                 updates.update({ChannelType.COLD_WHITE: cw, ChannelType.WARM_WHITE: ww})
+            elif self.state.has_channel(ChannelType.WARM_WHITE):
+                updates[ChannelType.WARM_WHITE] = brightness
+
+            if self.state.switches_color_mode:
+                # Showing white: a color left behind would tint it, or suppress it altogether.
+                updates.update({ChannelType.RED: 0, ChannelType.GREEN: 0, ChannelType.BLUE: 0})
 
         return updates
+
+    def _requested_or_last_brightness(self, kwargs: dict[str, Any]) -> int:
+        return int(kwargs.get("brightness") or self.state.brightness or self.state.last_brightness or 255)
 
     def _restore_previous_state(self) -> dict[ChannelType, int]:
         updates = {}

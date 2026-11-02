@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Mapping
 from functools import partial
 from typing import Any
 
@@ -32,6 +33,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         has_separate_dimmer: bool = False,
         min_kelvin: int = 2000,
         max_kelvin: int = 6500,
+        supported_color_modes: set[ColorMode] | None = None,
     ) -> None:
         self._matrix_key = matrix_key
         # No " Light" suffix: the entity_id HA derives from this name has to match the
@@ -54,8 +56,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
                 self._attr_unique_id = f"{self._attr_unique_id}_{matrix_key}"
 
         self._attr_device_info = device
-        self._attr_color_mode = color_mode
-        self._attr_supported_color_modes = {color_mode}
+        self._attr_supported_color_modes = supported_color_modes or {color_mode}
         self._attr_supported_features = LightEntityFeature(LightEntityFeature.TRANSITION)
 
         if self.supported_color_modes and ColorMode.COLOR_TEMP in self.supported_color_modes:
@@ -104,6 +105,10 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         self._state.apply_channel_update(channel_type, round(value))
         self.async_write_ha_state()
+
+    @property
+    def color_mode(self) -> ColorMode:
+        return self._state.color_mode
 
     @property
     def is_on(self) -> bool:
@@ -174,21 +179,17 @@ class DmxLightEntity(LightEntity, RestoreEntity):
                 self._state.brightness = brightness
                 self._state.last_brightness = brightness
 
-        if "rgb_color" in attrs:
-            rgb = attrs["rgb_color"]
-            if rgb is not None:
-                self._state.rgb = rgb
-                self._state.last_rgb = rgb
+        self._restore_color(attrs)
 
         if "color_temp_kelvin" in attrs:
             color_temp_kelvin = attrs["color_temp_kelvin"]
             if color_temp_kelvin is not None:
-                self._state.color_temp_kelvin = color_temp_kelvin
-                self._state.last_color_temp_kelvin = color_temp_kelvin
+                self._state.update_color_temp_kelvin(color_temp_kelvin)
 
         # For color temp mode without dimmer, restore CW/WW values if available
         if (
             self._state.color_mode == ColorMode.COLOR_TEMP
+            and self._state.has_cw_ww()
             and not self._has_separate_dimmer
             and "brightness" in attrs
             and ("color_temp_kelvin" in attrs or "color_temp" in attrs)
@@ -206,3 +207,36 @@ class DmxLightEntity(LightEntity, RestoreEntity):
             self._state.warm_white = warm
             self._state.last_cold_white = cold
             self._state.last_warm_white = warm
+
+        # A single white channel without dimmer is the brightness, unless it's part of the RGBW color restored above.
+        elif (
+            self._state.has_channel(ChannelType.WARM_WHITE)
+            and not self._state.has_cw_ww()
+            and not self._has_separate_dimmer
+            and attrs.get("color_mode") in (ColorMode.BRIGHTNESS, ColorMode.COLOR_TEMP)
+            and attrs.get("brightness")
+        ):
+            self._state.warm_white = attrs["brightness"]
+            self._state.last_warm_white = attrs["brightness"]
+
+    def _restore_color(self, attrs: Mapping[str, Any]) -> None:
+        # Only the attributes of the mode the light was in are real: Home Assistant derives the others from it,
+        # e.g. rgb_color while showing white at a color temperature, or while RGBW(W) has its whites on.
+        color_mode = attrs.get("color_mode")
+
+        if self._state.has_rgb() and color_mode == ColorMode.RGBWW and attrs.get("rgbww_color") is not None:
+            r, g, b, cold, warm = attrs["rgbww_color"]
+            self._state.rgb = self._state.last_rgb = (r, g, b)
+            self._state.cold_white = self._state.last_cold_white = cold
+            self._state.warm_white = self._state.last_warm_white = warm
+
+        elif self._state.has_rgb() and color_mode == ColorMode.RGBW and attrs.get("rgbw_color") is not None:
+            r, g, b, white = attrs["rgbw_color"]
+            self._state.rgb = self._state.last_rgb = (r, g, b)
+            self._state.warm_white = self._state.last_warm_white = white
+
+        elif self._state.has_rgb() and color_mode == ColorMode.RGB and attrs.get("rgb_color") is not None:
+            r, g, b = attrs["rgb_color"]
+            self._state.rgb = self._state.last_rgb = (r, g, b)
+
+        self._state.sync_color_mode()

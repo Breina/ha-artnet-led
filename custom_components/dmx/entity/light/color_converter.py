@@ -97,5 +97,6 @@ class ColorConverter:
 
     def kelvin_to_dmx(self, kelvin: int) -> float:
         """Convert color temperature in kelvin to DMX value (0-255)."""
+        kelvin = max(self.min_kelvin, min(self.max_kelvin, kelvin))
         ratio = (kelvin - self.min_kelvin) / (self.max_kelvin - self.min_kelvin)
         return ratio * 255

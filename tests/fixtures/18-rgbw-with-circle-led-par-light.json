@@ -1,0 +1,185 @@
+{
+  "$schema": "https://raw.githubusercontent.com/OpenLightingProject/open-fixture-library/master/schemas/fixture.json",
+  "name": "18 RGBW with Circle LED PAR LIGHT",
+  "shortName": "18RGBWC",
+  "categories": ["Color Changer", "Dimmer"],
+  "meta": {
+    "authors": ["lunkwillandfook"],
+    "createDate": "2025-07-29",
+    "lastModifyDate": "2025-07-29"
+  },
+  "availableChannels": {
+    "Dimmer": {
+      "defaultValue": 0,
+      "capability": {
+        "type": "Intensity"
+      }
+    },
+    "Red": {
+      "defaultValue": 0,
+      "capability": {
+        "type": "ColorIntensity",
+        "color": "Red"
+      }
+    },
+    "Green": {
+      "defaultValue": 0,
+      "capability": {
+        "type": "ColorIntensity",
+        "color": "Green"
+      }
+    },
+    "Blue": {
+      "defaultValue": 0,
+      "capability": {
+        "type": "ColorIntensity",
+        "color": "Blue"
+      }
+    },
+    "White": {
+      "defaultValue": 0,
+      "capability": {
+        "type": "ColorIntensity",
+        "color": "White"
+      }
+    },
+    "Strobe": {
+      "defaultValue": 1,
+      "capabilities": [
+        {
+          "dmxRange": [1, 5],
+          "type": "ShutterStrobe",
+          "shutterEffect": "Open"
+        },
+        {
+          "dmxRange": [6, 255],
+          "type": "ShutterStrobe",
+          "shutterEffect": "Strobe",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        }
+      ]
+    },
+    "Macro functions": {
+      "capabilities": [
+        {
+          "dmxRange": [0, 1],
+          "type": "NoFunction"
+        },
+        {
+          "dmxRange": [2, 19],
+          "type": "Effect",
+          "effectName": "Macro color (slow-fast)",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        },
+        {
+          "dmxRange": [20, 99],
+          "type": "Effect",
+          "effectName": "Jump self-walk mode (slow-fast)",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        },
+        {
+          "dmxRange": [100, 149],
+          "type": "Effect",
+          "effectName": "Gradual self-walk mode (slow-fast)",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        },
+        {
+          "dmxRange": [150, 199],
+          "type": "Effect",
+          "effectName": "Pulse self-walk mode (slow-fast)",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        },
+        {
+          "dmxRange": [200, 255],
+          "type": "Effect",
+          "effectName": "8 color auto switching (slow-fast)",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        }
+      ]
+    },
+    "Light strip functions": {
+      "capabilities": [
+        {
+          "dmxRange": [0, 19],
+          "type": "NoFunction"
+        },
+        {
+          "dmxRange": [20, 49],
+          "type": "Effect",
+          "effectName": "Rotating red",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        },
+        {
+          "dmxRange": [50, 79],
+          "type": "Effect",
+          "effectName": "Rotating green",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        },
+        {
+          "dmxRange": [80, 109],
+          "type": "Effect",
+          "effectName": "Rotating blue",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        },
+        {
+          "dmxRange": [110, 139],
+          "type": "Effect",
+          "effectName": "Rotating interval color",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        },
+        {
+          "dmxRange": [140, 169],
+          "type": "Effect",
+          "effectName": "Seven color jump",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        },
+        {
+          "dmxRange": [170, 199],
+          "type": "Effect",
+          "effectName": "Rotating water",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        },
+        {
+          "dmxRange": [200, 255],
+          "type": "Effect",
+          "effectName": "Wind and fire",
+          "speedStart": "0Hz",
+          "speedEnd": "20Hz"
+        }
+      ]
+    }
+  },
+  "modes": [
+    {
+      "name": "DRGBW",
+      "shortName": "drgbw",
+      "channels": ["Dimmer", "Red", "Green", "Blue", "White"]
+    },
+    {
+      "name": "DRGBW Strobe & Program",
+      "shortName": "drgbw-strb-prg",
+      "channels": [
+        "Dimmer",
+        "Red",
+        "Green",
+        "Blue",
+        "White",
+        "Strobe",
+        "Macro functions",
+        "Light strip functions"
+      ]
+    }
+  ]
+}
