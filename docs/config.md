@@ -131,7 +131,6 @@ Universe definitions. Each universe can be specified as:
 #### Device Configuration
 - **`start_address`** *(mandatory)*  
   DMX start address [1-512], where 1 is the first slot of the universe.
-  The fixture's channels have to fit within the universe, otherwise the device is ignored and an error is logged.
 - **`fixture`** *(mandatory)*  
   Matches the `shortName` of the fixture JSON, or `name` if no `shortName` is defined.
 - **`mode`** *(optional)*  
