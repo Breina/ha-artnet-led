@@ -74,7 +74,9 @@ class Fixture:
             for switch_channel_key, switch_channel_value in capability.switch_channels.items():
                 if switch_channel_key not in switching_dest:
                     switching_dest[switch_channel_key] = set()
-                switching_dest[switch_channel_key].add(switch_channel_value)
+                # None switches to an unused channel: nothing to control while that capability is active.
+                if switch_channel_value is not None:
+                    switching_dest[switch_channel_key].add(switch_channel_value)
 
     def define_matrix(self, matrix: Matrix) -> None:
         """
@@ -127,7 +129,7 @@ class Fixture:
     ) -> None:
 
         for switching_channel_name, switched_channel_names in switching_channel_names.items():
-            switched_channels = [channels[channelName] for channelName in switched_channel_names]
+            switched_channels = [channels[channelName] for channelName in sorted(switched_channel_names)]
             dest[switching_channel_name] = SwitchingChannel(
                 switching_channel_name,
                 {channel_offset.channel.name: channel_offset for channel_offset in switched_channels},
@@ -207,7 +209,9 @@ class Fixture:
 
         for capability in capability_list:
             capability.switch_channels = {
-                switchingChannel.replace(PIXEL_KEY, new_name): referenced_channel.replace(PIXEL_KEY, new_name)
+                switchingChannel.replace(PIXEL_KEY, new_name): (
+                    referenced_channel.replace(PIXEL_KEY, new_name) if referenced_channel is not None else None
+                )
                 for switchingChannel, referenced_channel in capability.switch_channels.items()
             }
         return copy

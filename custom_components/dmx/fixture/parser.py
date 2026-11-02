@@ -49,6 +49,12 @@ def _parse_fixture_data(data: dict[str, Any]) -> Fixture:
     :param data: The parsed JSON data
     :return: The `Fixture` model class.
     """
+    redirect_to = data.get("redirectTo")
+    if redirect_to:
+        raise FixtureConfigurationError(
+            f"'{data.get('name')}' is only a redirect, without a definition of its own. Use {redirect_to} instead."
+        )
+
     fixture_model = __parse_fixture(data)
 
     matrix_json = data.get("matrix")

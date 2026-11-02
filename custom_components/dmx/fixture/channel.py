@@ -22,6 +22,35 @@ def percent_to_dmx(value: str | int, resolution: DmxValueResolution) -> int:
     return value
 
 
+def dmx_bytes_to_range_value(values: list[int], range_bytes: int) -> int:
+    """
+    Combines the bytes of a channel into a value comparable to its capabilities' dmxRange.
+    A mode doesn't have to use all fine channels, so the bytes may be fewer or more than the range's resolution.
+    :param values: The DMX values, coarse to fine
+    :param range_bytes: The bytes in which the channel's dmxRange is expressed
+    """
+    combined = int.from_bytes(bytes(values), "big")
+    extra_bytes = len(values) - range_bytes
+    return combined >> (8 * extra_bytes) if extra_bytes > 0 else combined << (-8 * extra_bytes)
+
+
+def range_value_to_dmx_bytes(value: int, num_bytes: int, range_bytes: int) -> list[int]:
+    """
+    Splits a value expressed like a capability's dmxRange into the bytes a mode has for it.
+    With too few bytes it rounds up, as a capability's start must not end up in the capability before it.
+    :param value: The value, in the resolution of the range
+    :param num_bytes: The amount of bytes to split it in
+    :param range_bytes: The bytes in which the channel's dmxRange is expressed
+    """
+    extra_bytes = num_bytes - range_bytes
+    if extra_bytes >= 0:
+        combined = value << (8 * extra_bytes)
+    else:
+        lost_bits = -8 * extra_bytes
+        combined = min((value + (1 << lost_bits) - 1) >> lost_bits, (256**num_bytes) - 1)
+    return list(combined.to_bytes(num_bytes, "big"))
+
+
 class Channel:
     """
     One DMX channel.
@@ -58,6 +87,9 @@ class Channel:
 
         self.capabilities: Capabilities = []
 
+        # The bytes in which the capabilities' dmxRange is expressed.
+        self.range_bytes: int = 1
+
     def define_capability(self, capability: Capabilities) -> None:
         """
         Defines capabilities, add it to this channel.
@@ -67,6 +99,12 @@ class Channel:
             self.capabilities = capability
         else:
             self.capabilities = [capability]
+
+        highest_value = max((c.dmx_range_end for c in self.capabilities), default=0)
+        self.range_bytes = 3 if highest_value > 0xFFFF else 2 if highest_value > 0xFF else 1
+        for defined_capability in self.capabilities:
+            for dynamic_entity in defined_capability.dynamic_entities:
+                dynamic_entity.range_bytes = self.range_bytes
 
     def has_multiple_capabilities(self) -> bool:
         return isinstance(self.capabilities, list) and len(self.capabilities) > 1

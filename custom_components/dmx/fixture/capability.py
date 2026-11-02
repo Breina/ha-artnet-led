@@ -174,6 +174,9 @@ class DynamicMapping:
     def __init__(self, range_start: float, range_end: float, dmx_start: int, dmx_end: int) -> None:
         super().__init__()
 
+        # The bytes dmx_start and dmx_end are expressed in. Set by the channel, which knows all of its ranges.
+        self.range_bytes = 1
+
         self.__interpolate_to_dmx = _make_interpolater(range_start, range_end, dmx_start, dmx_end)
         self.__interpolate_from_dmx = _make_interpolater(dmx_start, dmx_end, range_start, range_end)
 
@@ -210,7 +213,7 @@ class DynamicMapping:
         """
         # Calculate the full precision DMX value (0-255, 0-65535, or 0-16777215)
         max_value = (256**num_channels) - 1
-        dmx_value = round(self.__interpolate_to_dmx(value) * max_value / 255)
+        dmx_value = round(self.__interpolate_to_dmx(value) * max_value / self._max_range_value())
 
         # Split into individual bytes
         result = []
@@ -236,12 +239,23 @@ class DynamicMapping:
             # Shift each byte to its appropriate position
             combined_value |= value << (8 * (num_channels - i - 1))
 
-        # Scale to 0-255 range for the interpolation
+        # Scale to the range's resolution for the interpolation
         max_value = (256**num_channels) - 1
-        scaled_value = combined_value * 255 / max_value
+        scaled_value = combined_value * self._max_range_value() / max_value
 
         # Convert to entity value
         return self.__interpolate_from_dmx(scaled_value)
+
+    def from_range_value(self, value: int) -> float:
+        """
+        Adapts a value expressed like the fixture's dmxRange into its corresponding entity value.
+        :param value: The value, in the resolution of the range
+        :return: The corresponding entity value
+        """
+        return self.__interpolate_from_dmx(value)
+
+    def _max_range_value(self) -> int:
+        return int((256**self.range_bytes) - 1)
 
     def normalize(self, value: int | float) -> float:
         assert 0 <= value <= 255
@@ -277,7 +291,7 @@ class Capability:
         comment: str | None = None,
         dmx_range: list[int] | None = None,
         menu_click: MenuClick | None = None,
-        switch_channels: dict[str, str] | None = None,
+        switch_channels: dict[str, str | None] | None = None,
     ) -> None:
         super().__init__()
 

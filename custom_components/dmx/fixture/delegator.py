@@ -1,5 +1,4 @@
 from dataclasses import dataclass, replace
-from itertools import groupby
 
 from homeassistant.components.light import ColorMode
 from homeassistant.helpers.entity import DeviceInfo, Entity
@@ -8,9 +7,15 @@ from custom_components.dmx.correction import OutputCorrection
 from custom_components.dmx.entity.light import ChannelMapping, ChannelType
 from custom_components.dmx.entity.light.light_entity import DmxLightEntity
 from custom_components.dmx.entity.number import DmxNumberEntity
-from custom_components.dmx.entity.select import DmxSelectEntity
-from custom_components.dmx.fixture.capability import ColorIntensity, ColorTemperature, Intensity, SingleColor
-from custom_components.dmx.fixture.channel import Channel, ChannelOffset, SwitchingChannel
+from custom_components.dmx.entity.select import DmxSelectEntity, capability_options
+from custom_components.dmx.fixture.capability import (
+    ColorIntensity,
+    ColorTemperature,
+    Intensity,
+    NoFunction,
+    SingleColor,
+)
+from custom_components.dmx.fixture.channel import Channel, ChannelOffset, SwitchingChannel, range_value_to_dmx_bytes
 from custom_components.dmx.io.dmx_io import DmxUniverse
 from custom_components.dmx.util.fixture_fingerprint import generate_fixture_fingerprint
 
@@ -36,6 +41,24 @@ def __get_all_channels(
     return [c for channel_sub in index_channels for c in __get_channel(channel_sub)]
 
 
+def _group_by_channel(
+    channels: list[tuple[int, ChannelOffset]],
+) -> list[tuple[Channel, list[tuple[int, ChannelOffset]]]]:
+    """
+    Groups the bytes of each channel, which don't need to be next to each other, like Pan, Tilt, Pan fine, Tilt fine.
+    A channel occupying the same byte in multiple slots is that many separate groups.
+    """
+    groups: list[tuple[Channel, list[tuple[int, ChannelOffset]]]] = []
+    for slot, channel_offset in channels:
+        for channel, group in groups:
+            if channel is channel_offset.channel and all(g[1].byte_offset != channel_offset.byte_offset for g in group):
+                group.append((slot, channel_offset))
+                break
+        else:
+            groups.append((channel_offset.channel, [(slot, channel_offset)]))
+    return groups
+
+
 def _correction_for_channel(channel: Channel, output_correction: OutputCorrection | None) -> OutputCorrection | None:
     """Return correction only for correctable intensity channels (not CT, pan, tilt, etc.)."""
     if output_correction is None:
@@ -58,6 +81,10 @@ def __accumulate_light_entities(
         capability = capabilities[0]
     else:
         capability = capabilities
+
+    if not capability.is_dynamic_entity():
+        return
+
     if isinstance(capability, ColorIntensity):
         if capability.color == SingleColor.Red:
             light_channel = ChannelType.RED
@@ -273,21 +300,35 @@ def create_entities(
 
     fixture_fingerprint = generate_fixture_fingerprint(fixture_name or name, mode_name or "default", channels)
 
-    for channel, group in groupby(__get_all_channels(list(enumerate(channels))), lambda c: c[1].channel):
+    channel_occurrences: dict[str, int] = {}
+
+    for channel, group in _group_by_channel(__get_all_channels(list(enumerate(channels)))):
+        # A mode may use the same channel in several slots, which are independent of each other.
+        channel_occurrences[channel.name] = channel_occurrences.get(channel.name, 0) + 1
+        occurrence = channel_occurrences[channel.name]
+        channel_name = f"{channel.name} {occurrence}" if occurrence > 1 else channel.name
+
         dmx_indexes = []
         for channel_group in sorted(group, key=lambda g: g[1].byte_offset):
             dmx_indexes.append(channel_group[0] + dmx_start)
 
         if channel.constant:
-            universe.set_constant_value(dmx_indexes, channel.default_value)
+            default_bytes = range_value_to_dmx_bytes(channel.default_value, len(dmx_indexes), channel.range_bytes)
+            for dmx_index, default_byte in zip(dmx_indexes, default_bytes, strict=True):
+                universe.set_constant_value([dmx_index], default_byte)
 
         if not channel.has_multiple_capabilities():
+            capabilities = channel.capabilities
+            single_capability = capabilities[0] if isinstance(capabilities, list) else capabilities
+            if isinstance(single_capability, NoFunction) and not single_capability.is_dynamic_entity():
+                continue
+
             entities.append(
                 DmxNumberEntity(
                     name,
-                    channel.name,
+                    channel_name,
                     entity_id_prefix,
-                    channel.capabilities[0] if isinstance(channel.capabilities, list) else channel.capabilities,
+                    single_capability,
                     universe,
                     dmx_indexes,
                     device,
@@ -298,11 +339,18 @@ def create_entities(
             __accumulate_light_entities(lights_accumulator, dmx_indexes, channel, output_correction)
 
         else:
-            assert len(dmx_indexes) == 1
-            number_entities = {
-                str(capability): DmxNumberEntity(
+            number_entities: dict[str, DmxNumberEntity] = {}
+            slider_names: set[str] = set()
+            for option, capability in capability_options(channel).items():
+                if not capability.is_dynamic_entity():
+                    continue
+
+                # The first slider of a name keeps the plain name: its entity already exists under that unique ID.
+                slider_name = option if str(capability) in slider_names else str(capability)
+                slider_names.add(str(capability))
+                number_entities[option] = DmxNumberEntity(
                     name,
-                    f"{channel.name} {capability!s}",
+                    f"{channel_name} {slider_name}",
                     entity_id_prefix,
                     capability,
                     universe,
@@ -312,18 +360,15 @@ def create_entities(
                     available=False,
                     owns_channel=False,
                 )
-                for capability in channel.capabilities
-                if capability.is_dynamic_entity()
-            }
 
             select_entity = DmxSelectEntity(
                 name,
-                channel.name,
+                channel_name,
                 entity_id_prefix or "",
                 channel,
                 number_entities,
                 universe,
-                dmx_indexes[0],
+                dmx_indexes,
                 device,
                 fixture_fingerprint,
             )

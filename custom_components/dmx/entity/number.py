@@ -8,6 +8,7 @@ from homeassistant.util import slugify
 from custom_components.dmx.const import DOMAIN
 from custom_components.dmx.correction import OutputCorrection
 from custom_components.dmx.fixture.capability import Capability, DynamicEntity
+from custom_components.dmx.fixture.entity import Parameter
 from custom_components.dmx.io.dmx_io import DmxUniverse
 
 log = logging.getLogger(__name__)
@@ -29,8 +30,6 @@ class DmxNumberEntity(RestoreNumber):
         owns_channel: bool = True,
     ) -> None:
         super().__init__()
-
-        assert capability.dynamic_entities and len(capability.dynamic_entities) == 1
 
         self._attr_name = f"{fixture_name} {channel_name}"
         self._attr_device_info = device
@@ -57,7 +56,13 @@ class DmxNumberEntity(RestoreNumber):
         self._attr_available = available
 
         self.capability = capability
-        self.dynamic_entity = capability.dynamic_entities[0]
+        # A capability changing several things at once has one slider, for the first thing it changes. Without
+        # anything to scale, a channel doing one thing is still controllable through its raw DMX value.
+        self.dynamic_entity = (
+            capability.dynamic_entities[0]
+            if capability.dynamic_entities
+            else DynamicEntity(Parameter(0), Parameter(255), 0, 255)
+        )
         assert isinstance(self.dynamic_entity, DynamicEntity)
 
         start_val: float = self.dynamic_entity.entity_start.value
@@ -83,10 +88,10 @@ class DmxNumberEntity(RestoreNumber):
 
         if capability.menu_click and capability.menu_click_value is not None:
             self._attr_native_value = self._from_dmx_corrected(
-                self.dynamic_entity.from_dmx(capability.menu_click_value)
+                self.dynamic_entity.from_range_value(capability.menu_click_value)
             )
         else:
-            self._attr_native_value = self._from_dmx_corrected(self.dynamic_entity.from_dmx(0))
+            self._attr_native_value = self._from_dmx_corrected(self.dynamic_entity.from_range_value(0))
         self._is_updating = False
         self.universe.register_channel_listener(dmx_indexes, self.update_value)
 

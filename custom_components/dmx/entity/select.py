@@ -10,11 +10,22 @@ from custom_components.dmx.const import DOMAIN
 from custom_components.dmx.entity.icon_helper import determine_icon
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.fixture.capability import Capability
-from custom_components.dmx.fixture.channel import Channel
-from custom_components.dmx.fixture.exceptions import FixtureConfigurationError
+from custom_components.dmx.fixture.channel import Channel, dmx_bytes_to_range_value, range_value_to_dmx_bytes
 from custom_components.dmx.io.dmx_io import DmxUniverse
 
 log = logging.getLogger(__name__)
+
+
+def capability_options(channel: Channel) -> dict[str, Capability]:
+    """Returns the channel's capabilities by a name which is unique within the channel."""
+    capabilities = channel.capabilities if isinstance(channel.capabilities, list) else [channel.capabilities]
+    name_counts: dict[str, int] = {}
+    options: dict[str, Capability] = {}
+    for capability in capabilities:
+        name = str(capability)
+        name_counts[name] = name_counts.get(name, 0) + 1
+        options[f"{name} {name_counts[name]}" if name_counts[name] > 1 else name] = capability
+    return options
 
 
 class DmxSelectEntity(SelectEntity, RestoreEntity):
@@ -26,7 +37,7 @@ class DmxSelectEntity(SelectEntity, RestoreEntity):
         channel: Channel,
         capability_entities: dict[str, DmxNumberEntity],
         universe: DmxUniverse,
-        dmx_index: int,
+        dmx_indexes: list[int],
         device: DeviceInfo,
         fixture_fingerprint: str,
     ) -> None:
@@ -48,25 +59,15 @@ class DmxSelectEntity(SelectEntity, RestoreEntity):
 
         self._attr_icon = determine_icon(channel)
 
-        name_counts: dict[str, int] = {}
-        self.capability_types: dict[str, Capability] = {}
-
-        capabilities_list = channel.capabilities if isinstance(channel.capabilities, list) else [channel.capabilities]
-        for capability in capabilities_list:
-            name = str(capability)
-            if name in name_counts:
-                name_counts[name] += 1
-                unique_name = f"{name} {name_counts[name]}"
-            else:
-                name_counts[name] = 1
-                unique_name = name
-            self.capability_types[unique_name] = capability
+        self.capability_types: dict[str, Capability] = capability_options(channel)
 
         self.capability_entities = capability_entities
         for capability_entity in self.capability_entities.values():
             capability_entity.available = False
 
-        self.dmx_index = dmx_index
+        self.dmx_indexes = dmx_indexes
+        self.dmx_index = dmx_indexes[0]
+        self._range_bytes = channel.range_bytes
 
         self._attr_options = list(self.capability_types.keys())
 
@@ -75,7 +76,7 @@ class DmxSelectEntity(SelectEntity, RestoreEntity):
         self._attr_current_option = self._attr_options[0]
 
         self.universe = universe
-        self.universe.register_channel_listener(dmx_index, self.update_value)
+        self.universe.register_channel_listener(dmx_indexes, self.update_value)
 
         # Initialize with default value - note: this is sync initialization so we can't await
         # The value will be properly set when the entity is added to Home Assistant
@@ -88,26 +89,22 @@ class DmxSelectEntity(SelectEntity, RestoreEntity):
         # Same guard as DmxNumberEntity.async_added_to_hass(): don't clobber a
         # value some other code path (e.g. a user command racing this restore)
         # already wrote to this channel.
-        if self.universe.is_channel_set(self.dmx_index):
+        if self._is_channel_set():
             return
 
         last_state: State | None = await self.async_get_last_state()
 
         # Re-check after the await: state may have changed while we were suspended.
-        if self.universe.is_channel_set(self.dmx_index):
+        if self._is_channel_set():
             return
 
         if last_state is None or last_state.state not in self.capability_types:
             return
 
         option = last_state.state
-        capability = self.capability_types[option]
-        dmx_value: int = (
-            capability.menu_click_value if capability.menu_click_value is not None else capability.dmx_range_start
-        )
 
         self._update_current_option_sync(option)
-        await self.universe.update_value(self.dmx_index, dmx_value, send_immediately=True)
+        await self._write_capability(self.capability_types[option])
 
     def link_switching_entities(self, entities: list[DmxNumberEntity]) -> None:
         for capability_name, capability in self.capability_types.items():
@@ -115,6 +112,9 @@ class DmxSelectEntity(SelectEntity, RestoreEntity):
                 continue
 
             for channel_name in capability.switch_channels.values():
+                if channel_name is None:
+                    continue
+
                 for entity in entities:
                     if isinstance(entity.name, str) and entity.name.endswith(channel_name):
                         self.switching_entities[capability_name] = entity
@@ -126,33 +126,40 @@ class DmxSelectEntity(SelectEntity, RestoreEntity):
     def update_value(self, source: str | None) -> None:
         self._attr_attribution = source
 
-        value = self.universe.get_channel_value(self.dmx_index)
+        values = [self.universe.get_channel_value(index) for index in self.dmx_indexes]
 
-        self.update_option_to_dmx_value(value)
+        self.update_option_to_dmx_value(dmx_bytes_to_range_value(values, self._range_bytes))
         if self.hass:
             self.async_schedule_update_ha_state()
         else:
             log.debug(f"Not updating {self.name} because it hasn't been added to hass yet.")
 
     def update_option_to_dmx_value(self, value: int) -> None:
-        capability: list[Capability] = [
-            capability for capability in self.capability_types.values() if capability.is_applicable(value)
-        ]
-        if not any(capability):
-            raise FixtureConfigurationError(f"Fixture {self._attr_name} received an invalid DMX value: " f"{value}")
+        option = next((name for name, c in self.capability_types.items() if c.is_applicable(value)), None)
+        if option is None:
+            # A hidden capability or a gap in the fixture's ranges: no option represents this value.
+            log.debug(f"Keeping option of {self._attr_name}, as none applies to DMX value {value}")
+            return
 
         # Only update the option, don't handle availability here
-        self._update_current_option_sync(str(capability[0]))
+        self._update_current_option_sync(option)
 
     async def async_select_option(self, option: str) -> None:
         await self._update_current_option_async(option)
+        await self._write_capability(self.capability_types[option])
 
-        capability = self.capability_types[option]
-        dmx_value: int = (
+    def _is_channel_set(self) -> bool:
+        return any(self.universe.is_channel_set(index) for index in self.dmx_indexes)
+
+    async def _write_capability(self, capability: Capability) -> None:
+        value: int = (
             capability.menu_click_value if capability.menu_click_value is not None else capability.dmx_range_start
         )
+        dmx_values = range_value_to_dmx_bytes(value, len(self.dmx_indexes), self._range_bytes)
 
-        await self.universe.update_value(self.dmx_index, dmx_value, send_immediately=True)
+        updates = dict(zip(self.dmx_indexes, dmx_values, strict=True))
+        await self.universe.update_multiple_values(updates, send_update=False)
+        self.universe.send_universe_data()
 
     def _update_current_option_sync(self, new_option: str) -> None:
         """Synchronous version for initialization and DMX value updates"""
