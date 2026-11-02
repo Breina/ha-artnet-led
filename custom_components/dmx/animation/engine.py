@@ -121,7 +121,7 @@ class DmxAnimationEngine:
                 if mapping.channel_type == channel_type:
                     try:
                         # Convert to DMX values using the mapping
-                        value_for_dmx = value
+                        value_for_dmx: float = value
                         if mapping.output_correction is not None:
                             value_for_dmx = mapping.output_correction.apply(float(value_for_dmx) / 255.0) * 255.0
                         capabilities = mapping.channel.capabilities

@@ -40,8 +40,9 @@ class TestSelectEntity(unittest.TestCase):
         anything to the name here (a " Light" suffix, say) changes the entity_id HA
         derives from it and silently breaks every migrated automation, scene and group.
         """
-        from custom_components.dmx.entity.light.light_entity import DmxLightEntity
         from homeassistant.util import slugify
+
+        from custom_components.dmx.entity.light.light_entity import DmxLightEntity
 
         fixture_path = Path(__file__).parent / "fixtures" / "rgbw-fader.json"
         fixture = parser.parse(str(fixture_path))

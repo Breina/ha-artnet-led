@@ -394,7 +394,7 @@ def __extract_single_value(value_json: Any, type_annotation: type) -> Any:
 
 
 def __inject_wheel_direction(fixture_model: Fixture) -> None:
-    all_channels: list = [co.channel for co in fixture_model.channels.values() if co.byte_offset == 0] + list(
+    all_channels: list[Any] = [co.channel for co in fixture_model.channels.values() if co.byte_offset == 0] + list(
         fixture_model.template_channels.values()
     )
     for ch in all_channels:

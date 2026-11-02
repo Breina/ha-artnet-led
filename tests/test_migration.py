@@ -26,31 +26,43 @@ class AnnotatedList(list):
 
 
 OLD_CONFIG = {
-    "light": AnnotatedList([
-        AnnotatedDict({
-            "platform": AnnotatedStr("artnet_led"),
-            "host": AnnotatedStr("192.168.1.15"),
-            "max_fps": 43,
-            "refresh_every": 0,
-            "node_type": AnnotatedStr("artnet-controller"),
-            "universes": AnnotatedDict({
-                0: AnnotatedDict({
-                    "send_partial_universe": True,
-                    "output_correction": AnnotatedStr("quadratic"),
-                    "devices": AnnotatedList([
-                        AnnotatedDict({
-                            "channel": 1,
-                            "name": AnnotatedStr("Bureau NO"),
-                            "type": AnnotatedStr("color_temp"),
-                            "channel_size": AnnotatedStr("16bit"),
-                            "min_temp": AnnotatedStr("2500K"),
-                            "max_temp": AnnotatedStr("6500K"),
-                        }),
-                    ]),
-                }),
-            }),
-        })
-    ])
+    "light": AnnotatedList(
+        [
+            AnnotatedDict(
+                {
+                    "platform": AnnotatedStr("artnet_led"),
+                    "host": AnnotatedStr("192.168.1.15"),
+                    "max_fps": 43,
+                    "refresh_every": 0,
+                    "node_type": AnnotatedStr("artnet-controller"),
+                    "universes": AnnotatedDict(
+                        {
+                            0: AnnotatedDict(
+                                {
+                                    "send_partial_universe": True,
+                                    "output_correction": AnnotatedStr("quadratic"),
+                                    "devices": AnnotatedList(
+                                        [
+                                            AnnotatedDict(
+                                                {
+                                                    "channel": 1,
+                                                    "name": AnnotatedStr("Bureau NO"),
+                                                    "type": AnnotatedStr("color_temp"),
+                                                    "channel_size": AnnotatedStr("16bit"),
+                                                    "min_temp": AnnotatedStr("2500K"),
+                                                    "max_temp": AnnotatedStr("6500K"),
+                                                }
+                                            ),
+                                        ]
+                                    ),
+                                }
+                            ),
+                        }
+                    ),
+                }
+            )
+        ]
+    )
 }
 
 
@@ -99,7 +111,7 @@ class TestMigrationOutputIsSafeYaml(unittest.TestCase):
     def test_fixture_short_name_matches_the_key_the_config_references(self):
         """The registry indexes fixtures by shortName/name, never by filename."""
         devices = self.result.dmx_config["dmx"]["artnet"]["universes"][0][0]["devices"]
-        referenced = {list(d.values())[0]["fixture"] for d in devices}
+        referenced = {next(iter(d.values()))["fixture"] for d in devices}
         short_names = {f["shortName"] for f in self.result.fixture_map.values()}
         self.assertTrue(referenced)
         self.assertTrue(referenced <= short_names, f"{referenced - short_names} not resolvable")
@@ -114,7 +126,7 @@ class TestMigrationOutputIsSafeYaml(unittest.TestCase):
         device in the universe by one channel."""
         devices = self.result.dmx_config["dmx"]["artnet"]["universes"][0][0]["devices"]
         [(name, device)] = devices[0].items()
-        self.assertEqual(name, "Bureau NO")   # old config had channel: 1
+        self.assertEqual(name, "Bureau NO")  # old config had channel: 1
         self.assertEqual(device["start_address"], 1)
 
     def test_no_entity_id_prefix_is_emitted(self):
@@ -124,7 +136,7 @@ class TestMigrationOutputIsSafeYaml(unittest.TestCase):
         is exactly what must not happen for automations to survive the migration.
         """
         for universe in self.result.dmx_config["dmx"]["artnet"]["universes"]:
-            for device_dict in list(universe.values())[0]["devices"]:
+            for device_dict in next(iter(universe.values()))["devices"]:
                 [(_, device)] = device_dict.items()
                 self.assertNotIn("entity_id_prefix", device)
 

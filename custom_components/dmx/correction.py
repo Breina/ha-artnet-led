@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 type CurveFunction = Callable[[float], float]
 
@@ -50,7 +51,7 @@ class OutputCorrection:
         return min(1.0, inverse(min(1.0, y)))
 
 
-def parse_output_correction(config: str | dict | None) -> OutputCorrection | None:
+def parse_output_correction(config: str | dict[str, Any] | None) -> OutputCorrection | None:
     """Parse output_correction from YAML config (string shorthand or full dict)."""
     if config is None:
         return None

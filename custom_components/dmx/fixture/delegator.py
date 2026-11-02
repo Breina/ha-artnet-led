@@ -9,6 +9,7 @@ from custom_components.dmx.entity.light.light_entity import DmxLightEntity
 from custom_components.dmx.entity.number import DmxNumberEntity
 from custom_components.dmx.entity.select import DmxSelectEntity, capability_options
 from custom_components.dmx.fixture.capability import (
+    Capability,
     ColorIntensity,
     ColorTemperature,
     Intensity,
@@ -63,7 +64,7 @@ def _correction_for_channel(channel: Channel, output_correction: OutputCorrectio
     """Return correction only for correctable intensity channels (not CT, pan, tilt, etc.)."""
     if output_correction is None:
         return None
-    cap = channel.capabilities
+    cap: Capability | list[Capability] | None = channel.capabilities
     if isinstance(cap, list):
         cap = cap[0] if cap else None
     return output_correction if isinstance(cap, (ColorIntensity, Intensity)) else None

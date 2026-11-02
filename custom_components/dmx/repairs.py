@@ -9,7 +9,6 @@ from typing import Any
 
 import voluptuous as vol
 import yaml
-
 from homeassistant import data_entry_flow
 from homeassistant.components.repairs import RepairsFlow
 from homeassistant.core import HomeAssistant
@@ -32,18 +31,16 @@ async def async_create_fix_flow(
 class MigrationRepairFlow(RepairsFlow):
     """Multi-step repair flow: confirm → run migration → show result."""
 
-    _result: MigrationResult | None = None
-    _written_files: list[str] = []
+    def __init__(self) -> None:
+        super().__init__()
+        self._result: MigrationResult | None = None
+        self._written_files: list[str] = []
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> data_entry_flow.FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> data_entry_flow.FlowResult:
         return await self.async_step_confirm()
 
-    async def async_step_confirm(
-        self, user_input: dict[str, Any] | None = None
-    ) -> data_entry_flow.FlowResult:
-        entries: list[dict] = self.hass.data.get(DOMAIN, {}).get("_old_entries", [])
+    async def async_step_confirm(self, user_input: dict[str, Any] | None = None) -> data_entry_flow.FlowResult:
+        entries: list[dict[str, Any]] = self.hass.data.get(DOMAIN, {}).get("_old_entries", [])
 
         if not entries:
             return self.async_abort(reason="no_entries")
@@ -51,9 +48,7 @@ class MigrationRepairFlow(RepairsFlow):
         if user_input is not None:
             self._result = await self.hass.async_add_executor_job(run_migration, entries)
             try:
-                self._written_files = await self.hass.async_add_executor_job(
-                    self._write_outputs, self._result
-                )
+                self._written_files = await self.hass.async_add_executor_job(self._write_outputs, self._result)
             except OSError as exc:
                 _LOGGER.exception("Migration file write failed")
                 return self.async_abort(
@@ -62,18 +57,16 @@ class MigrationRepairFlow(RepairsFlow):
                 )
             return await self.async_step_done()
 
-        device_count = sum(
-            len(u.get("devices", []))
-            for e in entries
-            for u in e.get("universes", {}).values()
-        )
+        device_count = sum(len(u.get("devices", [])) for e in entries for u in e.get("universes", {}).values())
         universe_count = sum(len(e.get("universes", {})) for e in entries)
-        fixture_count = len({
-            device_fixture_signature(d)
-            for e in entries
-            for u in e.get("universes", {}).values()
-            for d in u.get("devices", [])
-        })
+        fixture_count = len(
+            {
+                device_fixture_signature(d)
+                for e in entries
+                for u in e.get("universes", {}).values()
+                for d in u.get("devices", [])
+            }
+        )
 
         return self.async_show_form(
             step_id="confirm",
@@ -85,9 +78,7 @@ class MigrationRepairFlow(RepairsFlow):
             },
         )
 
-    async def async_step_done(
-        self, user_input: dict[str, Any] | None = None
-    ) -> data_entry_flow.FlowResult:
+    async def async_step_done(self, user_input: dict[str, Any] | None = None) -> data_entry_flow.FlowResult:
         if user_input is not None:
             return self.async_create_entry(title="", data={})
 

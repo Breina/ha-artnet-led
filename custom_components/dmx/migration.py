@@ -11,11 +11,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 OFL_SCHEMA = (
-    "https://raw.githubusercontent.com/OpenLightingProject/open-fixture-library"
-    "/schema-12.5.0/schemas/fixture.json"
+    "https://raw.githubusercontent.com/OpenLightingProject/open-fixture-library/schema-12.5.0/schemas/fixture.json"
 )
 
-DEFAULT_CHANNEL_SETUP: dict[str, str | list] = {
+DEFAULT_CHANNEL_SETUP: dict[str, str | list[Any]] = {
     "dimmer": "d",
     "binary": "d",
     "color_temp": "ch",
@@ -28,18 +27,27 @@ DEFAULT_CHANNEL_SETUP: dict[str, str | list] = {
 
 LETTER_CHANNEL_NAME: dict[str, str] = {
     "d": "Intensity",
-    "r": "Red", "R": "Red",
-    "g": "Green", "G": "Green",
-    "b": "Blue", "B": "Blue",
-    "w": "White", "W": "White",
-    "c": "Cold White", "C": "Cold White",
-    "h": "Warm White", "H": "Warm White",
-    "t": "Color Temperature", "T": "Color Temperature",
-    "u": "Hue", "U": "Saturation",
-    "x": "CIE X", "y": "CIE Y",
+    "r": "Red",
+    "R": "Red",
+    "g": "Green",
+    "G": "Green",
+    "b": "Blue",
+    "B": "Blue",
+    "w": "White",
+    "W": "White",
+    "c": "Cold White",
+    "C": "Cold White",
+    "h": "Warm White",
+    "H": "Warm White",
+    "t": "Color Temperature",
+    "T": "Color Temperature",
+    "u": "Hue",
+    "U": "Saturation",
+    "x": "CIE X",
+    "y": "CIE Y",
 }
 
-LETTER_CAPABILITY: dict[str, dict] = {
+LETTER_CAPABILITY: dict[str, dict[str, Any]] = {
     "d": {"type": "Intensity"},
     "r": {"type": "ColorIntensity", "color": "Red"},
     "R": {"type": "ColorIntensity", "color": "Red"},
@@ -72,7 +80,8 @@ FINE_ALIASES = {
 # Fixture signature & generation
 # ---------------------------------------------------------------------------
 
-def _normalise_setup(setup: str | list | None, device_type: str) -> str | list:
+
+def _normalise_setup(setup: str | list[Any] | None, device_type: str) -> str | list[Any]:
     """Return a canonical channel_setup value."""
     if setup is None:
         return DEFAULT_CHANNEL_SETUP[device_type]
@@ -81,7 +90,7 @@ def _normalise_setup(setup: str | list | None, device_type: str) -> str | list:
     return str(setup)
 
 
-def _normalise_setup_for_sig(setup: str | list) -> str | tuple:
+def _normalise_setup_for_sig(setup: str | list[Any]) -> str | tuple[Any, ...]:
     """
     Normalise a channel_setup for use as a deduplication key.
     Upper/lowercase letters map to the same OFL capability EXCEPT t vs T
@@ -96,7 +105,7 @@ def _normalise_setup_for_sig(setup: str | list) -> str | tuple:
     return "".join(c.lower() if c not in "tT" else c for c in setup)
 
 
-def device_fixture_signature(device: dict) -> tuple:
+def device_fixture_signature(device: dict[str, Any]) -> tuple[Any, ...]:
     """Return a deduplication key for fixture generation."""
     dtype = device.get("type", "dimmer")
     setup = _normalise_setup(device.get("channel_setup"), dtype)
@@ -125,18 +134,18 @@ def _channel_order_for_mode(base_name: str, channel_size: str, byte_order: str) 
     aliases = _fine_alias_names(base_name, channel_size)
     if byte_order == "little":
         # Most-significant fine alias first, then coarse last
-        return list(reversed(aliases)) + [base_name]
+        return [*reversed(aliases), base_name]
     # big-endian (default): coarse first
-    return [base_name] + aliases
+    return [base_name, *aliases]
 
 
 def channel_setup_to_channels(
-    setup: str | list,
+    setup: str | list[Any],
     channel_size: str,
     byte_order: str,
     min_temp: str,
     max_temp: str,
-) -> tuple[dict, list[str]]:
+) -> tuple[dict[str, Any], list[str]]:
     """
     Build availableChannels dict and mode channel list from a channel_setup.
     Returns (available_channels, mode_channels).
@@ -208,8 +217,8 @@ def channel_setup_to_channels(
     return available, mode_channels
 
 
-def _fixture_name_for_sig(sig: tuple) -> str:
-    dtype, setup_key, channel_size, byte_order, min_temp, max_temp = sig
+def _fixture_name_for_sig(sig: tuple[Any, ...]) -> str:
+    dtype, setup_key, channel_size, byte_order, _min_temp, _max_temp = sig
     if isinstance(setup_key, tuple):
         # fixed type with integer values
         vals = "-".join(str(v) for v in setup_key)
@@ -229,14 +238,12 @@ def _fixture_name_for_sig(sig: tuple) -> str:
     return base
 
 
-def generate_fixture(sig: tuple) -> dict:
+def generate_fixture(sig: tuple[Any, ...]) -> dict[str, Any]:
     """Build an OFL-compatible fixture dict from a device signature."""
     dtype, setup_key, channel_size, byte_order, min_temp, max_temp = sig
 
-    setup: str | list = list(setup_key) if isinstance(setup_key, tuple) else setup_key
-    available, mode_channels = channel_setup_to_channels(
-        setup, channel_size, byte_order, min_temp, max_temp
-    )
+    setup: str | list[Any] = list(setup_key) if isinstance(setup_key, tuple) else setup_key
+    available, mode_channels = channel_setup_to_channels(setup, channel_size, byte_order, min_temp, max_temp)
 
     fixture_name = _fixture_name_for_sig(sig).replace("-", " ").title()
 
@@ -278,13 +285,16 @@ def generate_fixture(sig: tuple) -> dict:
 # Config generation
 # ---------------------------------------------------------------------------
 
+
 def _correction_value(correction: str | None) -> str | None:
     if correction in (None, "linear"):
         return None
     return correction
 
 
-def _build_universe_devices(universe_cfg: dict, fixture_key_map: dict) -> list[dict]:
+def _build_universe_devices(
+    universe_cfg: dict[str, Any], fixture_key_map: dict[tuple[Any, ...], str]
+) -> list[dict[str, Any]]:
     """Build the devices list for one universe."""
     devices = []
     universe_correction = universe_cfg.get("output_correction")
@@ -320,14 +330,14 @@ def _build_universe_devices(universe_cfg: dict, fixture_key_map: dict) -> list[d
 
 
 def generate_dmx_config(
-    entries: list[dict],
-    fixture_key_map: dict,
+    entries: list[dict[str, Any]],
+    fixture_key_map: dict[tuple[Any, ...], str],
     warnings: list[str],
-) -> dict:
+) -> dict[str, Any]:
     """Build the full dmx: config dict from all old platform entries."""
 
-    artnet_universes_map: dict[int, dict] = {}
-    sacn_universes_map: dict[int, dict] = {}
+    artnet_universes_map: dict[int, dict[str, Any]] = {}
+    sacn_universes_map: dict[int, dict[str, Any]] = {}
 
     artnet_max_fps: int | None = None
     artnet_refresh: float | None = None
@@ -360,14 +370,13 @@ def generate_dmx_config(
                         "Your generated config preserves the old value (120 s). "
                         "Consider lowering it if you want faster re-transmission."
                     )
-        elif node_type == "sacn":
-            if sacn_refresh is None:
-                sacn_refresh = float(refresh)
-                if refresh == 120:
-                    warnings.append(
-                        "NOTE: refresh_every was 120 s (old default) for sACN. "
-                        "The new default is 0.8 s. Your generated config preserves 120 s."
-                    )
+        elif node_type == "sacn" and sacn_refresh is None:
+            sacn_refresh = float(refresh)
+            if refresh == 120:
+                warnings.append(
+                    "NOTE: refresh_every was 120 s (old default) for sACN. "
+                    "The new default is 0.8 s. Your generated config preserves 120 s."
+                )
 
         for universe_nr, universe_cfg in entry.get("universes", {}).items():
             universe_correction = universe_cfg.get("output_correction")
@@ -382,11 +391,14 @@ def generate_dmx_config(
             devices = _build_universe_devices(universe_cfg, fixture_key_map)
 
             if node_type in ("artnet-direct", "artnet-controller"):
-                existing = artnet_universes_map.setdefault(universe_nr, {
-                    "devices": [],
-                    "send_partial": send_partial,
-                    "manual_nodes": [],
-                })
+                existing = artnet_universes_map.setdefault(
+                    universe_nr,
+                    {
+                        "devices": [],
+                        "send_partial": send_partial,
+                        "manual_nodes": [],
+                    },
+                )
                 existing["devices"].extend(devices)
 
                 if node_type == "artnet-direct":
@@ -418,10 +430,13 @@ def generate_dmx_config(
                     port = entry.get("port_override") or entry.get("port", 5568)
                     unicast = {"host": host_override, "port": port}
 
-                existing_sacn = sacn_universes_map.setdefault(universe_nr, {
-                    "devices": [],
-                    "unicast_addresses": [],
-                })
+                existing_sacn = sacn_universes_map.setdefault(
+                    universe_nr,
+                    {
+                        "devices": [],
+                        "unicast_addresses": [],
+                    },
+                )
                 existing_sacn["devices"].extend(devices)
                 if unicast and unicast not in existing_sacn["unicast_addresses"]:
                     existing_sacn["unicast_addresses"].append(unicast)
@@ -456,7 +471,7 @@ def generate_dmx_config(
                         break
 
     # Build artnet universes list
-    artnet_universes: list[dict] = []
+    artnet_universes: list[dict[int, dict[str, Any]]] = []
     for universe_nr, data in artnet_universes_map.items():
         universe_entry: dict[str, Any] = {"devices": data["devices"]}
         compat: dict[str, Any] = {}
@@ -469,7 +484,7 @@ def generate_dmx_config(
         artnet_universes.append({universe_nr: universe_entry})
 
     # Build sACN universes list
-    sacn_universes: list[dict] = []
+    sacn_universes: list[dict[int, dict[str, Any]]] = []
     for universe_nr, data in sacn_universes_map.items():
         universe_entry = {"devices": data["devices"]}
         compat = {}
@@ -505,6 +520,7 @@ def generate_dmx_config(
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def to_plain_types(value: Any) -> Any:
     """Recursively convert a value to plain Python types.
 
@@ -533,13 +549,13 @@ def to_plain_types(value: Any) -> Any:
 
 @dataclass
 class MigrationResult:
-    dmx_config: dict
-    fixture_map: dict[tuple, dict]
-    fixture_key_map: dict[tuple, str]
+    dmx_config: dict[str, Any]
+    fixture_map: dict[tuple[Any, ...], dict[str, Any]]
+    fixture_key_map: dict[tuple[Any, ...], str]
     warnings: list[str] = field(default_factory=list)
 
 
-def extract_old_entries(config: dict) -> list[dict]:
+def extract_old_entries(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Filter a full HA config dict for artnet_led / ha_artnet_led platform entries."""
     light_section = config.get("light", [])
     if isinstance(light_section, dict):
@@ -547,15 +563,14 @@ def extract_old_entries(config: dict) -> list[dict]:
     if not isinstance(light_section, list):
         return []
     return [
-        e for e in light_section
-        if isinstance(e, dict) and e.get("platform", "") in ("artnet_led", "ha_artnet_led")
+        e for e in light_section if isinstance(e, dict) and e.get("platform", "") in ("artnet_led", "ha_artnet_led")
     ]
 
 
-def run_migration(entries: list[dict]) -> MigrationResult:
+def run_migration(entries: list[dict[str, Any]]) -> MigrationResult:
     """Full migration pipeline — pure, no I/O. Safe to call via async_add_executor_job."""
     warnings: list[str] = []
-    all_sigs: dict[tuple, dict] = {}
+    all_sigs: dict[tuple[Any, ...], dict[str, Any]] = {}
 
     for entry in entries:
         for universe_cfg in entry.get("universes", {}).values():
@@ -585,7 +600,7 @@ def run_migration(entries: list[dict]) -> MigrationResult:
                                 )
                     all_sigs[sig] = generate_fixture(sig)
 
-    fixture_key_map: dict[tuple, str] = {}
+    fixture_key_map: dict[tuple[Any, ...], str] = {}
     used_keys: set[str] = set()
     for sig in all_sigs:
         base_key = _fixture_name_for_sig(sig)

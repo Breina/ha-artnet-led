@@ -15,6 +15,7 @@ dev = [
     "ruff",
     "black", 
     "mypy==1.17.1",
+    "types-PyYAML",
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
