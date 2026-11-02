@@ -480,7 +480,7 @@ class ArtBase:
             nul_terminator = re.compile(b"([^\\x00]+)")
 
             match = nul_terminator.match(raw_string_from_packet)
-            terminated_string = match.group(1) if match else raw_string_from_packet
+            terminated_string = match.group(1) if match else b""
 
             # remove every other control character
             sanitized_str = re.sub(b"[^\x00-\x7f]", b"", terminated_string)

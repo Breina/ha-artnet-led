@@ -195,3 +195,19 @@ class TestStartup:
 
         calls = [call[0] for call in order.mock_calls]
         assert calls.index("platforms_ready") < calls.index("protocol.start_server")
+
+
+class TestStringsFromPackets:
+    """Strings in Art-Net packets are NUL terminated."""
+
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            (b"#0001 [0000] ok".ljust(64, b"\0"), "#0001 [0000] ok"),
+            (bytes(64), ""),
+            (b"\0left over".ljust(64, b"\0"), ""),
+            (b"a\0left over".ljust(64, b"\0"), "a"),
+        ],
+    )
+    def test_ends_at_the_first_nul(self, field, expected):
+        assert ArtPollReply._consume_str(bytearray(field), 0, 64) == (expected, 64)
