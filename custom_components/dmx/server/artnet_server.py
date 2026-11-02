@@ -254,13 +254,6 @@ class ArtNetServer(asyncio.DatagramProtocol):
         if not nodes:
             del self.nodes_by_port_address[port_address]
 
-        if node not in self.nodes_by_ip.values():
-            ip_str = inet_ntoa(node.addr)
-            if ip_str in self.node_change_subscribers:
-                self.node_change_subscribers.remove(ip_str)
-                if self.node_lost_callback:
-                    self.node_lost_callback(node)
-
     def update_subscribers(self) -> None:
         for subscriber in self.node_change_subscribers:
             self.send_reply(subscriber)
@@ -381,7 +374,10 @@ class ArtNetServer(asyncio.DatagramProtocol):
                 self.remove_node_by_port_address(node_address, node)
 
         for ip, bind_index in nodes_by_ip_to_delete:
-            del self.nodes_by_ip[(ip, bind_index)]
+            node = self.nodes_by_ip.pop((ip, bind_index))
+            self.node_change_subscribers.discard(inet_ntoa(ip))
+            if self.node_lost_callback:
+                self.node_lost_callback(node)
 
         if stale_count > 0:
             self.status_message = f"Cleaned up {stale_count} stale nodes"

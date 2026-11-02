@@ -38,7 +38,6 @@ class ServerManager:
         if (artnet_yaml := dmx_yaml.get(CONF_NODE_TYPE_ARTNET)) is not None:
             artnet_protocol = ArtNetProtocol(self.hass, self.entry)
             await artnet_protocol.setup(artnet_yaml)
-            artnet_protocol.start_server()
             self.protocol_servers["artnet"] = artnet_protocol
             log.info("Art-Net protocol configured")
 

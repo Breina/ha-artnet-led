@@ -90,7 +90,7 @@ class ArtNetProtocol(ProtocolServer):
         self.controller.node_update_callback = node_update_callback
 
         def node_lost_callback(node: Node) -> None:
-            self.hass.async_create_task(node_handler.disable_node(node))
+            self.hass.async_create_task(node_handler.handle_lost_node(node))
 
         self.controller.node_lost_callback = node_lost_callback
 

@@ -31,6 +31,10 @@ def bind_index_str(artpoll_reply: ArtPollReply) -> str:
 class ArtNetEntity(Entity):
     """Representation of an ArtNet entity."""
 
+    # Whether the node offers what this entity reports on, like a port that is an input
+    _is_available = True
+    _node_online = True
+
     def __init__(
         self,
         art_poll_reply: ArtPollReply,
@@ -42,8 +46,8 @@ class ArtNetEntity(Entity):
         super().__init__()
         self.art_poll_reply = art_poll_reply
 
-        # Store immutable IP + bind_index for entity identity verification
-        self._source_ip = tuple(art_poll_reply.source_ip)
+        # What identifies the node. Its IP address isn't part of that, as that can change.
+        self._mac_address_bytes = bytes(art_poll_reply.mac_address)
         self._bind_index = art_poll_reply.bind_index
 
         # Entity-level lock to prevent concurrent reference updates
@@ -63,23 +67,18 @@ class ArtNetEntity(Entity):
 
     async def update_from_artpoll_reply(self, new_artpoll_reply: ArtPollReply) -> bool:
         """
-        Safely update entity from ArtPollReply with IP + bind_index validation.
+        Safely update entity from ArtPollReply with MAC address + bind_index validation.
         This method handles the common validation and locking, then calls the entity-specific update.
         """
         async with self._update_lock:
-            new_source_ip = tuple(new_artpoll_reply.source_ip)
             new_bind_index = new_artpoll_reply.bind_index
 
-            if new_source_ip != self._source_ip or new_bind_index != self._bind_index:
-                _LOGGER.debug(
-                    f"Entity {self._attr_unique_id} rejected update from "
-                    f"IP={new_source_ip}, bind_index={new_bind_index}"
-                    f"(expected IP={self._source_ip}, bind_index={self._bind_index})"
-                )
+            if bytes(new_artpoll_reply.mac_address) != self._mac_address_bytes or new_bind_index != self._bind_index:
                 return False
 
             # Let the entity handle its own value extraction
             self._update_from_artpoll_reply(new_artpoll_reply)
+            self._node_online = True
             return True
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
@@ -89,14 +88,22 @@ class ArtNetEntity(Entity):
         """
         raise NotImplementedError("Entities must implement _update_from_artpoll_reply")
 
+    def set_offline(self) -> None:
+        """Mark this entity as belonging to a node that stopped answering."""
+        self._node_online = False
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return self._node_online and self._is_available
+
 
 class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
     """Representation of an ArtNet device online status."""
 
     def __init__(self, art_poll_reply: ArtPollReply, device_info: DeviceInfo) -> None:
         """Initialize the binary sensor."""
-        # Store the online status and extra state attributes at creation time
-        self._connected = True
+        # Store the extra state attributes at creation time
         self._ip_address = ".".join(str(b) for b in art_poll_reply.source_ip)
         self._short_name = art_poll_reply.short_name
         self._long_name = art_poll_reply.long_name
@@ -112,8 +119,7 @@ class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
         self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
     def _update_from_artpoll_reply(self, artpoll_reply: ArtPollReply) -> None:
-        """Update online status from ArtPollReply."""
-        self._connected = True  # If we're getting updates, the node is online
+        """Update attributes from ArtPollReply."""
         self._ip_address = ".".join(str(b) for b in artpoll_reply.source_ip)
         self._short_name = artpoll_reply.short_name
         self._long_name = artpoll_reply.long_name
@@ -123,14 +129,15 @@ class ArtNetOnlineBinarySensor(ArtNetEntity, BinarySensorEntity):
         except (TypeError, ValueError):
             self._style_name = "Unknown"
 
-    def set_offline(self) -> None:
-        """Mark this entity as offline."""
-        self._connected = False
+    @property
+    def available(self) -> bool:
+        """This is the one entity that can still say something when the node is gone."""
+        return True
 
     @property
     def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
-        return self._connected
+        return self._node_online
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -300,7 +307,6 @@ class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
             self._includes_dmx512_sips = port.good_input.includes_dmx512_sips
             self._includes_dmx512_text_packets = port.good_input.includes_dmx512_text_packets
             self._receive_errors_detected = port.good_input.receive_errors_detected
-            self._last_input_seen = port.last_input_seen.isoformat()
             self._port_type_name = port.type.name
         else:
             self._data_received = False
@@ -309,7 +315,6 @@ class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
             self._includes_dmx512_sips = False
             self._includes_dmx512_text_packets = False
             self._receive_errors_detected = False
-            self._last_input_seen = ""
             self._port_type_name = "Unknown"
 
         super().__init__(
@@ -332,7 +337,6 @@ class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
             self._includes_dmx512_sips = port.good_input.includes_dmx512_sips
             self._includes_dmx512_text_packets = port.good_input.includes_dmx512_text_packets
             self._receive_errors_detected = port.good_input.receive_errors_detected
-            self._last_input_seen = port.last_input_seen.isoformat()
             self._port_type_name = port.type.name
         else:
             self._data_received = False
@@ -341,18 +345,12 @@ class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
             self._includes_dmx512_sips = False
             self._includes_dmx512_text_packets = False
             self._receive_errors_detected = False
-            self._last_input_seen = ""
             self._port_type_name = "Unknown"
 
     @property
     def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
         return self._data_received
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._is_available
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -362,7 +360,6 @@ class ArtNetPortInputBinarySensor(ArtNetEntity, BinarySensorEntity):
             "Includes DMX512 sips": self._includes_dmx512_sips,
             "Includes DMX512 text packets": self._includes_dmx512_text_packets,
             "Receive errors detected": self._receive_errors_detected,
-            "Last input seen": self._last_input_seen,
             "Port type": self._port_type_name,
         }
 
@@ -436,11 +433,6 @@ class ArtNetPortOutputBinarySensor(ArtNetEntity, BinarySensorEntity):
         return self._data_being_transmitted
 
     @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._is_available
-
-    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
         return {
@@ -506,11 +498,6 @@ class ArtNetPortMergeModeSelect(ArtNetEntity, BinarySensorEntity):
         return {"Merge mode": self._merge_mode}
 
     @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._is_available
-
-    @property
     def platform_type(self) -> str:
         return "binary_sensor"
 
@@ -553,11 +540,6 @@ class ArtNetPortSACNBinarySensor(ArtNetEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
         return self._use_sacn
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._is_available
 
     @property
     def platform_type(self) -> str:
@@ -603,11 +585,6 @@ class ArtNetPortRDMBinarySensor(ArtNetEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
         return self._rdm_enabled
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._is_available
 
     @property
     def platform_type(self) -> str:
@@ -656,11 +633,6 @@ class ArtNetPortOutputModeSensor(ArtNetEntity, SensorEntity):
         return self._output_mode
 
     @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._is_available
-
-    @property
     def platform_type(self) -> str:
         return "sensor"
 
@@ -707,11 +679,6 @@ class ArtNetPortUniverseSensor(ArtNetEntity, SensorEntity):
     def native_value(self) -> str:
         """Return the stored universe value."""
         return self._universe_value
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._is_available
 
     @property
     def platform_type(self) -> str:

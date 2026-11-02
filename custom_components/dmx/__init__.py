@@ -136,6 +136,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: config_entries.ConfigEnt
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Nodes answer our first poll right away, and their entities can only be added to platforms that are set up.
+    if (artnet_protocol := server_manager.get_protocol_server("artnet")) is not None:
+        artnet_protocol.start_server()
+
     await store_fixture_fingerprints(hass, entry, device_fingerprints)
 
     return True

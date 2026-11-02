@@ -2,15 +2,11 @@
 
 import asyncio
 import datetime
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
-from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 
-from custom_components.dmx.const import CONF_NODE_ENTITIES, DOMAIN
-from custom_components.dmx.entity.node_handler import DynamicNodeHandler
-from custom_components.dmx.server import ArtDmx, ArtPollReply, PortAddress
+from custom_components.dmx.server import ArtDmx, PortAddress
 from custom_components.dmx.server.artnet_server import ArtNetServer, ManualNode, Node
 from tests.dmx_test_framework import MockHomeAssistant
 
@@ -213,38 +209,3 @@ def test_failing_diagnostics_and_replies_do_not_reach_the_caller(server, network
     network.unreachable.add(BROADCAST)
     server.send_diagnostics()
     ArtNetServer.send_artnet(ArtDmx(port_address=ADDRESS, data=bytearray(16)), BROADCAST)
-
-
-class TestNodeEntities:
-    """The entity registry takes an entity ID, it raises a TypeError on a registry entry."""
-
-    MAC = bytes.fromhex("0050c20830bc")
-
-    def handler_with_entity(self):
-        hass = MagicMock()
-        entity = SimpleNamespace(
-            _mac_address="00:50:c2:08:30:bc",
-            art_poll_reply=SimpleNamespace(bind_index=1),
-            registry_entry=SimpleNamespace(entity_id="sensor.node_report"),
-        )
-        hass.data = {DOMAIN: {"entry": {CONF_NODE_ENTITIES: [entity]}}}
-        handler = DynamicNodeHandler(hass, SimpleNamespace(entry_id="entry"), MagicMock())
-        return handler
-
-    @pytest.mark.asyncio
-    async def test_reenable_node(self):
-        reply = ArtPollReply(mac_address=bytearray(self.MAC), bind_index=1)
-        with patch("custom_components.dmx.entity.node_handler.er.async_get") as registry:
-            await self.handler_with_entity().reenable_node(reply)
-        registry.return_value.async_update_entity.assert_called_once_with("sensor.node_report", disabled_by=None)
-
-    @pytest.mark.asyncio
-    async def test_disable_node(self):
-        handler = self.handler_with_entity()
-        node = Node("node", bytes(4), 1, self.MAC, MagicMock())
-        handler.discovered_nodes[f"{node.mac_address!r}{node.bind_index}"] = node
-        with patch("custom_components.dmx.entity.node_handler.er.async_get") as registry:
-            await handler.disable_node(node)
-        registry.return_value.async_update_entity.assert_called_once_with(
-            "sensor.node_report", disabled_by=RegistryEntryDisabler.INTEGRATION
-        )
