@@ -467,9 +467,7 @@ class TestProtocolEndToEnd:
             patch("custom_components.dmx.server.sacn_server.socket.socket"),
         ):
             protocol = SacnProtocol(hass, SimpleNamespace(data={}))
-            await protocol.setup(
-                {"source_name": "HA", "priority": 110, "rate_limit": 0.01, "universes": [{1: {}}]}
-            )
+            await protocol.setup({"source_name": "HA", "priority": 110, "rate_limit": 0.01, "universes": [{1: {}}]})
 
         protocol.sacn_server.socket = FakeSocket()
         yield protocol
