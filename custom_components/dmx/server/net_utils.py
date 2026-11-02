@@ -1,10 +1,6 @@
 import socket
 
-from netifaces import AF_INET, gateways
-
-
-def get_default_gateway() -> str:
-    return str(gateways()["default"][AF_INET][0])
+LOOPBACK_IP = "127.0.0.1"
 
 
 def get_private_ip() -> str:
@@ -16,6 +12,6 @@ def get_private_ip() -> str:
         addr: tuple[str, int] = s.getsockname()
         return addr[0]
     except Exception:
-        return "127.0.0.1"
+        return LOOPBACK_IP
     finally:
         s.close()

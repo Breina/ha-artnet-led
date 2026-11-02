@@ -37,7 +37,7 @@ from custom_components.dmx.server import (
     PortType,
     StyleCode,
 )
-from custom_components.dmx.server.net_utils import get_default_gateway, get_private_ip
+from custom_components.dmx.server.net_utils import LOOPBACK_IP, get_private_ip
 
 STALE_NODE_CUTOFF_TIME = 10
 
@@ -150,7 +150,7 @@ class ArtNetServer(asyncio.DatagramProtocol):
         self.manual_nodes_by_port_address: dict[PortAddress, ManualNode] = {}
 
         self._own_ip = inet_aton(get_private_ip())
-        self._default_gateway = inet_aton(get_default_gateway())
+        self._failing_sends: set[str] = set()
 
         self.indicator_state = IndicatorState.LOCATE_IDENTIFY
         self.node_report = NodeReport.RC_POWER_OK
@@ -233,19 +233,17 @@ class ArtNetServer(asyncio.DatagramProtocol):
         return self.nodes_by_port_address.get(port_address, None)
 
     def add_node_by_port_address(self, port_address: PortAddress, node: Node) -> None:
-        nodes = self.nodes_by_port_address.get(port_address)
-        if nodes:
-            if node not in nodes:
-                nodes.add(node)
+        nodes = self.nodes_by_port_address.setdefault(port_address, set())
+        if node in nodes:
+            return
 
-                if self.uptime() > 3:
-                    own_port: OwnPort | None = self.own_port_addresses.get(port_address, None)
-                    if own_port and own_port.data:
-                        log.info("Since we have data on that node already, let's send an update immediately to it!")
-                        self.send_dmx(port_address, own_port.data)
+        nodes.add(node)
 
-        else:
-            self.nodes_by_port_address[port_address] = {node}
+        if self.uptime() > 3:
+            own_port: OwnPort | None = self.own_port_addresses.get(port_address, None)
+            if own_port and own_port.data:
+                log.info("Since we have data on that node already, let's send an update immediately to it!")
+                self.send_dmx(port_address, own_port.data)
 
     def remove_node_by_port_address(self, port_address: PortAddress, node: Node) -> None:
         nodes = self.nodes_by_port_address[port_address]
@@ -310,22 +308,54 @@ class ArtNetServer(asyncio.DatagramProtocol):
                 poll.notify_on_change = True
                 poll.enable_diagnostics(DiagnosticsMode.UNICAST, DiagnosticsPriority.DP_HIGH)
 
+                self._update_own_ip()
+
                 log.debug("Sending ArtPoll")
-                with socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) as sock:
-                    sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-                    sock.setblocking(False)
-                    sock.sendto(poll.serialize(), ("255.255.255.255", 0x1936))
+                error = self._send_udp(poll.serialize(), [("255.255.255.255", 0x1936)], broadcast=True)
+                self._log_send_result("ArtPoll", error)
 
-                if len(self.nodes_by_ip) == 0:
-                    self.status_message = f"Polling network - {len(self.own_port_addresses)} ports configured"
+                # A poll that didn't go out says nothing about the nodes, so it can't make them stale.
+                if not error:
+                    if len(self.nodes_by_ip) == 0:
+                        self.status_message = f"Polling network - {len(self.own_port_addresses)} ports configured"
 
-                self.__hass.async_create_background_task(self.remove_stale_nodes(), "Art-Net remove stale nodes")
+                    self.__hass.async_create_background_task(self.remove_stale_nodes(), "Art-Net remove stale nodes")
 
                 log.debug("Sleeping a few seconds before polling again...")
             else:
                 self.status_message = "Idle - No ports configured"
 
             await asyncio.sleep(random.uniform(2.5, 3))
+
+    def _update_own_ip(self) -> None:
+        """Our address can't be determined without a route, and can change when the DHCP lease does."""
+        own_ip = get_private_ip()
+        if own_ip != LOOPBACK_IP:
+            self._own_ip = inet_aton(own_ip)
+
+    @staticmethod
+    def _send_udp(packet: bytes | bytearray, targets: list[tuple[str, int]], broadcast: bool = False) -> OSError | None:
+        """Send to every target, returning the last error so that one unreachable target can't hold back the others."""
+        error = None
+        with socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) as sock:
+            if broadcast:
+                sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+            sock.setblocking(False)
+            for target in targets:
+                try:
+                    sock.sendto(packet, target)
+                except OSError as e:
+                    error = e
+        return error
+
+    def _log_send_result(self, packet_name: str, error: OSError | None) -> None:
+        """Only log when sending starts or stops failing, since it's retried several times per second."""
+        if error and packet_name not in self._failing_sends:
+            self._failing_sends.add(packet_name)
+            log.warning(f"Could not send {packet_name}, will keep trying: {error}")
+        elif not error and packet_name in self._failing_sends:
+            self._failing_sends.remove(packet_name)
+            log.info(f"Sending {packet_name} works again")
 
     async def remove_stale_nodes(self) -> None:
         await asyncio.sleep(STALE_NODE_CUTOFF_TIME)
@@ -359,9 +389,9 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
     @staticmethod
     def send_artnet(art_packet: ArtBase, ip: str) -> None:
-        with socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) as sock:
-            sock.setblocking(False)
-            sock.sendto(art_packet.serialize(), (ip, ARTNET_PORT))
+        error = ArtNetServer._send_udp(art_packet.serialize(), [(ip, ARTNET_PORT)])
+        if error:
+            log.debug(f"Could not send {type(art_packet).__name__} to {ip}: {error}")
 
     def send_diagnostics(
         self,
@@ -432,8 +462,12 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
     def send_dmx(self, address: PortAddress, data: bytearray) -> Task[None] | None:
         has_manual_node = address in self.manual_nodes_by_port_address
+        own_port = self.own_port_addresses[address]
 
         if not has_manual_node and not self.get_node_by_port_address(address):
+            # Nodes that show up later get the latest data, instead of what we had before losing them.
+            own_port.data = data
+
             if self.uptime() < 3:
                 log.debug("Can't currently send DMX as nodes haven't had the chance to be discovered.")
                 return None
@@ -453,7 +487,6 @@ class ArtNetServer(asyncio.DatagramProtocol):
                 )
             return None
 
-        own_port = self.own_port_addresses[address]
         if own_port.update_task:
             own_port.update_task.cancel()
 
@@ -487,20 +520,15 @@ class ArtNetServer(asyncio.DatagramProtocol):
                 own_port.port.good_output_a.data_being_transmitted = False
                 self._update_status_message()
                 self.update_subscribers()
-            elif nodes:
-                with socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) as sock:
-                    sock.setblocking(False)
-                    for node in nodes:
-                        ip_str = inet_ntoa(node.addr)
-                        log.debug(f"Sending ArtDmx to {ip_str}")
-                        sock.sendto(packet, (ip_str, ARTNET_PORT))
 
+            targets = [(inet_ntoa(node.addr), ARTNET_PORT) for node in nodes or ()]
             if has_manual_node:
                 manual_node = self.manual_nodes_by_port_address[address]
-                with socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) as sock:
-                    sock.setblocking(False)
-                    log.debug(f"Sending manually ArtDmx to {manual_node.addr}")
-                    sock.sendto(packet, (manual_node.addr, manual_node.port))
+                targets.append((manual_node.addr, manual_node.port))
+
+            if targets:
+                log.debug(f"Sending ArtDmx to {targets}")
+                self._log_send_result("ArtDmx", self._send_udp(packet, targets))
 
             if self._sequencing:
                 self.sequence_number += 0x01

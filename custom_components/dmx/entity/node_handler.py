@@ -169,7 +169,7 @@ class DynamicNodeHandler:
 
                     if hasattr(entity, "registry_entry") and entity.registry_entry:
                         entity_reg.async_update_entity(
-                            entity.registry_entry, disabled_by=RegistryEntryDisabler.INTEGRATION
+                            entity.registry_entry.entity_id, disabled_by=RegistryEntryDisabler.INTEGRATION
                         )
 
     async def reenable_node(self, artpoll_reply: ArtPollReply) -> None:
@@ -210,7 +210,7 @@ class DynamicNodeHandler:
                     continue
 
                 if hasattr(entity, "registry_entry") and entity.registry_entry:
-                    entity_reg.async_update_entity(entity.registry_entry, disabled_by=None)
+                    entity_reg.async_update_entity(entity.registry_entry.entity_id, disabled_by=None)
                     entities_updated += 1
 
         if entities_updated == 0:
