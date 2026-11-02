@@ -35,8 +35,11 @@ from pyartnet import BaseUniverse, Channel
 from pyartnet.errors import UniverseNotFoundError
 
 from custom_components.artnet_led.bridge.artnet_controller import ArtNetController
+from custom_components.artnet_led.bridge.sacn_controller import SacnNodeBridge, SacnController
 from custom_components.artnet_led.bridge.channel_bridge import ChannelBridge
+from custom_components.artnet_led.client.net_utils import get_private_ip
 from custom_components.artnet_led.util.channel_switch import clamp_color_temp_kelvin, from_values, to_values, validate
+
 
 ARTNET_DEFAULT_PORT = 6454
 SACN_DEFAULT_PORT = 5568
@@ -130,15 +133,19 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
             NODES["server"] = __node
             __node.start()
         node = NODES["server"]
+        if hasattr(node, "add_target_host") and real_host:
+            node.add_target_host(real_host)
 
-    elif client_type == "sacn":
+    elif client_type in ("sacn", "sacn-controller"):
         if real_port is None:
             real_port = SACN_DEFAULT_PORT
 
         __id = f"{host}:{port}"
         if __id not in NODES:
             from pyartnet.base.network import UnicastNetworkTarget
-            __node = pyartnet.SacnNode(
+            from custom_components.artnet_led.bridge.sacn_controller import SacnNodeBridge
+
+            __node = SacnNodeBridge(
                 UnicastNetworkTarget.create(real_host, real_port),
                 max_fps=max_fps,
                 refresh_every=refresh_interval,
@@ -150,6 +157,69 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_devices, d
             NODES[__id] = __node
 
         node = NODES[__id]
+
+        if "sacn_server" not in NODES:
+            from custom_components.artnet_led.client.sacn_server import SacnServer
+
+            def handle_sacn_inbound(universe_nr: int, data: bytearray):
+                try:
+                    matched = False
+                    for n in NODES.values():
+                        if isinstance(n, pyartnet.SacnNode):
+                            try:
+                                u = n.get_universe(universe_nr)
+                                if hasattr(u, "receive_data"):
+                                    u.receive_data(data)
+                                    matched = True
+                                    log.info(f"Updated sACN universe {universe_nr} from inbound frame")
+                            except Exception as err:
+                                log.debug(f"Universe {universe_nr} not found on node: {err}")
+
+                    if not matched:
+                        log.warning(f"Received sACN frame for universe {universe_nr}, but no HA entity is configured for universe {universe_nr}")
+                except Exception as err:
+                    log.error(f"Error processing inbound sACN frame: {err}")
+
+
+
+            server = SacnServer(hass, state_update_callback=handle_sacn_inbound)
+            NODES["sacn_server"] = server
+
+            async def init_sacn_server():
+                try:
+                    await server.start_server()
+                    egress_ip = get_private_ip(real_host)
+                    target_universes = set(config[CONF_NODE_UNIVERSES].keys())
+                    for universe_nr in target_universes:
+                        try:
+                            server.join_multicast_group(universe_nr, egress_ip)
+                        except Exception as err:
+                            log.warning(f"Could not join sACN multicast group for universe {universe_nr}: {err}")
+
+
+
+                    async def heartbeat_loop():
+                        import socket
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                        sock.setblocking(False)
+                        dummy_packet = b"\x00\x10\x00\x00ASC-E1.31\x00\x00\x00\x72\x57\x00\x00\x00\x04" + (b"\x00" * 16)
+                        while True:
+                            try:
+                                sock.sendto(dummy_packet, (real_host, SACN_DEFAULT_PORT))
+                            except Exception:
+                                pass
+                            await asyncio.sleep(10)
+
+                    hass.async_create_background_task(heartbeat_loop(), "sACN Heartbeat Task")
+                except Exception as err:
+                    log.error(f"Failed to start sACN inbound server: {err}")
+
+
+            hass.async_create_background_task(init_sacn_server(), "sACN Inbound Server Task")
+
+
+
+
     elif client_type == "kinet":
         if real_port is None:
             real_port = KINET_DEFAULT_PORT
@@ -1109,8 +1179,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
             vol.Coerce(float), vol.Range(min=0, max=9999)
         ),
         vol.Optional(CONF_NODE_TYPE, default="artnet-direct"): vol.Any(
-            None, vol.In(["artnet-direct", "artnet-controller", "sacn", "kinet"])
+            None, vol.In(["artnet-direct", "artnet-controller", "sacn", "sacn-controller", "kinet"])
         ),
+
     },
     required=True,
     extra=vol.PREVENT_EXTRA,

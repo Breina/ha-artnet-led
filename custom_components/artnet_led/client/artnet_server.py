@@ -98,9 +98,11 @@ class ArtNetServer(asyncio.DatagramProtocol):
 
         self.own_port_addresses = {}
         self.node_change_subscribers = set()
+        self.target_hosts = set()
 
         self.nodes_by_ip = {}
         self.nodes_by_port_address = {}
+
 
         self._own_ip = inet_aton(get_private_ip())
         self._default_gateway = inet_aton(get_default_gateway())
@@ -119,7 +121,13 @@ class ArtNetServer(asyncio.DatagramProtocol):
     def uptime(self) -> int:
         return (datetime.datetime.now() - self.startup_time).seconds if self.startup_time else 0
 
+    def add_target_host(self, host: str):
+        if host and host not in ("0.0.0.0", "127.0.0.1", "255.255.255.255"):
+            self.target_hosts.add(host)
+            log.info(f"Added targeted unicast poll host for Art-Net: {host}")
+
     def add_port(self, port_address: PortAddress):
+
         port = Port(input=True, output=True, type=PortType.ART_NET,
                     sw_in=port_address.universe, sw_out=port_address.universe)
 
@@ -225,10 +233,15 @@ class ArtNetServer(asyncio.DatagramProtocol):
                 poll.enable_diagnostics(DiagnosticsMode.UNICAST, DiagnosticsPriority.DP_HIGH)
 
                 log.debug("Sending ArtPoll")
-                with socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) as sock:
-                    sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-                    sock.setblocking(False)
-                    sock.sendto(poll.serialize(), ("255.255.255.255", 0x1936))
+            with socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) as sock:
+                sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+                sock.setblocking(False)
+                poll_bytes = poll.serialize()
+                sock.sendto(poll_bytes, ("255.255.255.255", 0x1936))
+                for target_host in self.target_hosts:
+                    log.debug(f"Sending targeted unicast ArtPoll to {target_host}")
+                    sock.sendto(poll_bytes, (target_host, 0x1936))
+
 
                 self.__hass.async_create_background_task(self.remove_stale_nodes(), "Art-Net remove stale nodes")
 

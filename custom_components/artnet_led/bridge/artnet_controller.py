@@ -30,7 +30,11 @@ class ArtNetController(BaseNode):
                                      retransmit_time_ms=int(refresh_every * 1000.0)
                                      )
 
+    def add_target_host(self, host: str):
+        self.__server.add_target_host(host)
+
     def _send_universe(self, id: int, byte_size: int, values: bytearray, universe: BaseUniverse):
+
         port_address = PortAddress.parse(id)
 
         log.debug(f"Going to send to port address {port_address}")
