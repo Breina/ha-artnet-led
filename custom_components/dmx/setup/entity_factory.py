@@ -18,6 +18,7 @@ from custom_components.dmx.setup.config_processor import (
     CONF_FIXTURE,
     CONF_OUTPUT_CORRECTION,
     CONF_START_ADDRESS,
+    DMX_SLOTS,
 )
 from custom_components.dmx.util.fixture_fingerprint import generate_fixture_fingerprint
 
@@ -59,6 +60,21 @@ class EntityFactory:
                 mode = next(iter(fixture.modes.keys()))
 
             channels = fixture.select_mode(mode)
+
+            # Config entries keep the data they were imported with, so this can't rely on the schema alone.
+            last_slot = start_address + len(channels) - 1
+            if start_address < 1 or last_slot > DMX_SLOTS:
+                log.error(
+                    "Ignoring device %s: its %d channels at start_address %d take up slots %d to %d, "
+                    "which should be within [1, %d]",
+                    device_name,
+                    len(channels),
+                    start_address,
+                    start_address,
+                    last_slot,
+                    DMX_SLOTS,
+                )
+                continue
 
             fixture_fingerprint = generate_fixture_fingerprint(fixture_name, mode, channels)
             device_fingerprints[device_name] = fixture_fingerprint

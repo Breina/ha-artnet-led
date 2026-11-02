@@ -31,7 +31,7 @@ dmx:
           devices:
             - Bureau NO:
                 fixture: CW/WW Fader
-                start_address: 0
+                start_address: 1
                 mode: 16bit-cw
                 entity_id_prefix: lol_this_is_prefix
                 output_correction:

@@ -65,6 +65,8 @@ CONF_FOLDER = "folder"
 CONF_FOLDER_DEFAULT = "fixtures"
 CONF_ENTITY_ID_PREFIX = "entity_id_prefix"
 
+DMX_SLOTS = 512
+
 
 def port_address_config(value: Any) -> int:
     """Validate that the given Port Address string is valid."""
@@ -154,7 +156,9 @@ SACN_COMPATIBILITY_SCHEMA = vol.Schema(
 
 DEVICE_CONFIG = vol.Schema(
     {
-        vol.Required(CONF_START_ADDRESS): vol.All(vol.Coerce(int), vol.Range(min=0, max=511)),
+        vol.Required(CONF_START_ADDRESS): vol.All(
+            vol.Coerce(int), vol.Range(min=1, max=DMX_SLOTS, msg=f"start_address must be within [1, {DMX_SLOTS}]")
+        ),
         vol.Required(CONF_FIXTURE): cv.string,
         vol.Optional(CONF_MODE): vol.Any(None, cv.string),
         vol.Optional(CONF_ENTITY_ID_PREFIX): vol.Any(None, cv.string),
