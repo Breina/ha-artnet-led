@@ -521,6 +521,8 @@ class ArtNetServer(asyncio.DatagramProtocol):
             if has_manual_node:
                 manual_node = self.manual_nodes_by_port_address[address]
                 targets.append((manual_node.addr, manual_node.port))
+            # A manual node can also be discovered, and must still get each frame only once.
+            targets = list(dict.fromkeys(targets))
 
             if targets:
                 log.debug(f"Sending ArtDmx to {targets}")
