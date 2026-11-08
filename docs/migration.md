@@ -1,18 +1,29 @@
-# How to migrate from the old fixture definitions?
+# How to migrate from the old `artnet_led` integration?
 
-All your current fixtures are now still supported! Here's the process to get your integration migrated.
+Your old configuration converts automatically, and your lights keep their entity IDs.
 
 ## Installing
 
-Our integration name changed from `artnet_led` to `dmx`. HACS doesn't allow this, so we are unable to upgrade this in-place. Therefore a manual release is needed for the beta.
+Download the [source code](https://github.com/Breina/ha-artnet-led/archive/refs/tags/v1.0.0-BETA.13.zip) of [the latest release](https://github.com/Breina/ha-artnet-led/releases/tag/v1.0.0-BETA.13), and copy its `custom_components/dmx` folder into your Home Assistant's `custom_components` folder.
 
-Under [the release](https://github.com/Breina/ha-artnet-led/releases/tag/v1.0.0-BETA.13) download the [source code](https://github.com/Breina/ha-artnet-led/archive/refs/tags/v1.0.0-BETA.13.zip).
+Once 1.0.0 is released, you'll be able to install it through HACS instead.
 
-In this ZIP, navigate to `custom_components/dmx` and copy this `dmx` folder into your Home Assistant's `custom_components` folder. 
+## Migrating
 
-## Find your fixture format
+1. Add `dmx: {}` to your `configuration.yaml` and restart.
+2. Under **Settings → System → Repairs**, fix **Old artnet_led configuration detected**. This writes your fixtures to `fixtures/` and your new configuration to `dmx_migration.yaml`.
+3. Remove the old `light: - platform: artnet_led` block, keep `dmx: {}`, and restart.
+4. Under **Settings → Devices & services → Entities**, delete the old lights. Their areas and icons don't carry over.
+    * If it says 0 can be deleted, Home Assistant is still starting: wait a minute and refresh.
+    * Old lights you had disabled are hidden there and can't be deleted. Remove them from `dmx_migration.yaml`, or they come back with a `_2` suffix.
+5. Replace `dmx: {}` with the contents of `dmx_migration.yaml` and restart.
+6. Delete the `custom_components/artnet_led` folder and `dmx_migration.yaml`.
 
-Most of the previously supported fixtures already have a [generic fixture variant](https://open-fixture-library.org/search?q=generic) for you to download.
+Do these in order: if the new lights appear before the old ones are deleted, they get a `_2` suffix.
+
+## Converting fixtures by hand
+
+Rather use real fixture definitions than the generated ones? Most of the previously supported fixtures already have a [generic fixture variant](https://open-fixture-library.org/search?q=generic) for you to download.
 
 Download as: **Open Fixture Library JSON**
 
@@ -26,20 +37,9 @@ Examples:
 * [RGBWW](https://open-fixture-library.org/generic/rgbww-fader.ofl)
 
 This downloads a ZIP, inside this ZIP **ignore** the `manufacturers.json` and copy the JSON file of fixture itself into your HomeAssistants `config/fixtures` folder, which you will need to create.
-The `config` folder is the one that houses your `configuration.yaml`.
 
 This fixture format is extremely flexible and contains templating, channel switching, matrixes, and many other crazy things, and we're compatible with **all** of it. :)
 
 You can go ahead and [use the editor](https://open-fixture-library.org/fixture-editor) or [write a JSON by hand](https://github.com/OpenLightingProject/open-fixture-library/blob/master/docs/fixture-format.md#fixture).
 
-Note down the `shortName` of your fixtures, or `name` if it has no `shortName`, we will use these in the next step.
-
-## Adding the fixtures to your house
-
-Now that you have all the types of lights configured, it's time to add them. This step is explained in detail in [Configuration](config.md).
-
-## Aftercare
-
-If the new light fixtures now work, you may remove the old `artnet_led` folder and remove the old entities from your system.
-
-When the 1.0.0 releases, this integration will be submitted for HACS default repositories, so manual installation won't be needed any more.
+Note down the `shortName` of your fixtures, or `name` if it has no `shortName`, then add them to your house as explained in [Configuration](config.md).

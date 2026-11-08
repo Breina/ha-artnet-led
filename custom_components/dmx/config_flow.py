@@ -3,8 +3,13 @@
 from typing import Any
 
 from homeassistant import config_entries
+from homeassistant.config import async_hass_config_yaml
+from homeassistant.exceptions import HomeAssistantError
 
 from .const import DOMAIN
+from .migration import extract_old_entries
+
+DOCS_URL = "https://breina.github.io/ha-artnet-led"
 
 
 class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -20,12 +25,30 @@ class ArtNetFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         pass
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> Any:
-        return self.async_abort(
-            reason=(
-                "I acknowledge that it's fun to click buttons, but alas, this integration is configured through "
-                "`configuration.yaml`. Here's how: https://breina.github.io/ha-artnet-led/config/"
+        if await self._async_artnet_led_configured():
+            return self.async_abort(
+                reason="migrate_artnet_led",
+                description_placeholders={
+                    "dmx_snippet": "dmx: {}",
+                    "migration_url": f"{DOCS_URL}/migration/",
+                },
             )
+        return self.async_abort(
+            reason="yaml_only",
+            description_placeholders={"config_url": f"{DOCS_URL}/config/"},
         )
+
+    async def _async_artnet_led_configured(self) -> bool:
+        """Whether configuration.yaml still has lights of the old artnet_led integration.
+
+        Starting a flow from the UI doesn't run async_setup, which is where the old
+        lights are normally found, so the YAML is read here.
+        """
+        try:
+            config = await async_hass_config_yaml(self.hass)
+        except HomeAssistantError:
+            return False
+        return bool(extract_old_entries(config))
 
     async def async_step_import(self, user_input: dict[str, Any] | None = None) -> Any:
         """Handle configuration by YAML file."""

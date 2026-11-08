@@ -64,7 +64,7 @@ sACN uses IP multicast addresses for efficient data distribution:
 
 - **Universe 1**: `239.255.0.1:5568`
 - **Universe 2**: `239.255.0.2:5568`
-- **Universe N**: `239.255.((N-1) >> 8).((N-1) & 0xFF):5568`
+- **Universe N**: `239.255.(N >> 8).(N & 0xFF):5568`
 
 ### Network Infrastructure Requirements
 

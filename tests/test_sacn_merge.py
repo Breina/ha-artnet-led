@@ -546,6 +546,30 @@ class TestProtocolEndToEnd:
         assert universe.get_channel_value(1) == 0
 
     @pytest.mark.asyncio
+    async def test_source_without_per_address_priorities_counts_after_the_wait(self, protocol):
+        """A console at our priority that only sends levels, going above what we've set (#133)."""
+        universe = protocol.universes[PortAddress(0, 0, 1)]
+        await universe.update_multiple_values({505: 64})
+        heard = []
+        universe.register_channel_listener(505, heard.append)
+
+        self.send(protocol, levels({505: 200}, priority=110))
+        await asyncio.sleep(0.05)
+        assert universe.get_channel_value(505) == 64
+
+        with (
+            patch.object(protocol_module, "SOURCE_CHECK_INTERVAL", 0.01),
+            patch("custom_components.dmx.server.sacn_merge.PRIORITY_WAIT", 0.0),
+        ):
+            protocol.stop_server()
+            protocol._source_watcher = protocol.hass.async_create_background_task(protocol._watch_sources())
+            await asyncio.sleep(0.1)
+
+        assert universe.get_channel_value(505) == 200
+        assert universe.get_channel_source(505) == "Console"
+        assert heard == ["Console"]
+
+    @pytest.mark.asyncio
     async def test_high_universe_receives_packets(self, protocol):
         universe = protocol.add_universe({513: {}})
         protocol.sacn_receiver.subscribe_universe(513)
