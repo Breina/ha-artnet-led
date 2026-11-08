@@ -1077,15 +1077,15 @@
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">3</span><span class="p">:</span><span class="w"> </span><span class="c1"># minimal required config</span>
 <span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">DJ led</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">start_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">                </span><span class="nt">start_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">                </span><span class="nt">fixture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DJ Scan LED</span>
 
 <span class="w">  </span><span class="nt">sacn</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">source_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Home</span><span class="nv"> </span><span class="s">Assistant</span><span class="nv"> </span><span class="s">sACN&quot;</span>
+<span class="w">    </span><span class="nt">source_name</span><span class="p">:</span><span class="w"> </span><span class="s">"Home</span><span class="nv"> </span><span class="s">Assistant</span><span class="nv"> </span><span class="s">sACN"</span>
 <span class="w">    </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
 <span class="w">    </span><span class="nt">multicast_ttl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
 <span class="w">    </span><span class="nt">enable_preview_data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">interface_ip</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10.101.97.101&quot;</span>
+<span class="w">    </span><span class="nt">interface_ip</span><span class="p">:</span><span class="w"> </span><span class="s">"10.101.97.101"</span>
 <span class="w">    </span><span class="nt">sync_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7000</span>
 <span class="w">    </span><span class="nt">refresh_every</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.8</span>
 <span class="w">    </span><span class="nt">rate_limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
@@ -1142,7 +1142,7 @@
 <h4 id="device-configuration">Device Configuration<a class="headerlink" href="#device-configuration" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong><code>start_address</code></strong> <em>(mandatory)</em><br />
-  DMX start address [0-511]</li>
+  DMX start address [1-512], where 1 is the first slot of the universe.</li>
 <li><strong><code>fixture</code></strong> <em>(mandatory)</em><br />
   Matches the <code>shortName</code> of the fixture JSON, or <code>name</code> if no <code>shortName</code> is defined.</li>
 <li><strong><code>mode</code></strong> <em>(optional)</em><br />
@@ -1166,7 +1166,19 @@
 <li>Light entities: <code>light.{entity_id_prefix}</code></li>
 </ul>
 </li>
+<li><strong><code>output_correction</code></strong> <em>(optional)</em><br />
+  Applies a dimming curve to all intensity channels of this fixture, correcting for the non-linear
+  relationship between DMX values and perceived brightness.</li>
 </ul>
+<p><strong>Shorthand</strong> (curve name only):
+  <div class="highlight"><pre><span></span><code><span class="nt">output_correction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quadratic</span>
+</code></pre></div></p>
+<p><strong>Full form</strong> (curve + dead zone + de-rating):
+  <div class="highlight"><pre><span></span><code><span class="nt">output_correction</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">curve</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quadratic</span><span class="w">   </span><span class="c1"># linear (default), quadratic, cubic, quartic, sine</span>
+<span class="w">  </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span><span class="w">          </span><span class="c1"># DMX floor when ON — skips fixture dead zone (fraction 0.0–1.0)</span>
+<span class="w">  </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.90</span><span class="w">          </span><span class="c1"># DMX ceiling — de-rates max brightness (fraction 0.0–1.0)</span>
+</code></pre></div></p>
 <h4 id="compatibility-options">Compatibility Options<a class="headerlink" href="#compatibility-options" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong><code>send_partial_universe</code></strong> <em>(optional, default: true)</em><br />
@@ -1192,7 +1204,7 @@
 <li><strong><code>source_name</code></strong> <em>(optional, default: <code>HA sACN Controller</code>)</em><br />
   Source name transmitted in sACN packets (max 63 characters)</li>
 <li><strong><code>priority</code></strong> <em>(optional, default: <code>100</code>)</em><br />
-  sACN data priority [0-200]. Higher values take precedence over lower priority sources.</li>
+  sACN data priority [0-200]. Higher values take precedence over lower priority sources, on the channels Home Assistant has set. See <a href="../sacn-communication/#how-home-assistant-shares-a-universe">how Home Assistant shares a universe</a>.</li>
 <li><strong><code>multicast_ttl</code></strong> <em>(optional, default: <code>64</code>)</em><br />
   Time-to-live for multicast packets [1-255]</li>
 <li><strong><code>enable_preview_data</code></strong> <em>(optional, default: <code>false</code>)</em><br />
