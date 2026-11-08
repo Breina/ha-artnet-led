@@ -478,32 +478,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#converting-your-configuration" class="md-nav__link">
+  <a href="#migrating" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Converting your configuration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#switching-over" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Switching over
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#aftercare" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Aftercare
+        Migrating
       
     </span>
   </a>
@@ -567,32 +545,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#converting-your-configuration" class="md-nav__link">
+  <a href="#migrating" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Converting your configuration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#switching-over" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Switching over
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#aftercare" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Aftercare
+        Migrating
       
     </span>
   </a>
@@ -628,47 +584,26 @@
 
 
 <h1 id="how-to-migrate-from-the-old-artnet_led-integration">How to migrate from the old <code>artnet_led</code> integration?<a class="headerlink" href="#how-to-migrate-from-the-old-artnet_led-integration" title="Permanent link">&para;</a></h1>
-<p>All your current fixtures are still supported! The integration can convert your old configuration for you, and your lights keep their entity IDs, so automations, scenes and groups keep working.</p>
+<p>Your old configuration converts automatically, and your lights keep their entity IDs.</p>
 <h2 id="installing">Installing<a class="headerlink" href="#installing" title="Permanent link">&para;</a></h2>
-<p>Our integration name changed from <code>artnet_led</code> to <code>dmx</code>. HACS doesn't allow this, so we are unable to upgrade this in-place. Therefore a manual release is needed for the beta.</p>
-<p>Under <a href="https://github.com/Breina/ha-artnet-led/releases/tag/v1.0.0-BETA.13">the release</a> download the <a href="https://github.com/Breina/ha-artnet-led/archive/refs/tags/v1.0.0-BETA.13.zip">source code</a>.</p>
-<p>In this ZIP, navigate to <code>custom_components/dmx</code> and copy this <code>dmx</code> folder into your Home Assistant's <code>custom_components</code> folder. Leave the old <code>artnet_led</code> folder where it is for now.</p>
-<h2 id="converting-your-configuration">Converting your configuration<a class="headerlink" href="#converting-your-configuration" title="Permanent link">&para;</a></h2>
+<p>Download the <a href="https://github.com/Breina/ha-artnet-led/archive/refs/tags/v1.0.0-BETA.13.zip">source code</a> of <a href="https://github.com/Breina/ha-artnet-led/releases/tag/v1.0.0-BETA.13">the latest release</a>, and copy its <code>custom_components/dmx</code> folder into your Home Assistant's <code>custom_components</code> folder.</p>
+<p>Once 1.0.0 is released, you'll be able to install it through HACS instead.</p>
+<h2 id="migrating">Migrating<a class="headerlink" href="#migrating" title="Permanent link">&para;</a></h2>
 <ol>
-<li>
-<p>Add this line to your <code>configuration.yaml</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">dmx</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-</code></pre></div>
-<p>Home Assistant only loads the integration when <code>dmx</code> appears in your <code>configuration.yaml</code>; copying the folder or clicking <em>Add integration</em> won't load it. Write the <code>{}</code> too: a bare <code>dmx:</code> is empty and gets rejected as invalid configuration.</p>
-</li>
-<li>
-<p>Restart Home Assistant.</p>
-</li>
-<li>
-<p>Go to <strong>Settings → System → Repairs</strong>, open <strong>Old artnet_led configuration detected</strong> and submit it.</p>
-</li>
-</ol>
-<p>The migration reads your old <code>light: - platform: artnet_led</code> configuration, including anything you pulled in through <code>!include</code>, <code>!secret</code> or packages, and writes two things into your config folder (the one that houses your <code>configuration.yaml</code>):</p>
-<ul>
-<li><code>fixtures/</code>: one <a href="https://open-fixture-library.org/">Open Fixture Library</a> fixture file for each distinct kind of light you had</li>
-<li><code>dmx_migration.yaml</code>: your new <code>dmx:</code> configuration, with the universes and devices of your old setup</li>
+<li>Add <code>dmx: {}</code> to your <code>configuration.yaml</code> and restart.</li>
+<li>Under <strong>Settings → System → Repairs</strong>, fix <strong>Old artnet_led configuration detected</strong>. This writes your fixtures to <code>fixtures/</code> and your new configuration to <code>dmx_migration.yaml</code>.</li>
+<li>Remove the old <code>light: - platform: artnet_led</code> block, keep <code>dmx: {}</code>, and restart.</li>
+<li>Under <strong>Settings → Devices &amp; services → Entities</strong>, delete the old lights. Their areas and icons don't carry over.<ul>
+<li>If it says 0 can be deleted, Home Assistant is still starting: wait a minute and refresh.</li>
+<li>Old lights you had disabled are hidden there and can't be deleted. Remove them from <code>dmx_migration.yaml</code>, or they come back with a <code>_2</code> suffix.</li>
 </ul>
-<p>It doesn't change your <code>configuration.yaml</code>. If it shows migration notes, read them: they point out the few settings the new fixture format can't express, such as 32-bit channels or a colour temperature range on lights without a temperature channel.</p>
-<h2 id="switching-over">Switching over<a class="headerlink" href="#switching-over" title="Permanent link">&para;</a></h2>
-<p>Do these steps in this order. Your old lights are still registered under their entity IDs; if the new ones show up before the old ones are deleted, Home Assistant gives them a <code>_2</code> suffix instead.</p>
-<ol>
-<li>Remove the old <code>light: - platform: artnet_led</code> block from your <code>configuration.yaml</code>, keep <code>dmx: {}</code>, and restart.</li>
-<li>Under <strong>Settings → Devices &amp; services → Entities</strong>, select your old lights, which now show as unavailable, and remove them.</li>
+</li>
 <li>Replace <code>dmx: {}</code> with the contents of <code>dmx_migration.yaml</code> and restart.</li>
+<li>Delete the <code>custom_components/artnet_led</code> folder and <code>dmx_migration.yaml</code>.</li>
 </ol>
-<p>Your lights are now back under their old entity IDs. Anything you set on the old entities from the UI, like an area, icon or name, doesn't carry over, so set it again on the new ones.</p>
-<p>To tweak the result, like adding more fixtures or changing universes, see <a href="../config/">Configuration</a>.</p>
-<h2 id="aftercare">Aftercare<a class="headerlink" href="#aftercare" title="Permanent link">&para;</a></h2>
-<p>If the new light fixtures work, you may remove the old <code>artnet_led</code> folder and <code>dmx_migration.yaml</code>.</p>
-<p>When the 1.0.0 releases, this integration will be submitted for HACS default repositories, so manual installation won't be needed any more.</p>
+<p>Do these in order: if the new lights appear before the old ones are deleted, they get a <code>_2</code> suffix.</p>
 <h2 id="converting-fixtures-by-hand">Converting fixtures by hand<a class="headerlink" href="#converting-fixtures-by-hand" title="Permanent link">&para;</a></h2>
-<p>You don't need this if the migration above worked. It's for when you'd rather use proper fixture definitions than the generated ones, for example to get the extra features of a fixture's manufacturer definition.</p>
-<p>Most of the previously supported fixtures already have a <a href="https://open-fixture-library.org/search?q=generic">generic fixture variant</a> for you to download.</p>
+<p>Rather use real fixture definitions than the generated ones? Most of the previously supported fixtures already have a <a href="https://open-fixture-library.org/search?q=generic">generic fixture variant</a> for you to download.</p>
 <p>Download as: <strong>Open Fixture Library JSON</strong></p>
 <p>Examples:</p>
 <ul>
