@@ -212,6 +212,11 @@ class LightState:
         scale = brightness / max_current if max_current > 0 else 0
         return {channel: min(255, round(value * scale)) for channel, value in channel_values.items()}
 
+    @staticmethod
+    def dim(channel_values: dict[ChannelType, int], brightness: int) -> dict[ChannelType, int]:
+        """Apply a brightness to channels the way a dimmer would."""
+        return {channel: round(value * brightness / 255) for channel, value in channel_values.items()}
+
     def get_channel_entity_value(self, channel_type: ChannelType) -> int:
         """Return the current entity-space value for a channel type from the light state."""
         if channel_type == ChannelType.DIMMER:
@@ -393,6 +398,19 @@ class LightState:
         if self.color_mode == ColorMode.COLOR_TEMP and self.has_cw_ww():
             color_temp_kelvin = self.converter.cw_ww_to_temp(self.cold_white, self.warm_white)
             self.update_color_temp_kelvin(color_temp_kelvin)
+
+    @property
+    def rgb_color(self) -> tuple[int, int, int]:
+        """
+        The color as Home Assistant has it in RGB mode, which comes on top of the brightness. Without a dimmer, the
+        brightness is already in the color channels, so it's taken out of the color to not have it counted twice.
+        """
+        peak = max(self.rgb)
+        if self._has_dimmer() or self.color_mode != ColorMode.RGB or not peak:
+            return self.rgb
+
+        r, g, b = self.rgb
+        return round(r * 255 / peak), round(g * 255 / peak), round(b * 255 / peak)
 
     @property
     def rgbw_color(self) -> tuple[int, int, int, int]:

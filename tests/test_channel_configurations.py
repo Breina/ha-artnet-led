@@ -513,6 +513,53 @@ class TestBrightnessIsAppliedOnce(ConfigurationTestCase):
         self.assertEqual({"D": 128, "C": 255, "W": 0, "T": 255}, dmx(light, universe))
 
 
+class TestRgbWithoutDimmer(ConfigurationTestCase):
+    """
+    Home Assistant has the brightness both in the brightness and in the color: 128 with (192, 64, 32) is 128/255 *
+    192/255 = 38%. Without a dimmer the brightness stands in for one, or it would be counted twice.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.light, self.universe = make_light("RGB")
+
+    def test_the_color_does_not_hold_the_brightness(self) -> None:
+        turn_on(self.light, brightness=179)
+        self.assertEqual({"R": 179, "G": 179, "B": 179}, dmx(self.light, self.universe))
+        self.assertEqual(179, self.light.brightness)
+        self.assertEqual((255, 255, 255), self.light.rgb_color)
+
+    def test_picking_colors_keeps_the_brightness(self) -> None:
+        turn_on(self.light, brightness=179)
+
+        # The color picker sends a request every half second while dragging.
+        for color in ((255, 255, 0), (128, 255, 0), (0, 255, 0), (0, 255, 0), (0, 255, 0)):
+            turn_on(self.light, rgb_color=color)
+
+        self.assertEqual({"R": 0, "G": 179, "B": 0}, dmx(self.light, self.universe))
+        self.assertEqual(179, self.light.brightness)
+        self.assertEqual((0, 255, 0), self.light.rgb_color)
+
+    def test_a_dim_color_comes_on_top_of_the_brightness(self) -> None:
+        turn_on(self.light, brightness=200, rgb_color=(0, 128, 0))
+        self.assertEqual({"R": 0, "G": 100, "B": 0}, dmx(self.light, self.universe))
+        self.assertEqual(100, self.light.brightness)
+        self.assertEqual((0, 255, 0), self.light.rgb_color)
+
+    def test_a_color_turns_on_at_the_last_brightness(self) -> None:
+        turn_on(self.light, brightness=100)
+        turn_off(self.light)
+
+        turn_on(self.light, rgb_color=(255, 0, 0))
+        self.assertEqual({"R": 100, "G": 0, "B": 0}, dmx(self.light, self.universe))
+        self.assertTrue(self.light.is_on)
+
+    def test_incoming_dmx(self) -> None:
+        asyncio.run(self.universe.receive_values({1: 100, 2: 50, 3: 20}, "sender"))
+        self.assertEqual(100, self.light.brightness)
+        self.assertEqual((255, 128, 51), self.light.rgb_color)
+
+
 class TestNoOutputChannels(ConfigurationTestCase):
     def test_color_temperature_only(self) -> None:
         light, universe = make_light("T")
@@ -566,6 +613,19 @@ class TestRestoreAfterRestart(ConfigurationTestCase):
 
         turn_on(light)
         self.assertEqual({"R": 10, "G": 20, "B": 30, "C": 40, "W": 50}, dmx(light, universe))
+
+    def test_rgb_without_dimmer_comes_back_at_its_brightness(self) -> None:
+        # The second one was saved while the color still held the brightness.
+        for saved_color in ((0, 255, 0), (0, 179, 0)):
+            with self.subTest(saved_color=saved_color):
+                attributes = {"color_mode": "rgb", "brightness": 179, "rgb_color": saved_color}
+                light, universe = self.restore("RGB", attributes)
+                self.assertEqual((0, 255, 0), light.rgb_color)
+                self.assertEqual(179, light.brightness)
+
+                turn_off(light)
+                turn_on(light)
+                self.assertEqual({"R": 0, "G": 179, "B": 0}, dmx(light, universe))
 
     def test_color_temperature_comes_back_on_its_channel(self) -> None:
         light, universe = self.restore("DT", {"color_mode": "color_temp", "brightness": 200, "color_temp_kelvin": 4600})

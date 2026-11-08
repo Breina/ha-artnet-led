@@ -194,8 +194,11 @@ class LightController:
 
         has_dimmer = self.state.has_channel(ChannelType.DIMMER)
 
-        # Without a dimmer, the color channels are the only place to express a requested brightness.
-        if "brightness" in kwargs and not has_dimmer:
+        # Without a dimmer, the color channels are the only place to express a brightness.
+        if "rgb_color" in kwargs and not has_dimmer:
+            # Home Assistant's RGB color comes on top of the brightness, so this stands in for the dimmer.
+            color_updates = self.state.dim(color_updates, self._requested_or_last_brightness(kwargs))
+        elif "brightness" in kwargs and not has_dimmer:
             color_updates = self.state.scale_to_brightness(color_updates, kwargs["brightness"])
 
         updates.update(color_updates)

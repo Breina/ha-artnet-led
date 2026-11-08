@@ -120,7 +120,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
     @property
     def rgb_color(self) -> tuple[int, int, int] | None:
-        return self._state.rgb
+        return self._state.rgb_color
 
     @property
     def rgbw_color(self) -> tuple[int, int, int, int] | None:
@@ -237,6 +237,12 @@ class DmxLightEntity(LightEntity, RestoreEntity):
 
         elif self._state.has_rgb() and color_mode == ColorMode.RGB and attrs.get("rgb_color") is not None:
             r, g, b = attrs["rgb_color"]
+            if not self._state.has_channel(ChannelType.DIMMER) and self._state.brightness:
+                # The color comes on top of the brightness. Scaling rather than dimming also brings back a color
+                # saved before that, which had the brightness in it already.
+                color = {ChannelType.RED: r, ChannelType.GREEN: g, ChannelType.BLUE: b}
+                color = self._state.scale_to_brightness(color, self._state.brightness)
+                r, g, b = color[ChannelType.RED], color[ChannelType.GREEN], color[ChannelType.BLUE]
             self._state.rgb = self._state.last_rgb = (r, g, b)
 
         self._state.sync_color_mode()
