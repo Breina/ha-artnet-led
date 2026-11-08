@@ -1,5 +1,6 @@
 {
   "config": {
+    "step": {},
     "abort": {
       "yaml_only": "This integration is configured through `configuration.yaml`. [Here's how]({config_url}).",
       "migrate_artnet_led": "Your `configuration.yaml` still has lights from the old `artnet_led` integration. This integration is set up through YAML rather than this button, and it can convert those lights for you:\n\n1. Add `{dmx_snippet}` to your `configuration.yaml`, if it isn't there yet\n2. Restart Home Assistant\n3. Open **Settings → System → Repairs** and fix **Old artnet_led configuration detected**\n\nThe [migration guide]({migration_url}) walks you through the rest."
