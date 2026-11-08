@@ -41,8 +41,14 @@ class LightController:
         await self._apply_updates(updates, transition)
 
     async def turn_off(self, transition: float | None = None) -> None:
+        # A light that's dark already, or still on its way to a state that's remembered already, shows nothing new to
+        # come back to.
+        if self.state.is_on and not self._current_animation_id:
+            preserved = self._capture_current_state()
+        else:
+            preserved = self._capture_last_state()
+
         self.state.is_on = False
-        preserved = self._capture_current_state()
         updates = {}
 
         if self.state.has_channel(ChannelType.DIMMER):
@@ -254,6 +260,16 @@ class LightController:
             "warm_white": self.state.warm_white,
             "color_temp_kelvin": self.state.color_temp_kelvin,
             "color_temp_dmx": self.state.color_temp_dmx,
+        }
+
+    def _capture_last_state(self) -> dict[str, Any]:
+        return {
+            "brightness": self.state.last_brightness,
+            "rgb": self.state.last_rgb,
+            "cold_white": self.state.last_cold_white,
+            "warm_white": self.state.last_warm_white,
+            "color_temp_kelvin": self.state.last_color_temp_kelvin,
+            "color_temp_dmx": self.state.last_color_temp_dmx,
         }
 
     def _save_last_state(self, s: dict[str, Any]) -> None:

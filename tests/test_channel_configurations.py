@@ -560,6 +560,53 @@ class TestRgbWithoutDimmer(ConfigurationTestCase):
         self.assertEqual((255, 128, 51), self.light.rgb_color)
 
 
+class TestTurningOffAgain(ConfigurationTestCase):
+    """Something that's dark already, or still on its way there, has nothing new to come back to."""
+
+    REQUESTS: tuple[tuple[str, dict[str, Any]], ...] = (
+        ("RGB", {"brightness": 100, "rgb_color": (255, 0, 0)}),
+        ("DRGB", {"brightness": 100, "rgb_color": (255, 0, 0)}),
+        ("W", {"brightness": 100}),
+        ("CH", {"brightness": 100, "color_temp_kelvin": 6500}),
+        ("DTRGB", {"brightness": 100, "rgb_color": (255, 0, 0)}),
+        ("RGBWT", {"rgbw_color": (100, 0, 0, 0)}),
+    )
+
+    def test_when_it_is_off(self) -> None:
+        for signature, request in self.REQUESTS:
+            with self.subTest(signature):
+                light, universe = make_light(signature)
+                turn_on(light, **request)
+                turn_off(light)
+                turn_on(light)
+                expected = dmx(light, universe)
+
+                turn_off(light)
+                turn_off(light)
+                turn_on(light)
+                self.assertEqual(expected, dmx(light, universe))
+                self.assertTrue(light.is_on)
+
+    def test_while_it_fades_out(self) -> None:
+        for signature, frame in (("RGB", ChannelType.RED), ("DRGB", ChannelType.DIMMER)):
+            with self.subTest(signature):
+                light, universe = make_light(signature)
+                engine = MagicMock()
+                engine.create_animation.return_value = "animation"
+                light._controller.animation_engine = engine
+
+                turn_on(light, brightness=100, rgb_color=(255, 0, 0))
+                expected = dmx(light, universe)
+
+                asyncio.run(light.async_turn_off(transition=3.0))
+                light._state.apply_channel_update(frame, 60)
+                self.assertTrue(light.is_on)
+
+                turn_off(light)
+                turn_on(light)
+                self.assertEqual(expected, dmx(light, universe))
+
+
 class TestNoOutputChannels(ConfigurationTestCase):
     def test_color_temperature_only(self) -> None:
         light, universe = make_light("T")
