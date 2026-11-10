@@ -707,7 +707,7 @@ class TestTransitions(ConfigurationTestCase):
         self.assertEqual((0, 255, 0), light._state.last_rgb)
 
     def test_white_is_the_target_on_rgb_with_color_temperature(self) -> None:
-        light, _ = make_light("DTRGB")
+        light, universe = make_light("DTRGB")
         engine = MagicMock()
         engine.create_animation.return_value = "animation"
         light._controller.animation_engine = engine
@@ -715,11 +715,58 @@ class TestTransitions(ConfigurationTestCase):
         turn_on(light, brightness=255, rgb_color=(255, 0, 0))
         turn_on(light, color_temp_kelvin=4600, transition=1.0)
         self.assertEqual((0, 0, 0), light._state.last_rgb)
+
+        # It shows the color until the frames have taken it out, then white.
+        self.assertEqual(ColorMode.RGB, light.color_mode)
+        asyncio.run(universe.update_multiple_values({1: 255, 2: 128, 3: 0, 4: 0, 5: 0}))
         self.assertEqual(ColorMode.COLOR_TEMP, light.color_mode)
 
         desired = engine.create_animation.call_args.kwargs["desired_values"]
         self.assertEqual(0, desired[ChannelType.RED])
         self.assertAlmostEqual(127.5, desired[ChannelType.COLOR_TEMPERATURE], delta=1)
+
+    @staticmethod
+    def animated(light: DmxLightEntity) -> MagicMock:
+        engine = MagicMock()
+        engine.create_animation.return_value = "animation"
+        light._controller.animation_engine = engine
+        return engine
+
+    def test_it_follows_its_transition_without_the_target_mixed_in(self) -> None:
+        # Only the channels that change report back. Left at the target, red stayed there while green came up
+        # from zero, so a green fading up showed as red and yellow before it jumped to green.
+        light, universe = make_light("RGB")
+        turn_on(light, rgb_color=(57, 255, 0), brightness=100)
+        turn_off(light)
+        self.animated(light)
+
+        turn_on(light, rgb_color=(57, 255, 0), brightness=100, transition=2.0)
+        self.assertFalse(light.is_on)
+
+        # A frame on the way up in which only green has moved yet.
+        asyncio.run(universe.update_multiple_values({1: 0, 2: 4, 3: 0}))
+        self.assertEqual((4, (0, 255, 0)), (light.brightness, light.rgb_color))
+
+        asyncio.run(universe.update_multiple_values({1: 22, 2: 100, 3: 0}))
+        self.assertEqual(100, light.brightness)
+
+    def test_a_fade_out_stays_on_until_it_is_dark(self) -> None:
+        light, universe = make_light("RGB")
+        turn_on(light, rgb_color=(0, 255, 0), brightness=100)
+        self.animated(light)
+
+        asyncio.run(light.async_turn_off(transition=2.0))
+        self.assertTrue(light.is_on)
+
+        asyncio.run(universe.update_multiple_values({1: 0, 2: 60, 3: 0}))
+        self.assertEqual((True, 60), (light.is_on, light.brightness))
+
+        asyncio.run(universe.update_multiple_values({1: 0, 2: 0, 3: 0}))
+        self.assertFalse(light.is_on)
+
+        # What it faded out from is what it comes back to.
+        turn_on(light)
+        self.assertEqual({"R": 0, "G": 100, "B": 0}, dmx(light, universe))
 
 
 if __name__ == "__main__":

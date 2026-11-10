@@ -125,6 +125,9 @@ class LightController:
             # Preserve last_* values during animation to prevent animation frames from corrupting them
             self.state._preserve_last_values = True
 
+            for ct, val in current_values.items():
+                self.state.apply_channel_update(ct, val)
+
     def _read_written_value(self, mapping: ChannelMapping) -> int | None:
         """Read a channel's value in entity space from DMX, or None if it hasn't been written yet."""
         if not all(self.universe.is_channel_set(idx) for idx in mapping.dmx_indexes):
