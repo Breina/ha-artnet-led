@@ -32,6 +32,7 @@ class LightController:
             updates = self._restore_previous_state()
         else:
             self._add_updates_to_become_visible(updates)
+            self._add_color_temperature_never_sent(updates)
 
         # Clear preserve flag when user explicitly turns light on
         if self.state._preserve_last_values:
@@ -44,9 +45,9 @@ class LightController:
         # A light that's dark already, or still on its way to a state that's remembered already, shows nothing new to
         # come back to.
         if self.state.is_on and not self._current_animation_id:
-            preserved = self._capture_current_state()
+            preserved = self.state.current_values()
         else:
-            preserved = self._capture_last_state()
+            preserved = self.state.last_values()
 
         self.state.is_on = False
         updates = {}
@@ -61,7 +62,7 @@ class LightController:
                     updates[channel] = 0
 
         await self._apply_updates(updates, transition)
-        self._save_last_state(preserved)
+        self.state.remember(preserved)
 
     async def _apply_updates(self, updates: dict[ChannelType, int], transition: float | None = None) -> None:
         if self._current_animation_id and self.animation_engine:
@@ -166,6 +167,19 @@ class LightController:
         ):
             updates.update(self.state.last_output_values())
 
+    def _add_color_temperature_never_sent(self, updates: dict[ChannelType, int]) -> None:
+        """
+        After a restart, nothing has been sent yet. A brightness alone leaves the color temperature channel out, which
+        would then go out at zero, or not at all, instead of at what it was.
+        """
+        if (
+            self.state.restored
+            and self.state.has_channel(ChannelType.COLOR_TEMPERATURE)
+            and ChannelType.COLOR_TEMPERATURE not in updates
+            and self._read_written_value(self.state.channels[ChannelType.COLOR_TEMPERATURE]) is None
+        ):
+            updates[ChannelType.COLOR_TEMPERATURE] = self.state.last_color_temp_dmx  # type: ignore[assignment]
+
     def _collect_updates_from_kwargs(self, kwargs: dict[str, Any]) -> dict[ChannelType, int]:
         updates = {}
 
@@ -235,7 +249,10 @@ class LightController:
         return updates
 
     def _requested_or_last_brightness(self, kwargs: dict[str, Any]) -> int:
-        return int(kwargs.get("brightness") or self.state.brightness or self.state.last_brightness or 255)
+        # During a transition, the brightness is that of one of its frames. Where it's headed, or fading out from, is
+        # the last one.
+        current = 0 if self.state.in_transition else self.state.brightness
+        return int(kwargs.get("brightness") or current or self.state.last_brightness or 255)
 
     def _restore_previous_state(self) -> dict[ChannelType, int]:
         updates = {}
@@ -254,34 +271,6 @@ class LightController:
             updates[ChannelType.COLOR_TEMPERATURE] = self.state.last_color_temp_dmx  # type: ignore[assignment]
 
         return updates
-
-    def _capture_current_state(self) -> dict[str, Any]:
-        return {
-            "brightness": self.state.brightness,
-            "rgb": self.state.rgb,
-            "cold_white": self.state.cold_white,
-            "warm_white": self.state.warm_white,
-            "color_temp_kelvin": self.state.color_temp_kelvin,
-            "color_temp_dmx": self.state.color_temp_dmx,
-        }
-
-    def _capture_last_state(self) -> dict[str, Any]:
-        return {
-            "brightness": self.state.last_brightness,
-            "rgb": self.state.last_rgb,
-            "cold_white": self.state.last_cold_white,
-            "warm_white": self.state.last_warm_white,
-            "color_temp_kelvin": self.state.last_color_temp_kelvin,
-            "color_temp_dmx": self.state.last_color_temp_dmx,
-        }
-
-    def _save_last_state(self, s: dict[str, Any]) -> None:
-        self.state.last_brightness = s["brightness"]
-        self.state.last_rgb = s["rgb"]
-        self.state.last_cold_white = s["cold_white"]
-        self.state.last_warm_white = s["warm_white"]
-        self.state.last_color_temp_kelvin = s["color_temp_kelvin"]
-        self.state.last_color_temp_dmx = s["color_temp_dmx"]
 
     def _on_animation_complete(self) -> None:
         """Called when an animation completes naturally"""

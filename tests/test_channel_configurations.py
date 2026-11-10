@@ -14,6 +14,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import homeassistant.helpers.device_registry
 from homeassistant.components.light import ColorMode
+from homeassistant.core import State
+from homeassistant.helpers.json import json_dumps
+from homeassistant.helpers.restore_state import ExtraStoredData, RestoredExtraData, StoredState
+from homeassistant.util import dt as dt_util
 
 from custom_components.dmx.entity.light import ChannelType
 from custom_components.dmx.entity.light.light_entity import DmxLightEntity
@@ -587,6 +591,16 @@ class TestTurningOffAgain(ConfigurationTestCase):
                 self.assertEqual(expected, dmx(light, universe))
                 self.assertTrue(light.is_on)
 
+    def test_a_brightness_alone_comes_back_at_the_color_temperature(self) -> None:
+        # Dark, the whites can't tell the color temperature anymore: from them, it's the warmest.
+        light, universe = make_light("CH")
+        turn_on(light, color_temp_kelvin=6500, brightness=100)
+        turn_off(light)
+
+        turn_on(light, brightness=50)
+        self.assertEqual({"C": 50, "W": 0}, dmx(light, universe))
+        self.assertEqual(6500, light.color_temp_kelvin)
+
     def test_while_it_fades_out(self) -> None:
         for signature, frame in (("RGB", ChannelType.RED), ("DRGB", ChannelType.DIMMER)):
             with self.subTest(signature):
@@ -624,17 +638,33 @@ class TestNoOutputChannels(ConfigurationTestCase):
         self.assertEqual(255, light.brightness)
 
 
+def start(
+    signature: str, last_state: State | None, extra_data: ExtraStoredData | None
+) -> tuple[DmxLightEntity, DmxUniverse]:
+    """Set the light up the way Home Assistant does when it starts, with what it saved of it."""
+    light, universe = make_light(signature)
+    with (
+        patch("homeassistant.helpers.restore_state.RestoreEntity.async_added_to_hass", AsyncMock()),
+        patch.object(DmxLightEntity, "async_get_last_state", AsyncMock(return_value=last_state)),
+        patch.object(DmxLightEntity, "async_get_last_extra_data", AsyncMock(return_value=extra_data)),
+    ):
+        asyncio.run(light.async_added_to_hass())
+    return light, universe
+
+
+def restart(signature: str, light: DmxLightEntity) -> tuple[DmxLightEntity, DmxUniverse]:
+    """The light again after a restart, from what Home Assistant writes to disk of it when it stops."""
+    state = State("light.restarted", "on" if light.is_on else "off", light.state_attributes)
+    stored = StoredState(state, light.extra_restore_state_data, dt_util.utcnow())
+    saved = StoredState.from_dict(json.loads(json_dumps(stored.as_dict())))
+    return start(signature, saved.state, saved.extra_data)
+
+
 class TestRestoreAfterRestart(ConfigurationTestCase):
     @staticmethod
     def restore(signature: str, attributes: dict[str, Any]) -> tuple[DmxLightEntity, DmxUniverse]:
-        light, universe = make_light(signature)
-        last_state = MagicMock(state="on", attributes=attributes)
-        with (
-            patch("homeassistant.helpers.restore_state.RestoreEntity.async_added_to_hass", AsyncMock()),
-            patch.object(DmxLightEntity, "async_get_last_state", AsyncMock(return_value=last_state)),
-        ):
-            asyncio.run(light.async_added_to_hass())
-        return light, universe
+        """From what an older version saved, before it kept what to come back to."""
+        return start(signature, State("light.restored", "on", attributes), None)
 
     def test_rgbw_comes_back_with_its_white(self) -> None:
         light, universe = self.restore(
@@ -688,6 +718,130 @@ class TestRestoreAfterRestart(ConfigurationTestCase):
         light, universe = self.restore("CH", {"color_mode": "color_temp", "brightness": 100, "color_temp_kelvin": 6500})
         turn_on(light)
         self.assertEqual({"C": 100, "W": 0}, dmx(light, universe))
+
+    BEFORE: tuple[tuple[str, dict[str, Any]], ...] = (
+        ("RGB", {"rgb_color": (255, 100, 0), "brightness": 100}),
+        ("DRGB", {"rgb_color": (255, 100, 0), "brightness": 100}),
+        ("RGBW", {"rgbw_color": (200, 0, 50, 30)}),
+        ("DRGBW", {"rgbw_color": (200, 0, 50, 30), "brightness": 100}),
+        ("RGBCH", {"rgbww_color": (200, 0, 50, 30, 10)}),
+        ("W", {"brightness": 100}),
+        ("CH", {"color_temp_kelvin": 3000, "brightness": 100}),
+        ("DT", {"color_temp_kelvin": 3000, "brightness": 100}),
+        ("RGBT", {"rgb_color": (255, 100, 0), "brightness": 100}),
+        ("DTRGB", {"rgb_color": (255, 100, 0), "brightness": 100}),
+        ("RGBWT", {"rgbw_color": (200, 0, 50, 30)}),
+    )
+
+    @staticmethod
+    def after(light: DmxLightEntity) -> list[dict[str, Any]]:
+        """What can be asked of a light once it's back."""
+        requests: list[dict[str, Any]] = [
+            {},
+            {"brightness": 38},
+            {"transition": 2.0},
+            {"brightness": 38, "transition": 2.0},
+        ]
+        if ColorMode.RGB in light.supported_color_modes:
+            requests.append({"rgb_color": (0, 0, 255)})
+        if ColorMode.COLOR_TEMP in light.supported_color_modes:
+            requests.append({"color_temp_kelvin": 5000})
+        return requests
+
+    @staticmethod
+    def outcome(light: DmxLightEntity, **request: Any) -> tuple[dict[ChannelType, int | None], ...]:
+        """Where each channel starts and ends up, None for one that never gets sent."""
+        engine = TestTransitions.animated(light)
+        turn_on(light, **request)
+        sent = {
+            channel: light._controller._read_written_value(mapping) for channel, mapping in light.channel_map.items()
+        }
+        if not engine.create_animation.called:
+            return sent, sent
+
+        animation = engine.create_animation.call_args.kwargs
+        start = {**sent, **animation["current_values"]}
+        end = {**sent, **{channel: round(value) for channel, value in animation["desired_values"].items()}}
+        return start, end
+
+    def test_a_restart_while_it_is_off_changes_nothing(self) -> None:
+        for signature, before in self.BEFORE:
+            light, _ = make_light(signature)
+            for request in self.after(light):
+                with self.subTest(signature, before=before, after=request):
+                    # In use for a while, so every channel has been sent.
+                    stayed, _ = make_light(signature)
+                    turn_on(stayed)
+                    turn_on(stayed, **before)
+                    turn_off(stayed)
+
+                    restarted, _ = restart(signature, stayed)
+                    self.assertFalse(restarted.is_on)
+                    self.assertEqual(self.outcome(stayed, **request), self.outcome(restarted, **request))
+
+    def test_a_dim_level_alone_keeps_the_color_from_before_the_restart(self) -> None:
+        # An automation that dims a room gives only a brightness, the color is whatever was picked last.
+        light, universe = make_light("RGB")
+        turn_on(light, rgb_color=(255, 100, 0), brightness=100)
+        turn_off(light)
+
+        light, universe = restart("RGB", light)
+        turn_on(light, brightness=38)
+        self.assertEqual({"R": 38, "G": 15, "B": 0}, dmx(light, universe))
+
+    def test_a_brightness_after_the_restart_sends_the_color_temperature_too(self) -> None:
+        # Nothing has been sent yet, so a color temperature channel left out would go out at zero.
+        light, _ = make_light("DT")
+        turn_on(light, color_temp_kelvin=4600, brightness=200)
+        turn_off(light)
+
+        light, universe = restart("DT", light)
+        turn_on(light, brightness=50)
+        self.assertEqual({"D": 50, "T": 128}, dmx(light, universe))
+
+    def test_a_fade_in_after_the_restart_starts_from_dark(self) -> None:
+        for signature in ("RGB", "DRGB"):
+            with self.subTest(signature):
+                light, _ = make_light(signature)
+                turn_on(light, rgb_color=(255, 100, 0), brightness=100)
+                turn_off(light)
+
+                light, _ = restart(signature, light)
+                current, _ = self.outcome(light, transition=2.0)
+                self.assertEqual(0, current.get(ChannelType.DIMMER, current[ChannelType.RED]))
+
+    def test_a_restart_while_it_is_on_comes_back_to_the_same(self) -> None:
+        for signature, before in self.BEFORE:
+            with self.subTest(signature):
+                stayed, stayed_universe = make_light(signature)
+                turn_on(stayed, **before)
+
+                restarted, restarted_universe = restart(signature, stayed)
+                self.assertTrue(restarted.is_on)
+                for light in (stayed, restarted):
+                    turn_off(light)
+                    turn_on(light)
+                self.assertEqual(dmx(stayed, stayed_universe), dmx(restarted, restarted_universe))
+
+    def test_what_it_comes_back_to_stays_out_of_the_state(self) -> None:
+        # The state goes to the recorder on every change, what's only needed after a restart doesn't belong there.
+        light, _ = make_light("RGB")
+        turn_on(light, rgb_color=(255, 100, 0), brightness=100)
+        turn_off(light)
+        self.assertEqual(
+            {"color_mode": None, "brightness": None, "hs_color": None, "rgb_color": None, "xy_color": None},
+            light.state_attributes,
+        )
+        self.assertIsNone(light.extra_state_attributes)
+
+    def test_what_another_version_saved_is_ignored(self) -> None:
+        # Anything that doesn't fit, like a different set of values from some future version, is left for the
+        # light's own defaults rather than failing to set it up.
+        for extra_data in ({"rgb": "red"}, {"brightness": None}, {"rgb": [1, 2]}, {}):
+            with self.subTest(extra_data):
+                light, universe = start("RGB", State("light.restored", "off", {}), RestoredExtraData(extra_data))
+                turn_on(light)
+                self.assertEqual({"R": 255, "G": 255, "B": 255}, dmx(light, universe))
 
 
 class TestTransitions(ConfigurationTestCase):
@@ -767,6 +921,60 @@ class TestTransitions(ConfigurationTestCase):
         # What it faded out from is what it comes back to.
         turn_on(light)
         self.assertEqual({"R": 0, "G": 100, "B": 0}, dmx(light, universe))
+
+    # Late in a fade out, a frame has little left of the color's ratios.
+    FADING_OUT = (
+        ("RGB", {"rgb_color": (255, 100, 0)}, {1: 3, 2: 1, 3: 0}),
+        ("RGBW", {"rgbw_color": (255, 0, 120, 60)}, {1: 3, 2: 0, 3: 1, 4: 0}),
+        ("RGBCH", {"rgbww_color": (255, 0, 120, 60, 30)}, {1: 3, 2: 0, 3: 1, 4: 0, 5: 0}),
+    )
+
+    def test_a_brightness_during_a_fade_out_brings_back_what_it_faded_from(self) -> None:
+        # Coming back in before it's dark, the way an automation that dims a room does when someone walks back in.
+        for signature, color, frame in self.FADING_OUT:
+            with self.subTest(signature):
+                light, universe = make_light(signature)
+                turn_on(light, brightness=38, **color)
+                expected = dmx(light, universe)
+                self.animated(light)
+
+                asyncio.run(light.async_turn_off(transition=3.0))
+                asyncio.run(universe.update_multiple_values(frame))
+                turn_on(light, brightness=38)
+                self.assertEqual(expected, dmx(light, universe))
+
+    def test_a_brightness_during_a_fade_in_keeps_the_color_it_fades_to(self) -> None:
+        light, universe = make_light("RGB")
+        turn_on(light, rgb_color=(57, 255, 0), brightness=100)
+        turn_on(light, brightness=200)
+        expected = dmx(light, universe)
+
+        light, universe = make_light("RGB")
+        self.animated(light)
+        turn_on(light, rgb_color=(57, 255, 0), brightness=100, transition=2.0)
+        asyncio.run(universe.update_multiple_values({1: 0, 2: 4, 3: 0}))
+        turn_on(light, brightness=200)
+        self.assertEqual(expected, dmx(light, universe))
+
+    def test_a_color_during_a_transition_comes_on_at_the_brightness_it_is_headed_for(self) -> None:
+        light, universe = make_light("RGB")
+        turn_on(light, rgb_color=(255, 0, 0), brightness=100)
+        self.animated(light)
+        asyncio.run(light.async_turn_off(transition=3.0))
+        asyncio.run(universe.update_multiple_values({1: 30, 2: 0, 3: 0}))
+
+        # What it's fading out from, as it would after the fade.
+        turn_on(light, rgb_color=(0, 0, 255))
+        self.assertEqual({"R": 0, "G": 0, "B": 100}, dmx(light, universe))
+
+        light, universe = make_light("RGB")
+        self.animated(light)
+        turn_on(light, rgb_color=(255, 0, 0), brightness=100, transition=2.0)
+        asyncio.run(universe.update_multiple_values({1: 20, 2: 0, 3: 0}))
+
+        # What it's fading in to.
+        turn_on(light, rgb_color=(0, 0, 255))
+        self.assertEqual({"R": 0, "G": 0, "B": 100}, dmx(light, universe))
 
 
 if __name__ == "__main__":

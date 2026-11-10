@@ -6,7 +6,7 @@ from typing import Any
 from homeassistant.components.light import ATTR_TRANSITION, ColorMode, LightEntity, LightEntityFeature
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.restore_state import ExtraStoredData, RestoredExtraData, RestoreEntity
 from homeassistant.util import slugify
 
 from custom_components.dmx.const import DOMAIN
@@ -170,6 +170,7 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         if not last_state:
             return
 
+        self._state.restored = True
         self._state.is_on = last_state.state == "on"
         attrs = last_state.attributes
 
@@ -218,6 +219,38 @@ class DmxLightEntity(LightEntity, RestoreEntity):
         ):
             self._state.warm_white = attrs["brightness"]
             self._state.last_warm_white = attrs["brightness"]
+
+        # The state of a light that's off has none of the above, so what it comes back to is saved next to it.
+        last_values = self._saved_last_values(await self.async_get_last_extra_data())
+        if last_values is not None:
+            self._state.remember(last_values)
+
+        if not self._state.is_on:
+            self._state.restore_off()
+
+    @property
+    def extra_restore_state_data(self) -> ExtraStoredData:
+        return RestoredExtraData(self._state.last_values())
+
+    def _saved_last_values(self, extra_data: ExtraStoredData | None) -> dict[str, Any] | None:
+        """What was saved to come back to, unless it isn't what this version saves."""
+        if extra_data is None:
+            return None
+
+        saved = extra_data.as_dict()
+        try:
+            r, g, b = (int(c) for c in saved["rgb"])
+            return {
+                "brightness": int(saved["brightness"]),
+                "rgb": (r, g, b),
+                "cold_white": int(saved["cold_white"]),
+                "warm_white": int(saved["warm_white"]),
+                "color_temp_kelvin": int(saved["color_temp_kelvin"]),
+                "color_temp_dmx": float(saved["color_temp_dmx"]),
+            }
+        except (KeyError, TypeError, ValueError):
+            log.warning(f"Not restoring what {self.name} comes back to, it was saved as {saved}")
+            return None
 
     def _restore_color(self, attrs: Mapping[str, Any]) -> None:
         # Only the attributes of the mode the light was in are real: Home Assistant derives the others from it,

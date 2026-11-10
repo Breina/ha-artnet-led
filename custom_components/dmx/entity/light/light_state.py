@@ -1,4 +1,6 @@
 import logging
+from collections.abc import Mapping
+from typing import Any
 
 from homeassistant.components.light import ColorMode
 
@@ -44,6 +46,9 @@ class LightState:
 
         # Flag to prevent updating last_* values during animations
         self._preserve_last_values = False
+
+        # Whether the values it comes back to were saved before a restart, as opposed to the defaults above.
+        self.restored = False
 
         self._channel_handlers = {}
 
@@ -181,18 +186,29 @@ class LightState:
             return updates
 
         if self.has_cw_ww() and not self.has_rgb():
-            cw, ww = self.converter.temp_to_cw_ww(self.color_temp_kelvin, new_brightness)
+            # Turned off, the whites no longer say what the color temperature was, and during a transition they're
+            # one of its frames.
+            dark = not (self.cold_white or self.warm_white)
+            kelvin = self.last_color_temp_kelvin if dark or self.in_transition else self.color_temp_kelvin
+            cw, ww = self.converter.temp_to_cw_ww(kelvin, new_brightness)
             updates[ChannelType.COLD_WHITE] = cw
             updates[ChannelType.WARM_WHITE] = ww
             return updates
 
         channel_values = {channel: self.get_channel_entity_value(channel) for channel in self.output_channels()}
 
-        # Switched off, so these are all zero. There's nothing to scale, but the last values are.
-        if not any(channel_values.values()):
+        # Switched off, so these are all zero. There's nothing to scale, but the last values are. During a transition,
+        # these are one of its frames, which have lost the color's ratios to rounding the dimmer they get. The last
+        # values are what it's headed for, or what it's fading out from.
+        if self.in_transition or not any(channel_values.values()):
             channel_values = self.last_output_values()
 
         return self.scale_to_brightness(channel_values, new_brightness)
+
+    @property
+    def in_transition(self) -> bool:
+        """Whether a transition is running, which the last values are kept out of."""
+        return self._preserve_last_values
 
     def last_output_values(self) -> dict[ChannelType, int]:
         """The values of the output channels from before the light was last turned off."""
@@ -350,6 +366,58 @@ class LightState:
         self.color_temp_dmx = self.converter.kelvin_to_dmx(kelvin)
         if not self._preserve_last_values:
             self.last_color_temp_dmx = self.color_temp_dmx
+
+    def current_values(self) -> dict[str, Any]:
+        return {
+            "brightness": self.brightness,
+            "rgb": self.rgb,
+            "cold_white": self.cold_white,
+            "warm_white": self.warm_white,
+            "color_temp_kelvin": self.color_temp_kelvin,
+            "color_temp_dmx": self.color_temp_dmx,
+        }
+
+    def last_values(self) -> dict[str, Any]:
+        """What turning on comes back to."""
+        return {
+            "brightness": self.last_brightness,
+            "rgb": self.last_rgb,
+            "cold_white": self.last_cold_white,
+            "warm_white": self.last_warm_white,
+            "color_temp_kelvin": self.last_color_temp_kelvin,
+            "color_temp_dmx": self.last_color_temp_dmx,
+        }
+
+    def remember(self, values: Mapping[str, Any]) -> None:
+        self.last_brightness = values["brightness"]
+        self.last_rgb = values["rgb"]
+        self.last_cold_white = values["cold_white"]
+        self.last_warm_white = values["warm_white"]
+        self.last_color_temp_kelvin = values["color_temp_kelvin"]
+        self.last_color_temp_dmx = values["color_temp_dmx"]
+
+    def restore_off(self) -> None:
+        """
+        Leave the light the way turning it off does: a dimmer at zero, or else whatever produces light, at the values
+        it comes back to. A restart doesn't write any DMX, so this is what a transition starts from.
+        """
+        last_values = self.last_values()
+
+        self.color_temp_kelvin = self.last_color_temp_kelvin
+        self.color_temp_dmx = self.last_color_temp_dmx
+        if self._has_dimmer():
+            self.rgb = self.last_rgb
+            self.cold_white = self.last_cold_white
+            self.warm_white = self.last_warm_white
+            self.brightness = 0
+            self.is_on = False
+        else:
+            self.reset()
+            self.rgb = (0, 0, 0)
+
+        self.sync_color_mode()
+        # Without a dimmer, a dark color reads as showing white, which forgets the color. Turning off doesn't.
+        self.remember(last_values)
 
     def reset(self) -> None:
         if self.output_channels():
