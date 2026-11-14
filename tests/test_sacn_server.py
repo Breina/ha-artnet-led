@@ -18,6 +18,7 @@ class TestSacnServerConfig:
         assert not config.enable_per_universe_sync
         assert config.multicast_ttl == 64
         assert not config.enable_preview_data
+        assert config.per_address_priority
         assert len(config.cid) == 16
 
     def test_config_custom(self):
@@ -31,6 +32,7 @@ class TestSacnServerConfig:
             enable_per_universe_sync=True,
             multicast_ttl=32,
             enable_preview_data=True,
+            per_address_priority=False,
         )
 
         assert config.source_name == "Custom Controller"
@@ -41,6 +43,7 @@ class TestSacnServerConfig:
         assert config.enable_per_universe_sync
         assert config.multicast_ttl == 32
         assert config.enable_preview_data
+        assert not config.per_address_priority
 
 
 class TestSacnServer:
@@ -142,6 +145,47 @@ class TestSacnServer:
 
         result = sacn_server.send_dmx_data(999, dmx_data)
         assert not result
+
+    @staticmethod
+    def _sent_start_codes(mock_socket) -> list[int]:
+        # Byte 125 is the DMP layer's first property value: the start code.
+        return [call.args[0][125] for call in mock_socket.sendto.call_args_list if len(call.args[0]) > 125]
+
+    @patch("socket.socket")
+    @pytest.mark.asyncio
+    async def test_sends_per_address_priorities_by_default(self, mock_socket_class, sacn_server, mock_hass):
+        mock_socket = MagicMock()
+        mock_socket_class.return_value = mock_socket
+
+        sacn_server.start_server()
+        sacn_server.add_universe(1)
+
+        dmx_data = bytearray([0] + [255, 128, 64] + [0] * 509)
+        assert sacn_server.send_dmx_data(1, dmx_data, bytes([100] * 3 + [0] * 509))
+        await mock_hass.wait_for_all_tasks()
+
+        start_codes = self._sent_start_codes(mock_socket)
+        assert 0x00 in start_codes
+        assert 0xDD in start_codes
+
+    @patch("socket.socket")
+    @pytest.mark.asyncio
+    async def test_per_address_priorities_can_be_turned_off(self, mock_socket_class, mock_hass):
+        mock_socket = MagicMock()
+        mock_socket_class.return_value = mock_socket
+
+        sacn_server = SacnServer(mock_hass, SacnServerConfig(per_address_priority=False))
+        sacn_server.start_server()
+        sacn_server.add_universe(1)
+
+        dmx_data = bytearray([0] + [255, 128, 64] + [0] * 509)
+        assert sacn_server.send_dmx_data(1, dmx_data, bytes([100] * 3 + [0] * 509))
+        await mock_hass.wait_for_all_tasks()
+
+        start_codes = self._sent_start_codes(mock_socket)
+        assert 0x00 in start_codes
+        assert 0xDD not in start_codes
+        assert sacn_server.universes[1].address_priorities is None
 
     @patch("socket.socket")
     def test_termination_packet(self, mock_socket_class, sacn_server):
