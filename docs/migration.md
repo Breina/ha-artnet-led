@@ -4,7 +4,7 @@ Your old configuration converts automatically, and your lights keep their entity
 
 ## Installing
 
-Download the [source code](https://github.com/Breina/ha-artnet-led/archive/refs/tags/v1.0.0-BETA.13.zip) of [the latest release](https://github.com/Breina/ha-artnet-led/releases/tag/v1.0.0-BETA.13), and copy its `custom_components/dmx` folder into your Home Assistant's `custom_components` folder.
+Download the [source code](https://github.com/Breina/ha-artnet-led/archive/refs/tags/v1.0.0-BETA.14.zip) of [the latest release](https://github.com/Breina/ha-artnet-led/releases/tag/v1.0.0-BETA.14), and copy its `custom_components/dmx` folder into your Home Assistant's `custom_components` folder.
 
 Once 1.0.0 is released, you'll be able to install it through HACS instead.
 
