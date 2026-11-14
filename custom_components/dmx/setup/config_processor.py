@@ -33,6 +33,7 @@ CONF_MULTICAST_TTL = "multicast_ttl"
 CONF_MULTICAST_TTL_DEFAULT = 64
 CONF_SYNC_ADDRESS = "sync_address"
 CONF_ENABLE_PREVIEW_DATA = "enable_preview_data"
+CONF_PER_ADDRESS_PRIORITY = "per_address_priority"
 CONF_UNICAST_ADDRESSES = "unicast_addresses"
 CONF_COMPATIBILITY = "compatibility"
 CONF_SEND_PARTIAL_UNIVERSE = "send_partial_universe"
@@ -215,6 +216,7 @@ CONFIG_SCHEMA = vol.Schema(
                     vol.Coerce(int), vol.Range(min=1, max=255)
                 ),
                 vol.Optional(CONF_ENABLE_PREVIEW_DATA, default=False): cv.boolean,
+                vol.Optional(CONF_PER_ADDRESS_PRIORITY, default=True): cv.boolean,
                 vol.Optional(CONF_REFRESH_EVERY, default=CONF_REFRESH_EVERY_DEFAULT): cv.positive_float,
                 vol.Optional(CONF_RATE_LIMIT, default=CONF_RATE_LIMIT_DEFAULT): cv.positive_float,
                 vol.Required(CONF_UNIVERSES): vol.Schema(

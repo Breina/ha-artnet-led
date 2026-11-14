@@ -41,6 +41,8 @@ class SacnServerConfig:
     enable_per_universe_sync: bool = False
     multicast_ttl: int = 64
     enable_preview_data: bool = False
+    per_address_priority: bool = True
+    """Some reciever don't recognise the start code, option not send 0xDD alongside the levels."""
     retransmit_interval: float = 0.8
     """Interval in seconds to retransmit last frame when no new data arrives."""
 
@@ -191,6 +193,10 @@ class SacnServer:
             return False
 
         universe_state = self.universes[universe_id]
+
+        if not self.config.per_address_priority:
+            # Receivers that ignore the start code would output these as levels.
+            address_priorities = None
 
         universe_state.pending_data = dmx_data.copy()
         universe_state.last_update_time = time.time()
