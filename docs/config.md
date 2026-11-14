@@ -76,6 +76,7 @@ dmx:
     priority: 100
     multicast_ttl: 64
     enable_preview_data: false
+    per_address_priority: true
     interface_ip: "10.101.97.101"
     sync_address: 7000
     refresh_every: 0.8
@@ -179,6 +180,8 @@ Universe definitions. Each universe can be specified as:
   Time-to-live for multicast packets [1-255]
 - **`enable_preview_data`** *(optional, default: `false`)*  
   Mark transmitted data as preview data (non-live)
+- **`per_address_priority`** *(optional, default: `true`)*  
+  Send [per-address priorities](sacn-communication.md#how-home-assistant-shares-a-universe) (start code `0xDD`) alongside the levels. Set to `false` for receivers that don't recognise the `0xDD` start code and output those packets as levels, which shows as channels flickering to the priority value.
 - **`interface_ip`** *(optional, default: `0.0.0.0`)*  
   IP address of the interface to use for sACN transmission
 - **`sync_address`** *(optional, default: `7000`)*  
