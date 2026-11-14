@@ -41,8 +41,8 @@ class SacnServerConfig:
     enable_per_universe_sync: bool = False
     multicast_ttl: int = 64
     enable_preview_data: bool = False
-    per_address_priority: bool = True
-    """Some reciever don't recognise the start code, option not send 0xDD alongside the levels."""
+    per_address_priority: bool = False
+    """Some reciever don't recognise the start code, option to send 0xDD alongside the levels."""
     retransmit_interval: float = 0.8
     """Interval in seconds to retransmit last frame when no new data arrives."""
 

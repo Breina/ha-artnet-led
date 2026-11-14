@@ -384,7 +384,7 @@ class TestSendingPriorities:
     @pytest.fixture
     def server(self, hass):
         hass.async_create_background_task = lambda coro, name=None: hass.async_create_task(coro)
-        server = SacnServer(hass, SacnServerConfig(priority=110))
+        server = SacnServer(hass, SacnServerConfig(priority=110, per_address_priority=True))
         server.running = True
         server.socket = FakeSocket()
         server.add_universe(1)
@@ -467,7 +467,15 @@ class TestProtocolEndToEnd:
             patch("custom_components.dmx.server.sacn_server.socket.socket"),
         ):
             protocol = SacnProtocol(hass, SimpleNamespace(data={}))
-            await protocol.setup({"source_name": "HA", "priority": 110, "rate_limit": 0.01, "universes": [{1: {}}]})
+            await protocol.setup(
+                {
+                    "source_name": "HA",
+                    "priority": 110,
+                    "per_address_priority": True,
+                    "rate_limit": 0.01,
+                    "universes": [{1: {}}],
+                }
+            )
 
         protocol.sacn_server.socket = FakeSocket()
         yield protocol
