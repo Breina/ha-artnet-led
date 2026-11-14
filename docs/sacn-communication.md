@@ -33,7 +33,7 @@ When Home Assistant receives sACN data from external controllers:
 
 Home Assistant takes part as one source among the others. It never retransmits what it receives, it only sends the levels it was asked to set.
 
-**What it sends:** Levels, along with [per-address priorities](https://etclabs.github.io/sACNDocs/2.0.1/per_address_priority.html) (start code `0xDD`). Those give the channels Home Assistant has set the configured `priority`, and every other channel priority 0, meaning "not sourced". A channel is claimed from the first time it gets set, including being turned off.
+**What it sends:** Levels, and with `per_address_priority: true` under `sacn:`, [per-address priorities](https://etclabs.github.io/sACNDocs/2.0.1/per_address_priority.html) (start code `0xDD`) along with them. Those give the channels Home Assistant has set the configured `priority`, and every other channel priority 0, meaning "not sourced". A channel is claimed from the first time it gets set, including being turned off.
 
 **What it shows:** For each channel, the highest priority wins, and among equal priorities the highest level does. This uses the received per-address priorities, or else the source's universe priority.
 
@@ -44,8 +44,8 @@ Home Assistant takes part as one source among the others. It never retransmits w
 | That console stops or terminates its stream | 64 again |
 | Console and Home Assistant both at 100, sending 200 and 64 | 200, attributed to the console |
 
-!!! tip "Receivers that output per-address priorities as levels"
-    Some receivers don't check the start code and treat the `0xDD` packets as levels, so every channel Home Assistant has set flickers between its level and the priority value. Set `per_address_priority: false` under `sacn:` to send levels only. Sharing a universe then works as for any receiver without per-address priority (below).
+!!! tip "Per-address priorities are off by default"
+    Some receivers don't check the start code and treat the `0xDD` packets as levels, so every channel Home Assistant has set flickers between its level and the priority value. That's why Home Assistant only sends levels unless you set `per_address_priority: true` under `sacn:`. Until then, sharing a universe works as for any receiver without per-address priority (below).
 
 !!! warning "Receivers without per-address priority"
     A receiver that doesn't support per-address priority only looks at the universe priority, and lets the source with the highest one control the entire universe. To share a universe with other controllers on such a receiver, give them the same `priority` and have it merge them, or use separate universes.
